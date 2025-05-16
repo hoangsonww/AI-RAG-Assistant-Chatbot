@@ -12,6 +12,7 @@ import {
   CircularProgress,
   Menu,
   MenuItem,
+  Button,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import SearchIcon from "@mui/icons-material/Search";
@@ -20,6 +21,9 @@ import AddCommentIcon from "@mui/icons-material/AddComment";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
+import LoginModal from "./LoginModal";
+import SignupModal from "./SignupModal";
+import ForgotPasswordModal from "./ForgotPasswordModal";
 
 import {
   createNewConversation,
@@ -30,9 +34,6 @@ import {
 import { useNavigate } from "react-router-dom";
 import { IConversation } from "../types/conversation";
 
-/**
- * Props: The Navbar component props
- */
 interface NavbarProps {
   sidebarOpen: boolean;
   onToggleSidebar: () => void;
@@ -43,18 +44,6 @@ interface NavbarProps {
   setConversations: React.Dispatch<React.SetStateAction<IConversation[]>>;
 }
 
-/**
- * The Navbar component
- *
- * @param sidebarOpen The sidebar open state
- * @param onToggleSidebar The sidebar toggle function
- * @param onRefreshConversations The refresh conversations function
- * @param onSelectConversation The select conversation function
- * @param onToggleTheme The toggle theme function
- * @param darkMode The dark mode state
- * @param setConversations The set conversations function
- * @constructor The Navbar component
- */
 const Navbar: React.FC<NavbarProps> = ({
   sidebarOpen,
   onToggleSidebar,
@@ -68,6 +57,9 @@ const Navbar: React.FC<NavbarProps> = ({
   const [searchLoading, setSearchLoading] = useState(false);
   const [newConvLoading, setNewConvLoading] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [signupModalOpen, setSignupModalOpen] = useState(false);
+  const [forgotPasswordModalOpen, setForgotPasswordModalOpen] = useState(false);
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -75,12 +67,9 @@ const Navbar: React.FC<NavbarProps> = ({
   const colors = ["#FF6B6B", "#FFD93D", "#6BCB77", "#4D96FF", "#9D4EDD"];
   const debounceTimerRef = useRef<number | null>(null);
 
-  // State to track token validity
   const [isTokenValid, setIsTokenValid] = useState(isAuthenticated());
-  // Ref to ensure the app reloads only once
   const hasReloadedRef = useRef(false);
 
-  // Validate the token every 500ms and reload only once if invalid
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -101,27 +90,14 @@ const Navbar: React.FC<NavbarProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  /**
-   * Opens the menu anchor
-   *
-   * @param event The mouse event
-   */
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
 
-  /**
-   * Closes the menu anchor
-   */
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
 
-  /**
-   * Debounces the search term
-   *
-   * @param value The search value
-   */
   const debouncedSearch = (value: string) => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
@@ -143,11 +119,6 @@ const Navbar: React.FC<NavbarProps> = ({
     }, 500);
   };
 
-  /**
-   * Handles the search change
-   *
-   * @param e The change event
-   */
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
@@ -155,9 +126,6 @@ const Navbar: React.FC<NavbarProps> = ({
     debouncedSearch(value);
   };
 
-  /**
-   * Creates a new conversation
-   */
   const handleCreateNewConversation = async () => {
     setNewConvLoading(true);
 
@@ -188,20 +156,38 @@ const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
-  /**
-   * Logs out the user
-   */
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
   };
 
-  /**
-   * Toggles the theme
-   */
   const handleToggleTheme = () => {
     onToggleTheme();
     localStorage.setItem("darkMode", JSON.stringify(!darkMode));
+  };
+
+  const handleOpenLoginModal = () => {
+    setLoginModalOpen(true);
+  };
+
+  const handleCloseLoginModal = () => {
+    setLoginModalOpen(false);
+  };
+
+  const handleOpenSignupModal = () => {
+    setSignupModalOpen(true);
+  };
+
+  const handleCloseSignupModal = () => {
+    setSignupModalOpen(false);
+  };
+
+  const handleOpenForgotPasswordModal = () => {
+    setForgotPasswordModalOpen(true);
+  };
+
+  const handleCloseForgotPasswordModal = () => {
+    setForgotPasswordModalOpen(false);
   };
 
   return (
@@ -214,7 +200,6 @@ const Navbar: React.FC<NavbarProps> = ({
         }}
       >
         <Box display="flex" alignItems="center" flex="1">
-          {/* Sidebar Toggle */}
           <IconButton
             color="inherit"
             onClick={onToggleSidebar}
@@ -224,7 +209,6 @@ const Navbar: React.FC<NavbarProps> = ({
             <MenuIcon />
           </IconButton>
 
-          {/* Dark/Light Mode Toggle */}
           <IconButton
             color="inherit"
             onClick={handleToggleTheme}
@@ -233,7 +217,6 @@ const Navbar: React.FC<NavbarProps> = ({
             {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
           </IconButton>
 
-          {/* Search Bar */}
           <Box
             sx={{
               display: "flex",
@@ -265,7 +248,6 @@ const Navbar: React.FC<NavbarProps> = ({
             )}
           </Box>
 
-          {/* New Conversation Icon Button */}
           <IconButton
             sx={{ ml: 1 }}
             color="inherit"
@@ -280,39 +262,29 @@ const Navbar: React.FC<NavbarProps> = ({
             )}
           </IconButton>
 
-          {/* Login/Signup (if token is invalid) OR Logout */}
           {!isTokenValid ? (
             <>
-              <IconButton
+              <Button
                 sx={{ ml: 1 }}
                 color="inherit"
-                onClick={handleMenuOpen}
-                title="Login or Register"
+                onClick={handleOpenLoginModal}
               >
-                <AccountCircle />
-              </IconButton>
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleMenuClose}
+                Login
+              </Button>
+              <Button
+                sx={{ ml: 1 }}
+                color="inherit"
+                onClick={handleOpenSignupModal}
               >
-                <MenuItem
-                  onClick={() => {
-                    handleMenuClose();
-                    navigate("/login");
-                  }}
-                >
-                  Login
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    handleMenuClose();
-                    navigate("/signup");
-                  }}
-                >
-                  Register
-                </MenuItem>
-              </Menu>
+                Sign Up
+              </Button>
+              <Button
+                sx={{ ml: 1 }}
+                color="inherit"
+                onClick={handleOpenForgotPasswordModal}
+              >
+                Reset Password
+              </Button>
             </>
           ) : (
             <IconButton
@@ -324,7 +296,6 @@ const Navbar: React.FC<NavbarProps> = ({
           )}
         </Box>
 
-        {/* Title on the Right (only if not mobile) */}
         {!isMobile && (
           <Typography
             variant="h6"
@@ -371,6 +342,22 @@ const Navbar: React.FC<NavbarProps> = ({
           </Typography>
         )}
       </Toolbar>
+      <LoginModal
+        open={loginModalOpen}
+        onClose={handleCloseLoginModal}
+        onOpenSignup={handleOpenSignupModal}
+        onOpenForgotPassword={handleOpenForgotPasswordModal}
+      />
+      <SignupModal
+        open={signupModalOpen}
+        onClose={handleCloseSignupModal}
+        onOpenLogin={handleOpenLoginModal}
+      />
+      <ForgotPasswordModal
+        open={forgotPasswordModalOpen}
+        onClose={handleCloseForgotPasswordModal}
+        onOpenLogin={handleOpenLoginModal}
+      />
     </AppBar>
   );
 };
