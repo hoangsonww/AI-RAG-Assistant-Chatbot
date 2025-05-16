@@ -1,14 +1,18 @@
 version: '3.8'
 
 services:
-  mongo:
-    image: mongo:5.0
-    container_name: mongo
+  postgres:
+    image: postgres:13
+    container_name: postgres
     restart: always
     ports:
-      - "27017:27017"
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ai_assistant
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: your_postgres_password_here
     volumes:
-      - mongo-data:/data/db
+      - postgres-data:/var/lib/postgresql/data
 
   backend:
     build:
@@ -20,14 +24,13 @@ services:
       - "5000:5000"
     environment:
       - PORT=5000
-      - MONGODB_URI=mongodb://mongo:27017/ai-assistant
+      - POSTGRES_URI=postgresql://postgres:5432/ai_assistant
       - JWT_SECRET=your_jwt_secret_here
       - GOOGLE_AI_API_KEY=your_google_ai_api_key_here
       - AI_INSTRUCTIONS=Your system instructions for the AI assistant
-      - PINECONE_API_KEY=your_pinecone_api_key_here
-      - PINECONE_INDEX_NAME=your_pinecone_index_name_here
+      - FAISS_INDEX_PATH=/path/to/faiss/index
     depends_on:
-      - mongo
+      - postgres
 
   client:
     build:
@@ -44,4 +47,4 @@ services:
       - CHOKIDAR_USEPOLLING=true
 
 volumes:
-  mongo-data:
+  postgres-data:

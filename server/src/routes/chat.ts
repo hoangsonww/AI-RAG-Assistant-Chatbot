@@ -12,7 +12,7 @@ const router = express.Router();
  *     summary: Chat with the AI assistant as an authenticated user.
  *     description: >
  *       Sends a chat message to the AI assistant. Requires a valid JWT in the Authorization header.
- *       The conversation is stored in MongoDB's Conversation collection.
+ *       The conversation is stored in PostgreSQL's Conversation table.
  *     tags:
  *       - Chat
  *     requestBody:
@@ -27,7 +27,7 @@ const router = express.Router();
  *                 example: "Hello, AI!"
  *               conversationId:
  *                 type: string
- *                 description: The MongoDB _id of an existing conversation.
+ *                 description: The PostgreSQL id of an existing conversation.
  *                 example: "60d5ec49f5a3c80015c0d9a4"
  *     responses:
  *       200:
@@ -87,8 +87,7 @@ router.post("/", async (req: Request, res: Response) => {
     if (conversationId) {
       // Load existing conversation
       conversation = await Conversation.findOne({
-        _id: conversationId,
-        user: userId,
+        where: { id: conversationId, user: userId },
       });
 
       if (!conversation) {
@@ -102,8 +101,7 @@ router.post("/", async (req: Request, res: Response) => {
       }));
     } else {
       // Create a new conversation
-      conversation = new Conversation({ user: userId, messages: [] });
-      await conversation.save();
+      conversation = await Conversation.create({ user: userId, messages: [] });
     }
 
     // Add the user's new message
@@ -130,7 +128,7 @@ router.post("/", async (req: Request, res: Response) => {
 
     return res.json({
       answer: aiResponse,
-      conversationId: conversation._id, // Return the actual conversation _id
+      conversationId: conversation.id, // Return the actual conversation id
     });
   } catch (error: any) {
     console.error("Error in POST /api/chat/auth:", error);

@@ -1,4 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
+import { DataTypes, Model } from "sequelize";
+import sequelize from "../config/database";
 
 export interface IGuestMessage {
   sender: "user" | "model";
@@ -6,33 +7,31 @@ export interface IGuestMessage {
   timestamp: Date;
 }
 
-export interface IGuestConversation extends Document {
-  guestId: string; // a random UUID or unique string
-  messages: IGuestMessage[];
-  createdAt?: Date;
-  updatedAt?: Date;
+export class GuestConversation extends Model {
+  public guestId!: string;
+  public messages!: IGuestMessage[];
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
 }
 
-const GuestMessageSchema = new Schema<IGuestMessage>(
+GuestConversation.init(
   {
-    sender: { type: String, enum: ["user", "model"], required: true },
-    text: { type: String, required: true },
-    timestamp: { type: Date, default: Date.now },
+    guestId: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    messages: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      defaultValue: [],
+    },
   },
-  { _id: false },
-);
-
-const GuestConversationSchema = new Schema<IGuestConversation>(
   {
-    guestId: { type: String, required: true, unique: true },
-    messages: [GuestMessageSchema],
-  },
-  { timestamps: true },
-);
-
-const GuestConversation = mongoose.model<IGuestConversation>(
-  "GuestConversation",
-  GuestConversationSchema,
+    sequelize,
+    modelName: "GuestConversation",
+    timestamps: true,
+  }
 );
 
 export default GuestConversation;

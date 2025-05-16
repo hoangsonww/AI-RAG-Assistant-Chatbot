@@ -1,4 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
+import { DataTypes, Model } from "sequelize";
+import sequelize from "../config/database";
 
 /**
  * @swagger
@@ -24,14 +25,36 @@ import mongoose, { Schema, Document } from "mongoose";
  *         password: yourpassword
  */
 
-export interface IUser extends Document {
-  email: string;
-  password: string;
+export class User extends Model {
+  public id!: string;
+  public email!: string;
+  public password!: string;
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
 }
 
-const UserSchema: Schema = new Schema({
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-});
+User.init(
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
+    password: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+  },
+  {
+    sequelize,
+    modelName: "User",
+    timestamps: true,
+  }
+);
 
-export default mongoose.model<IUser>("User", UserSchema);
+export default User;

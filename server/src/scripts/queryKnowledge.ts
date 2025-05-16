@@ -1,6 +1,7 @@
-import { index } from "../services/pineconeClient";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
+import { FAISS } from "langchain/vectorstores";
+import { HuggingFaceEmbeddings } from "langchain/embeddings";
 
 dotenv.config();
 
@@ -24,18 +25,16 @@ async function searchKnowledge(query: string, topK = 3) {
     if (!queryEmbedding || !Array.isArray(queryEmbedding))
       throw new Error("Invalid query embedding.");
 
-    const response = await index.namespace("knowledge").query({
-      vector: queryEmbedding,
-      topK,
-      includeMetadata: true,
-    });
+    const vectorStore = await FAISS.load(process.env.FAISS_INDEX_PATH, new HuggingFaceEmbeddings());
 
-    const results = response.matches?.map((match) => ({
+    const response = await vectorStore.similaritySearch(queryEmbedding, topK);
+
+    const results = response.map((match) => ({
       text: match.metadata?.text,
       score: match.score,
     }));
 
-    console.log(`✅ Found ${results?.length || 0} matches.`);
+    console.log(`✅ Found ${results.length} matches.`);
     return results;
   } catch (error) {
     console.error("❌ Error searching:", error);

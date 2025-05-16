@@ -1,4 +1,5 @@
-import { index } from "../services/pineconeClient";
+import { FAISS } from "langchain/vectorstores";
+import { HuggingFaceEmbeddings } from "langchain/embeddings";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 
@@ -215,7 +216,7 @@ const knowledgeBase = [
 ];
 
 /**
- * Stores knowledge base items in Pinecone.
+ * Stores knowledge base items in FAISS.
  */
 async function storeKnowledge() {
   const vectors = [];
@@ -245,10 +246,11 @@ async function storeKnowledge() {
 
   // Upsert all vectors at once
   if (vectors.length > 0) {
-    await index.namespace("knowledge").upsert(vectors);
-    console.log(`✅ Successfully stored ${vectors.length} items in Pinecone.`);
+    const vectorStore = await FAISS.load(process.env.FAISS_INDEX_PATH, new HuggingFaceEmbeddings());
+    await vectorStore.addVectors(vectors);
+    console.log(`✅ Successfully stored ${vectors.length} items in FAISS.`);
   }
 }
 
-// Run the function to store knowledge base in Pinecone
+// Run the function to store knowledge base in FAISS
 storeKnowledge();

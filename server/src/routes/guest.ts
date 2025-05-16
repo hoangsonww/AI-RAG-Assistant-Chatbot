@@ -1,8 +1,5 @@
 import express, { Request, Response } from "express";
-import GuestConversation, {
-  IGuestConversation,
-  IGuestMessage,
-} from "../models/GuestConversation";
+import GuestConversation from "../models/GuestConversation";
 import { chatWithAI } from "../services/geminiService";
 import { v4 as uuidv4 } from "uuid";
 
@@ -15,7 +12,7 @@ const router = express.Router();
  *     summary: Chat with the AI assistant as a guest (unauthenticated).
  *     description: >
  *       Sends a chat message to the AI assistant. No token required. The conversation
- *       is stored in MongoDB's GuestConversation collection, keyed by a guestId.
+ *       is stored in PostgreSQL's GuestConversation table, keyed by a guestId.
  *     tags:
  *       - Chat
  *     requestBody:
@@ -57,37 +54,31 @@ router.post("/", async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid or empty message." });
     }
 
-    let guestConversation: IGuestConversation | null = null;
+    let guestConversation = null;
 
     // If a guestId was provided, try to load that conversation
     if (guestId) {
-      guestConversation = await GuestConversation.findOne({ guestId });
+      guestConversation = await GuestConversation.findOne({ where: { guestId } });
     }
 
     // If not found, create a new guest conversation
     if (!guestId) {
       const newGuestId = uuidv4();
-      const newGuestConv = new GuestConversation({
+      const newGuestConv = await GuestConversation.create({
         guestId: newGuestId,
         messages: [],
       });
-      await newGuestConv.save();
       return handleGuestConversation(res, newGuestConv, message);
     } else if (!guestConversation && guestId) {
       // If a guestId was provided but no conversation was found, still create a new one but with the provided guestId
-      const newGuestConv = new GuestConversation({
+      const newGuestConv = await GuestConversation.create({
         guestId,
         messages: [],
       });
-      await newGuestConv.save();
       return handleGuestConversation(res, newGuestConv, message);
     } else {
       // We have an existing guest conversation
-      // @ts-ignore
-
       console.log("Existing guest conversation found:", guestConversation);
-
-      //@ts-ignore
       return handleGuestConversation(res, guestConversation, message);
     }
   } catch (error: any) {
@@ -98,11 +89,11 @@ router.post("/", async (req: Request, res: Response) => {
 
 async function handleGuestConversation(
   res: Response,
-  guestConv: IGuestConversation,
+  guestConv: any,
   userMessage: string,
 ) {
   // Convert DB messages to the AI "history"
-  const history = guestConv.messages.map((m) => ({
+  const history = guestConv.messages.map((m: any) => ({
     role: m.sender === "user" ? "user" : "model",
     parts: [{ text: m.text }],
   }));

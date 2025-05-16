@@ -1,4 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
+import { DataTypes, Model } from "sequelize";
+import sequelize from "../config/database";
 
 /**
  * @swagger
@@ -68,30 +69,41 @@ export interface IMessage {
   timestamp: Date;
 }
 
-export interface IConversation extends Document {
-  user: mongoose.Types.ObjectId;
-  title: string;
-  messages: IMessage[];
-  createdAt: Date;
-  updatedAt: Date;
+export class Conversation extends Model {
+  public id!: string;
+  public user!: string;
+  public title!: string;
+  public messages!: IMessage[];
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
 }
 
-const MessageSchema: Schema = new Schema({
-  sender: { type: String, enum: ["user", "model"], required: true },
-  text: { type: String, required: true },
-  timestamp: { type: Date, default: Date.now },
-});
-
-const ConversationSchema: Schema = new Schema(
+Conversation.init(
   {
-    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    title: { type: String, default: "New Conversation" },
-    messages: [MessageSchema],
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    user: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    title: {
+      type: DataTypes.STRING,
+      defaultValue: "New Conversation",
+    },
+    messages: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      defaultValue: [],
+    },
   },
-  { timestamps: true },
+  {
+    sequelize,
+    modelName: "Conversation",
+    timestamps: true,
+  }
 );
 
-export default mongoose.model<IConversation>(
-  "Conversation",
-  ConversationSchema,
-);
+export default Conversation;

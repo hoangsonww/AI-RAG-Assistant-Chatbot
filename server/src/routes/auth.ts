@@ -1,5 +1,5 @@
 import express, { Request, Response } from "express";
-import User, { IUser } from "../models/User";
+import User from "../models/User";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
@@ -51,13 +51,12 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 router.post("/signup", async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    const existingUser: IUser | null = await User.findOne({ email });
+    const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser: IUser = new User({ email, password: hashedPassword });
-    await newUser.save();
+    const newUser = await User.create({ email, password: hashedPassword });
     res.json({ message: "User created successfully" });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -107,7 +106,7 @@ router.post("/signup", async (req: Request, res: Response) => {
 router.post("/login", async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    const user: IUser | null = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(400).json({ message: "User does not exist" });
     }
@@ -116,7 +115,7 @@ router.post("/login", async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
     const token = jwt.sign(
-      { id: user._id, email: user.email },
+      { id: user.id, email: user.email },
       process.env.JWT_SECRET as string,
       { expiresIn: "1d" },
     );
@@ -163,7 +162,7 @@ router.get("/verify-email", async (req: Request, res: Response) => {
     if (!email || typeof email !== "string") {
       return res.status(400).json({ message: "Email is required" });
     }
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
     res.json({ exists: !!user });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -218,7 +217,7 @@ router.post("/reset-password", async (req: Request, res: Response) => {
         .status(400)
         .json({ message: "Email and new password are required" });
     }
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(400).json({ message: "User does not exist" });
     }
@@ -265,7 +264,6 @@ router.get("/validate-token", (req: Request, res: Response) => {
         .json({ valid: false, message: "No token provided" });
     }
 
-    // @ts-ignore
     jwt.verify(token, JWT_SECRET, (err) => {
       if (err) {
         return res

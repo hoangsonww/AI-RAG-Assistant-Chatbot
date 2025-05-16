@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import { authenticateJWT, AuthRequest } from "../middleware/auth";
-import Conversation, { IConversation, IMessage } from "../models/Conversation";
+import Conversation, { IMessage } from "../models/Conversation";
 
 const router = express.Router();
 
@@ -22,7 +22,7 @@ const router = express.Router();
  *             schema:
  *               type: object
  *               properties:
- *                 _id:
+ *                 id:
  *                   type: string
  *                   description: The unique identifier for the conversation.
  *                 user:
@@ -56,7 +56,7 @@ const router = express.Router();
  *                   format: date-time
  *                   description: The last update time of the conversation.
  *               example:
- *                 _id: "603e5e534cc7d52e2c2f7c90"
+ *                 id: "603e5e534cc7d52e2c2f7c90"
  *                 user: "603e5e534cc7d52e2c2f7c90"
  *                 title: "New Conversation"
  *                 messages: []
@@ -68,12 +68,11 @@ const router = express.Router();
 router.post("/", authenticateJWT, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;
-    const conversation = new Conversation({
+    const conversation = await Conversation.create({
       user: userId,
       title: "New Conversation",
       messages: [],
     });
-    await conversation.save();
     res.json(conversation);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -99,7 +98,7 @@ router.post("/", authenticateJWT, async (req: AuthRequest, res: Response) => {
  *               items:
  *                 type: object
  *                 properties:
- *                   _id:
+ *                   id:
  *                     type: string
  *                     description: The unique identifier for the conversation.
  *                   user:
@@ -133,7 +132,7 @@ router.post("/", authenticateJWT, async (req: AuthRequest, res: Response) => {
  *                     format: date-time
  *                     description: The last update time of the conversation.
  *                 example:
- *                   - _id: "603e5e534cc7d52e2c2f7c90"
+ *                   - id: "603e5e534cc7d52e2c2f7c90"
  *                     user: "603e5e534cc7d52e2c2f7c90"
  *                     title: "New Conversation"
  *                     messages: []
@@ -145,7 +144,7 @@ router.post("/", authenticateJWT, async (req: AuthRequest, res: Response) => {
 router.get("/", authenticateJWT, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;
-    const conversations = await Conversation.find({ user: userId });
+    const conversations = await Conversation.findAll({ where: { user: userId } });
     res.json(conversations);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -176,7 +175,7 @@ router.get("/", authenticateJWT, async (req: AuthRequest, res: Response) => {
  *             schema:
  *               type: object
  *               properties:
- *                 _id:
+ *                 id:
  *                   type: string
  *                   description: The unique identifier for the conversation.
  *                 user:
@@ -210,7 +209,7 @@ router.get("/", authenticateJWT, async (req: AuthRequest, res: Response) => {
  *                   format: date-time
  *                   description: The last update time of the conversation.
  *               example:
- *                 _id: "603e5e534cc7d52e2c2f7c90"
+ *                 id: "603e5e534cc7d52e2c2f7c90"
  *                 user: "603e5e534cc7d52e2c2f7c90"
  *                 title: "New Conversation"
  *                 messages:
@@ -228,8 +227,7 @@ router.get("/:id", authenticateJWT, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;
     const conversation = await Conversation.findOne({
-      _id: req.params.id,
-      user: userId,
+      where: { id: req.params.id, user: userId },
     });
     if (!conversation) {
       return res.status(404).json({ message: "Conversation not found" });
@@ -276,7 +274,7 @@ router.get("/:id", authenticateJWT, async (req: AuthRequest, res: Response) => {
  *             schema:
  *               type: object
  *               properties:
- *                 _id:
+ *                 id:
  *                   type: string
  *                   description: The unique identifier for the conversation.
  *                 user:
@@ -310,7 +308,7 @@ router.get("/:id", authenticateJWT, async (req: AuthRequest, res: Response) => {
  *                   format: date-time
  *                   description: The last update time of the conversation.
  *               example:
- *                 _id: "603e5e534cc7d52e2c2f7c90"
+ *                 id: "603e5e534cc7d52e2c2f7c90"
  *                 user: "603e5e534cc7d52e2c2f7c90"
  *                 title: "Updated Conversation Title"
  *                 messages: []
@@ -325,14 +323,14 @@ router.put("/:id", authenticateJWT, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;
     const { title } = req.body;
-    const conversation = await Conversation.findOneAndUpdate(
-      { _id: req.params.id, user: userId },
-      { title },
-      { new: true },
-    );
+    const conversation = await Conversation.findOne({
+      where: { id: req.params.id, user: userId },
+    });
     if (!conversation) {
       return res.status(404).json({ message: "Conversation not found" });
     }
+    conversation.title = title;
+    await conversation.save();
     res.json(conversation);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -365,7 +363,7 @@ router.put("/:id", authenticateJWT, async (req: AuthRequest, res: Response) => {
  *               items:
  *                 type: object
  *                 properties:
- *                   _id:
+ *                   id:
  *                     type: string
  *                     description: The unique identifier for the conversation.
  *                   user:
@@ -399,7 +397,7 @@ router.put("/:id", authenticateJWT, async (req: AuthRequest, res: Response) => {
  *                     format: date-time
  *                     description: The last update time of the conversation.
  *                 example:
- *                   - _id: "603e5e534cc7d52e2c2f7c90"
+ *                   - id: "603e5e534cc7d52e2c2f7c90"
  *                     user: "603e5e534cc7d52e2c2f7c90"
  *                     title: "Conversation Title"
  *                     messages:
@@ -419,12 +417,14 @@ router.get(
       const userId = req.user.id;
       const query = req.params.query;
       // Search by conversation title or within messages' text
-      const conversations = await Conversation.find({
-        user: userId,
-        $or: [
-          { title: { $regex: query, $options: "i" } },
-          { "messages.text": { $regex: query, $options: "i" } },
-        ],
+      const conversations = await Conversation.findAll({
+        where: {
+          user: userId,
+          [Op.or]: [
+            { title: { [Op.iLike]: `%${query}%` } },
+            { messages: { [Op.contains]: [{ text: { [Op.iLike]: `%${query}%` } }] } },
+          ],
+        },
       });
       res.json(conversations);
     } catch (error: any) {
@@ -471,13 +471,13 @@ router.delete(
   async (req: AuthRequest, res: Response) => {
     try {
       const userId = req.user.id;
-      const conversation = await Conversation.findOneAndDelete({
-        _id: req.params.id,
-        user: userId,
+      const conversation = await Conversation.findOne({
+        where: { id: req.params.id, user: userId },
       });
       if (!conversation) {
         return res.status(404).json({ message: "Conversation not found" });
       }
+      await conversation.destroy();
       res.json({ message: "Conversation deleted successfully" });
     } catch (error: any) {
       res.status(500).json({ message: error.message });

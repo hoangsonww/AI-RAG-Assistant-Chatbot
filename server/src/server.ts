@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import mongoose from "mongoose";
+import { Sequelize } from "sequelize";
 import swaggerJsdoc from "swagger-jsdoc";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -33,16 +33,16 @@ app.use(cors(corsOptions));
 
 app.use(express.json());
 
-// Connect to MongoDB
-const mongoURI =
-  process.env.MONGODB_URI || "mongodb://localhost:27017/ai-assistant";
-mongoose
-  .connect(mongoURI)
+// Connect to PostgreSQL
+const sequelize = new Sequelize(process.env.POSTGRES_URI as string);
+
+sequelize
+  .authenticate()
   .then(() => {
-    console.log("MongoDB connected");
+    console.log("PostgreSQL connected");
   })
   .catch((err) => {
-    console.error("MongoDB connection error: ", err);
+    console.error("PostgreSQL connection error: ", err);
   });
 
 // Swagger Options and Specification with Bearer Authentication
