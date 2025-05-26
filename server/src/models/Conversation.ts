@@ -61,7 +61,6 @@ import mongoose, { Schema, Document } from "mongoose";
  *         createdAt: "2023-02-06T00:00:00.000Z"
  *         updatedAt: "2023-02-06T00:00:00.000Z"
  */
-
 export interface IMessage {
   sender: "user" | "model";
   text: string;

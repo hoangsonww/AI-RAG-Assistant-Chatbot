@@ -4,7 +4,6 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import swaggerJsdoc from "swagger-jsdoc";
 import path from "path";
-import { fileURLToPath } from "url";
 import favicon from "serve-favicon";
 
 dotenv.config();
@@ -12,16 +11,12 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Serve the favicon from the /public folder
 app.use(favicon(path.join(__dirname, "public", "favicon.ico")));
-
-// Logging middleware: Log every incoming request to the console.
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
 });
 
-// Middleware
 const corsOptions = {
   origin: "*", // Allow all origins
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -30,7 +25,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
 app.use(express.json());
 
 // Connect to MongoDB
@@ -96,14 +90,10 @@ const swaggerOptions = {
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
-
-// Serve the Swagger JSON spec
 app.get("/api/swagger.json", (req, res) => {
   res.setHeader("Content-Type", "application/json");
   res.send(swaggerSpec);
 });
-
-// Serve Swagger docs using a custom HTML page that loads assets from a CDN.
 app.get("/docs", (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -135,13 +125,10 @@ app.get("/docs", (req, res) => {
     </html>
   `);
 });
-
-// Redirect "/" to "/docs"
 app.get("/", (req, res) => {
   res.redirect("/docs");
 });
 
-// Import routes
 import authRoutes from "./routes/auth";
 import conversationRoutes from "./routes/conversations";
 import chatRoutes from "./routes/chat";

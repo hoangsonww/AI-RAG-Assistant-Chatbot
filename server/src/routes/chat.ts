@@ -53,20 +53,15 @@ const router = express.Router();
 router.post("/", async (req: Request, res: Response) => {
   try {
     const { message, conversationId } = req.body;
-
     if (!message || typeof message !== "string") {
       return res.status(400).json({ message: "Invalid or empty message." });
     }
-
-    // Check for JWT
     const authHeader = req.headers.authorization;
     if (!authHeader) {
       return res.status(401).json({ message: "Missing Authorization header" });
     }
-
     const token = authHeader.split(" ")[1];
     let userId: string | null = null;
-
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
         id?: string;
@@ -80,12 +75,10 @@ router.post("/", async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Invalid or expired token" });
     }
 
-    // At this point, userId is guaranteed
     let conversation = null;
     let history: any[] = [];
 
     if (conversationId) {
-      // Load existing conversation
       conversation = await Conversation.findOne({
         _id: conversationId,
         user: userId,
@@ -95,26 +88,18 @@ router.post("/", async (req: Request, res: Response) => {
         return res.status(404).json({ message: "Conversation not found" });
       }
 
-      // Convert stored messages to the format AI needs
       history = conversation.messages.map((msg: IMessage) => ({
         role: msg.sender === "user" ? "user" : "model",
         parts: [{ text: msg.text }],
       }));
     } else {
-      // Create a new conversation
       conversation = new Conversation({ user: userId, messages: [] });
       await conversation.save();
     }
 
-    // Add the user's new message
     history.push({ role: "user", parts: [{ text: message }] });
 
-    console.log("User message history:", history);
-
-    // Call AI
     const aiResponse = await chatWithAI(history, message);
-
-    // Store messages in DB
     conversation.messages.push({
       sender: "user",
       text: message,
@@ -130,7 +115,7 @@ router.post("/", async (req: Request, res: Response) => {
 
     return res.json({
       answer: aiResponse,
-      conversationId: conversation._id, // Return the actual conversation _id
+      conversationId: conversation._id,
     });
   } catch (error: any) {
     console.error("Error in POST /api/chat/auth:", error);

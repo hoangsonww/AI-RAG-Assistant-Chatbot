@@ -5,10 +5,6 @@ dotenv.config();
 
 // @ts-ignore
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
-
-console.log(process.env.GOOGLE_AI_API_KEY);
-
-// Initialize the model - From Gemini API
 const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
 
 /**

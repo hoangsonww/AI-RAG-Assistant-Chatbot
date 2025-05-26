@@ -7,9 +7,6 @@ import { v4 as uuidv4 } from "uuid";
  */
 export const ephemeralStore: Record<string, any[]> = {};
 
-/**
- * Adds a message to the ephemeral conversation store.
- */
 export function createEphemeralConversation(): string {
   const newId = uuidv4();
   ephemeralStore[newId] = [];

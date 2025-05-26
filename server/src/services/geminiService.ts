@@ -39,15 +39,7 @@ export const chatWithAI = async (
       "No relevant knowledge found in Pinecone. You are a highly intelligent AI assistant. If relevant information is found in the user's internal database, include it in your response. However, if no relevant information is found, use your general knowledge to answer the question accurately and in detail.\n";
   }
 
-  console.log(
-    "🧠 Enriching AI with Pinecone knowledge:",
-    JSON.stringify(additionalContext, null, 2),
-  );
-
-  // Combine system instructions with knowledge base context
   const fullSystemInstruction = process.env.AI_INSTRUCTIONS || "";
-
-  // Initialize Gemini AI
   const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
   const model = genAI.getGenerativeModel({
     model: "gemini-2.0-flash-lite",
@@ -80,19 +72,15 @@ export const chatWithAI = async (
     },
   ];
 
-  // Add Pinecone results to history
   history.push({ role: "user", parts: [{ text: message }] });
   history.push({ role: "user", parts: [{ text: additionalContext }] });
 
-  // Start chat session
   const chatSession = model.startChat({
     generationConfig,
     safetySettings,
     history: history,
   });
-
   const result = await chatSession.sendMessage(message);
-
   if (!result.response || !result.response.text) {
     throw new Error("Failed to get text response from the AI.");
   }

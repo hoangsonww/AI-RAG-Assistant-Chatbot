@@ -23,7 +23,6 @@ import mongoose, { Schema, Document } from "mongoose";
  *         email: user@example.com
  *         password: yourpassword
  */
-
 export interface IUser extends Document {
   email: string;
   password: string;

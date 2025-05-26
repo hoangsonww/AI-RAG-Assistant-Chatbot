@@ -96,7 +96,7 @@ The project is divided into two main parts:
   - A collapsible sidebar for conversation history.
   - Theme toggling (dark/light mode) and responsive design.
 
-- **AI/ML:**
+- **AI/ML:**  
   Use RAG (Retrieval-Augmented Generation) & LangChain to enhance the AI's responses by retrieving relevant information from a knowledge base or external sources. This involves:
 
   - Retrieval: Implement a retrieval mechanism to fetch relevant documents or data from a knowledge base or external sources.

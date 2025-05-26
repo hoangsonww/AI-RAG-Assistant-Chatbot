@@ -16,8 +16,6 @@ const model = genAI.getGenerativeModel({ model: "models/text-embedding-004" });
  */
 async function searchKnowledge(query: string, topK = 3) {
   try {
-    console.log(`🔍 Searching for: "${query}"...`);
-
     const embeddingResponse = await model.embedContent(query);
     const queryEmbedding = embeddingResponse.embedding.values;
 
@@ -35,10 +33,8 @@ async function searchKnowledge(query: string, topK = 3) {
       score: match.score,
     }));
 
-    console.log(`✅ Found ${results?.length || 0} matches.`);
     return results;
   } catch (error) {
-    console.error("❌ Error searching:", error);
     return [];
   }
 }
@@ -68,13 +64,6 @@ async function searchKnowledge(query: string, topK = 3) {
 (async () => {
   const query = "What is Lumina?";
   const results = await searchKnowledge(query, 1);
-  console.log("🔹 Most relevant results:", results);
-})();
-
-// Example usage 5
-(async () => {
-  const query = "What is Pinecone?";
-  const results = await searchKnowledge(query, 2);
   console.log("🔹 Most relevant results:", results);
 })();
 

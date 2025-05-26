@@ -52,18 +52,15 @@ const router = express.Router();
 router.post("/", async (req: Request, res: Response) => {
   try {
     const { message, guestId } = req.body;
-
     if (!message || typeof message !== "string") {
       return res.status(400).json({ message: "Invalid or empty message." });
     }
-
     let guestConversation: IGuestConversation | null = null;
 
     // If a guestId was provided, try to load that conversation
     if (guestId) {
       guestConversation = await GuestConversation.findOne({ guestId });
     }
-
     // If not found, create a new guest conversation
     if (!guestId) {
       const newGuestId = uuidv4();
@@ -84,10 +81,6 @@ router.post("/", async (req: Request, res: Response) => {
     } else {
       // We have an existing guest conversation
       // @ts-ignore
-
-      console.log("Existing guest conversation found:", guestConversation);
-
-      //@ts-ignore
       return handleGuestConversation(res, guestConversation, message);
     }
   } catch (error: any) {
@@ -101,19 +94,12 @@ async function handleGuestConversation(
   guestConv: IGuestConversation,
   userMessage: string,
 ) {
-  // Convert DB messages to the AI "history"
   const history = guestConv.messages.map((m) => ({
     role: m.sender === "user" ? "user" : "model",
     parts: [{ text: m.text }],
   }));
-
-  // Add user's new message
   history.push({ role: "user", parts: [{ text: userMessage }] });
-
-  // Get AI response
   const aiResponse = await chatWithAI(history, userMessage);
-
-  // Store both messages in DB
   guestConv.messages.push({
     sender: "user",
     text: userMessage,
@@ -124,12 +110,10 @@ async function handleGuestConversation(
     text: aiResponse,
     timestamp: new Date(),
   });
-
   await guestConv.save();
-
   return res.json({
     answer: aiResponse,
-    guestId: guestConv.guestId, // Return the guestId so user can continue
+    guestId: guestConv.guestId,
   });
 }
 
