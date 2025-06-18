@@ -11,6 +11,7 @@ will be addressed promptly.
 | Version | Supported |
 | ------- | --------- |
 | 1.x.x   | Yes       |
+| 2.x.x   | Yes       |
 
 We recommend upgrading to the latest main branch.
 
