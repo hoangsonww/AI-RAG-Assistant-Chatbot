@@ -3,7 +3,9 @@
 **David Nguyen's Personal AI Assistant** - **Lumina** is a full-stack web application that allows users to ask questions about David Nguyen, as well as any other topics, and receive instant, personalized responses powered by state‑of‑the‑art AI & RAG. Users can log in to save their conversation history or continue as guests. The app uses modern technologies and provides a sleek, responsive user interface with lots of animations. 🚀
 
 <p align="center">
-  <img src="img/lumina.png" alt="Lumina Logo" width="30%" style="border-radius: 10px">
+  <a href="https://lumina-david.vercel.app/" target="_blank" rel="noopener noreferrer">
+    <img src="img/logo.jpeg" alt="Lumina Logo" width="35%" style="border-radius: 10px">
+  </a>
 </p>
 
 ## Table of Contents
