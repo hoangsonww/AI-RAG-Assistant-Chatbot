@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://lumina-david.vercel.app/" target="_blank" rel="noopener noreferrer">
-    <img src="img/logo.jpeg" alt="Lumina Logo" width="40%" style="border-radius: 10px">
+    <img src="img/logo.jpeg" alt="Lumina Logo" width="45%" style="border-radius: 10px">
   </a>
 </p>
 
