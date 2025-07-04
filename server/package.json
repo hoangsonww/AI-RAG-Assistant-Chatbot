@@ -36,7 +36,8 @@
     "start": "node dist/server.js",
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/server.ts",
     "store": "ts-node src/scripts/storeKnowledge.ts",
-    "vercel": "vercel --prod"
+    "vercel": "vercel --prod",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,scss,md,html}\""
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
