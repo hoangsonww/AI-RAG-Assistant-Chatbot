@@ -35,8 +35,10 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/server.ts",
+    "lint": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,scss,md,html}\"",
     "store": "ts-node src/scripts/storeKnowledge.ts",
-    "vercel": "vercel --prod"
+    "vercel": "vercel --prod",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,scss,md,html}\""
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
@@ -48,6 +50,7 @@
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^6.0.0",
     "multer": "^1.4.4",
+    "prettier": "^3.6.2",
     "serve-favicon": "^2.5.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
