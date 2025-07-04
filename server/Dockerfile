@@ -1,22 +1,22 @@
-# Use an official Node.js runtime as a parent image
-FROM node:18
-
-# Set the working directory inside the container
+FROM node:18-alpine AS builder
 WORKDIR /app
 
-# Copy package.json and package-lock.json (if present)
-COPY package*.json ./
+# ignore peer‐dep conflicts
+ENV NPM_CONFIG_LEGACY_PEER_DEPS=true
 
-# Install dependencies
-RUN npm install
-
-# Copy the rest of the application code
+# install & build
+COPY package.json package-lock.json ./
+RUN npm ci
 COPY . .
 
-# Build the project (if needed)
+# Build the project
 RUN npm run build
 
-# Expose the port the app runs on
+# runtime image
+FROM node:18-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app /app
 EXPOSE 5000
 
 # Start the app
