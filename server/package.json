@@ -49,6 +49,7 @@
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^6.0.0",
     "multer": "^1.4.4",
+    "prettier": "^3.6.2",
     "serve-favicon": "^2.5.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
