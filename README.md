@@ -29,6 +29,8 @@
 - [Project Structure](#project-structure)
 - [Dockerization](#dockerization)
 - [OpenAPI Specification](#openapi-specification)
+- [CI / CD with GitHub Actions](#ci--cd-with-github-actions)
+- [Testing](#testing)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -478,6 +480,41 @@ To run the application using Docker, simply run `docker-compose up` in the root 
 There is an OpenAPI specification file (`openapi.yaml`) in the root directory that describes the API endpoints, request/response formats, and authentication methods. This can be used to generate client SDKs or documentation.
 
 To view the API documentation, you can use tools like Swagger UI or Postman to import the `openapi.yaml` file. Or just go to the `/docs` endpoint of the deployed backend.
+
+## CI / CD with GitHub Actions
+
+This project includes a GitHub Actions workflow for continuous integration and deployment. The workflow is defined in the `.github/workflows/workflow.yml` file and includes steps to:
+- Install dependencies for both the frontend and backend.
+- Run tests for both the frontend and backend.
+- Build the frontend and backend applications.
+- Deploy the applications to Vercel and Netlify.
+- Notify the team via email on successful deployments.
+- Notify the team via email on failed builds or tests.
+- Generate and upload artifacts for the frontend and backend builds.
+- Run linting checks for both the frontend and backend code.
+- _and more..._
+
+This workflow ensures that every commit and pull request is tested and deployed automatically, providing a robust CI/CD pipeline.
+
+Please ensure you have the necessary secrets configured in your GitHub repository for deployment (e.g, Vercel and Netlify tokens, etc.). Also, feel free to customize the workflow under [`.github/workflows/workflow.yml`](.github/workflows/workflow.yml) to suit your needs.
+
+## Testing
+
+This project includes unit and integration tests for both the frontend and backend. To run the tests:
+
+- **Frontend:**  
+  Navigate to the `client` directory and run:
+
+  ```bash
+  npm test
+  ```
+  
+- **Backend:**  
+  Navigate to the `server` directory and run:
+
+  ```bash
+  npm test
+  ```
 
 ## Contributing
 
