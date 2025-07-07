@@ -50,23 +50,27 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 
 ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
 ![Express](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)
-![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
 ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
 ![Pinecone](https://img.shields.io/badge/Pinecone-FF6F61?style=for-the-badge&logo=googledataflow&logoColor=white)
-![Material UI](https://img.shields.io/badge/Material--UI-007FFF?style=for-the-badge&logo=mui&logoColor=white)
 ![JWT](https://img.shields.io/badge/JWT-black?style=for-the-badge&logo=json-web-tokens)
+![Material UI](https://img.shields.io/badge/Material_UI-007FFF?style=for-the-badge&logo=mui&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
 ![Netlify](https://img.shields.io/badge/Netlify-00C7B7?style=for-the-badge&logo=netlify&logoColor=white)
 ![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=white)
-![RAG](https://img.shields.io/badge/RAG-FFCA28?style=for-the-badge&logo=rag&logoColor=black)
+![RAG](https://img.shields.io/badge/Retrieval_Augmented_Generation-FFCA28?style=for-the-badge&logo=chatbot&logoColor=black)
 ![LangChain](https://img.shields.io/badge/LangChain-000000?style=for-the-badge&logo=langchain&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)
 ![Google AI](https://img.shields.io/badge/GoogleAI-4285F4?style=for-the-badge&logo=google&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![Jupyter Notebook](https://img.shields.io/badge/Jupyter-FFCA28?style=for-the-badge&logo=jupyter&logoColor=black)
+![Jupyter Notebook](https://img.shields.io/badge/Jupyter_Notebook-FFCA28?style=for-the-badge&logo=jupyter&logoColor=black)
 ![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)
+![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)
+![Jest](https://img.shields.io/badge/Jest-C21325?style=for-the-badge&logo=jest&logoColor=white)
 
 ## Features
 
@@ -80,6 +84,9 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 - **Responsive UI:** Built with React and Material‑UI (MUI) with a fully responsive, modern, and animated interface.
 - **Landing Page:** A dynamic landing page with animations, feature cards, and call-to-action buttons.
 - **Guest Mode:** Users may interact with the AI assistant as a guest, though conversations will not be saved.
+- **Conversation Search:** Search through conversation titles and messages to find relevant discussions.
+- **Collapsible Sidebar:** A sidebar that displays conversation history, allowing users to switch between conversations easily.
+- **Reinforced Learning from Human Feedback (RLHF):** Implement a feedback loop to continuously improve the AI's responses based on user interactions.
 - **Dark/Light Mode:** Users can toggle between dark and light themes, with the preference stored in local storage.
 
 ## Architecture
@@ -107,12 +114,12 @@ The project is divided into two main parts:
 - **AI/ML:**  
   Use RAG (Retrieval-Augmented Generation) & LangChain to enhance the AI's responses by retrieving relevant information from a knowledge base or external sources. This involves:
 
-  - Retrieval: Implement a retrieval mechanism to fetch relevant documents or data from a knowledge base or external sources.
-  - Augmentation: Combine the retrieved information with the user's query to provide a more informed response.
-  - Generation: Use a generative model to create a response based on the augmented input.
-  - Feedback Loop: Implement a feedback loop to continuously improve the system based on user interactions and feedback.
-  - LangChain: Use LangChain to manage the entire process, from retrieval to generation, ensuring a seamless integration of RAG into the chatbot's workflow.
-  - Pinecone: Use Pinecone for vector similarity search to efficiently retrieve relevant documents or data for the RAG model.
+  - **Retrieval**: Implement a retrieval mechanism to fetch relevant documents or data from a knowledge base or external sources.
+  - **Augmentation**: Combine the retrieved information with the user's query to provide a more informed response.
+  - **Generation**: Use a generative model to create a response based on the augmented input.
+  - **Feedback Loop**: Implement a **RLHF** feedback loop to continuously improve the system based on user interactions and feedback.
+  - **LangChain**: Use **LangChain** to manage the entire process, from retrieval to generation, ensuring a seamless integration of RAG into the chatbot's workflow.
+  - **Pinecone**: Use **Pinecone vector database** for vector similarity search to efficiently retrieve relevant documents or data for the RAG model.
 
 ### High-Level Architecture Flow Diagram
 
@@ -159,7 +166,7 @@ The project is divided into two main parts:
        │ - Retrieval (Pinecone &       │
        │   MongoDB conversation data)  │
        │ - Augmentation (LangChain)    │
-       │ - Generation (OpenAI API)     │
+       │ - Generation (OpenAI/Gemini)  │
        │ - Feedback loop               │
        └───────────────┬───────────────┘
                        │
@@ -185,6 +192,9 @@ The project is divided into two main parts:
          │ - Sign user in/out, etc.    │
          └─────────────────────────────┘
 ```
+
+> [!NOTE]
+> This diagram might not cover every detail, but it provides a high-level overview of the architecture and data flow in the application. The AI/ML component is crucial for enhancing the chatbot's capabilities through RAG and LangChain, while the frontend and backend work together to provide a seamless user experience.
 
 ## Setup & Installation
 
@@ -500,7 +510,7 @@ Please ensure you have the necessary secrets configured in your GitHub repositor
 
 ## Testing
 
-This project includes unit and integration tests for both the frontend and backend. To run the tests:
+This project includes unit and integration tests with Jest for both the frontend and backend. To run the tests:
 
 - **Frontend:**  
   Navigate to the `client` directory and run:
