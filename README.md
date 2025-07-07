@@ -84,6 +84,9 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 - **Responsive UI:** Built with React and Material‑UI (MUI) with a fully responsive, modern, and animated interface.
 - **Landing Page:** A dynamic landing page with animations, feature cards, and call-to-action buttons.
 - **Guest Mode:** Users may interact with the AI assistant as a guest, though conversations will not be saved.
+- **Conversation Search:** Search through conversation titles and messages to find relevant discussions.
+- **Collapsible Sidebar:** A sidebar that displays conversation history, allowing users to switch between conversations easily.
+- **Reinforced Learning from Human Feedback (RLHF):** Implement a feedback loop to continuously improve the AI's responses based on user interactions.
 - **Dark/Light Mode:** Users can toggle between dark and light themes, with the preference stored in local storage.
 
 ## Architecture
@@ -111,12 +114,12 @@ The project is divided into two main parts:
 - **AI/ML:**  
   Use RAG (Retrieval-Augmented Generation) & LangChain to enhance the AI's responses by retrieving relevant information from a knowledge base or external sources. This involves:
 
-  - Retrieval: Implement a retrieval mechanism to fetch relevant documents or data from a knowledge base or external sources.
-  - Augmentation: Combine the retrieved information with the user's query to provide a more informed response.
-  - Generation: Use a generative model to create a response based on the augmented input.
-  - Feedback Loop: Implement a feedback loop to continuously improve the system based on user interactions and feedback.
-  - LangChain: Use **LangChain** to manage the entire process, from retrieval to generation, ensuring a seamless integration of RAG into the chatbot's workflow.
-  - Pinecone: Use **Pinecone vector database** for vector similarity search to efficiently retrieve relevant documents or data for the RAG model.
+  - **Retrieval**: Implement a retrieval mechanism to fetch relevant documents or data from a knowledge base or external sources.
+  - **Augmentation**: Combine the retrieved information with the user's query to provide a more informed response.
+  - **Generation**: Use a generative model to create a response based on the augmented input.
+  - **Feedback Loop**: Implement a **RLHF** feedback loop to continuously improve the system based on user interactions and feedback.
+  - **LangChain**: Use **LangChain** to manage the entire process, from retrieval to generation, ensuring a seamless integration of RAG into the chatbot's workflow.
+  - **Pinecone**: Use **Pinecone vector database** for vector similarity search to efficiently retrieve relevant documents or data for the RAG model.
 
 ### High-Level Architecture Flow Diagram
 
@@ -189,6 +192,9 @@ The project is divided into two main parts:
          │ - Sign user in/out, etc.    │
          └─────────────────────────────┘
 ```
+
+> [!NOTE]
+> This diagram might not cover every detail, but it provides a high-level overview of the architecture and data flow in the application. The AI/ML component is crucial for enhancing the chatbot's capabilities through RAG and LangChain, while the frontend and backend work together to provide a seamless user experience.
 
 ## Setup & Installation
 
