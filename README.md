@@ -55,8 +55,10 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
 ![Pinecone](https://img.shields.io/badge/Pinecone-FF6F61?style=for-the-badge&logo=googledataflow&logoColor=white)
-![Material UI](https://img.shields.io/badge/Material--UI-007FFF?style=for-the-badge&logo=mui&logoColor=white)
 ![JWT](https://img.shields.io/badge/JWT-black?style=for-the-badge&logo=json-web-tokens)
+![Material UI](https://img.shields.io/badge/Material_UI-007FFF?style=for-the-badge&logo=mui&logoColor=white)
+![HTML5 & CSS](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white) 
+![CSS](https://img.shields.io/badge/CSS-1572B6?style=for-the-badge&logo=css&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
 ![Netlify](https://img.shields.io/badge/Netlify-00C7B7?style=for-the-badge&logo=netlify&logoColor=white)
 ![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=white)
@@ -113,8 +115,8 @@ The project is divided into two main parts:
   - Augmentation: Combine the retrieved information with the user's query to provide a more informed response.
   - Generation: Use a generative model to create a response based on the augmented input.
   - Feedback Loop: Implement a feedback loop to continuously improve the system based on user interactions and feedback.
-  - LangChain: Use LangChain to manage the entire process, from retrieval to generation, ensuring a seamless integration of RAG into the chatbot's workflow.
-  - Pinecone: Use Pinecone for vector similarity search to efficiently retrieve relevant documents or data for the RAG model.
+  - LangChain: Use **LangChain** to manage the entire process, from retrieval to generation, ensuring a seamless integration of RAG into the chatbot's workflow.
+  - Pinecone: Use **Pinecone vector database** for vector similarity search to efficiently retrieve relevant documents or data for the RAG model.
 
 ### High-Level Architecture Flow Diagram
 
