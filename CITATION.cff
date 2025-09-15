@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "AI-RAG-Assistant-Chatbot (Lumina)"
+version: "1.0.0"
+date-released: 2025-05-16
+authors:
+  - family-names: "Nguyen"
+    given-names: "Son (David)"
+    alias: "hoangsonww"
+    email: "Email"
+    website: "https://lumina-david.vercel.app"
+repository-code: "https://github.com/hoangsonww/AI-RAG-Assistant-Chatbot"
+license: "MIT"
+type: software
+keywords:
+  - personal AI assistant
+  - conversational AI
+  - chatbot
+  - fullstack development
+  - RAG
+  - LangChain
+  - Pinecone
+  - MongoDB
+  - OpenAI
+  - Google AI
+  - Express
+  - React
+  - TypeScript
+  - Vercel
+  - Netlify
+abstract: >
+  Lumina is a full-stack, Retrieval-Augmented Generation (RAG)-powered AI chatbot 
+  assistant designed by Son (David) Nguyen. It provides intelligent, accurate, and 
+  responsive answers about the creator or general topics. Built with Node.js, Express, 
+  React, TypeScript, MongoDB, LangChain, Pinecone, and multiple AI APIs, the system 
+  offers a modern, responsive, and animated interface with authentication, conversation 
+  history, and deployment on Vercel/Netlify. The project demonstrates how to integrate 
+  advanced AI/ML techniques with practical web technologies to deliver a personal, 
+  production-ready assistant.
