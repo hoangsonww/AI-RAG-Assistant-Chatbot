@@ -1,0 +1,51 @@
+# Copy this file to terraform.tfvars and fill in your values
+# DO NOT commit terraform.tfvars to version control
+
+# General Configuration
+environment    = "production"
+aws_region     = "us-east-1"
+domain_name    = "lumina-ai.yourdomain.com"
+certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/your-cert-id"
+alert_email    = "alerts@yourdomain.com"
+
+# VPC Configuration
+vpc_cidr             = "10.0.0.0/16"
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+private_subnet_cidrs = ["10.0.11.0/24", "10.0.12.0/24", "10.0.13.0/24"]
+
+# ECS Configuration
+frontend_image         = "123456789012.dkr.ecr.us-east-1.amazonaws.com/lumina-frontend:latest"
+frontend_cpu           = 512
+frontend_memory        = 1024
+frontend_desired_count = 2
+
+backend_image         = "123456789012.dkr.ecr.us-east-1.amazonaws.com/lumina-backend:latest"
+backend_cpu           = 1024
+backend_memory        = 2048
+backend_desired_count = 3
+
+# DocumentDB Configuration
+documentdb_cluster_size    = 2
+documentdb_instance_class  = "db.r5.large"
+documentdb_master_username = "admin"
+documentdb_master_password = "YourSecurePassword123!"  # Change this!
+
+# ElastiCache Configuration
+redis_node_type  = "cache.r6g.large"
+redis_num_nodes  = 2
+
+# Application Secrets
+jwt_secret         = "your-super-secret-jwt-key"  # Change this!
+google_ai_api_key  = "your-google-ai-api-key"
+pinecone_api_key   = "your-pinecone-api-key"
+pinecone_index_name = "lumina-knowledge-base"
+
+# Auto Scaling
+frontend_min_capacity = 2
+frontend_max_capacity = 10
+backend_min_capacity  = 2
+backend_max_capacity  = 20
+
+# Monitoring
+enable_detailed_monitoring = true
+log_retention_days        = 30
