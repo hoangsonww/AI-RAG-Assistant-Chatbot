@@ -13,8 +13,13 @@ variable "private_subnet_ids" {
   type        = list(string)
 }
 
-variable "alb_target_group_arn" {
-  description = "ALB target group ARN"
+variable "frontend_target_group_arn" {
+  description = "ARN of the frontend target group"
+  type        = string
+}
+
+variable "backend_target_group_arn" {
+  description = "ARN of the backend target group"
   type        = string
 }
 
@@ -43,6 +48,16 @@ variable "frontend_desired_count" {
   type        = number
 }
 
+variable "frontend_min_capacity" {
+  description = "Minimum number of frontend tasks"
+  type        = number
+}
+
+variable "frontend_max_capacity" {
+  description = "Maximum number of frontend tasks"
+  type        = number
+}
+
 variable "backend_image" {
   description = "Backend Docker image"
   type        = string
@@ -63,43 +78,38 @@ variable "backend_desired_count" {
   type        = number
 }
 
+variable "backend_min_capacity" {
+  description = "Minimum number of backend tasks"
+  type        = number
+}
+
+variable "backend_max_capacity" {
+  description = "Maximum number of backend tasks"
+  type        = number
+}
+
 variable "backend_domain" {
   description = "Backend domain name"
   type        = string
-  default     = "api.lumina-ai.example.com"
 }
 
-variable "mongodb_uri" {
-  description = "MongoDB connection string"
+variable "backend_env_secret_arn" {
+  description = "Secrets Manager secret ARN containing backend environment variables"
   type        = string
-  sensitive   = true
-}
-
-variable "redis_endpoint" {
-  description = "Redis endpoint"
-  type        = string
-  sensitive   = true
-}
-
-variable "jwt_secret" {
-  description = "JWT secret"
-  type        = string
-  sensitive   = true
-}
-
-variable "google_ai_api_key" {
-  description = "Google AI API key"
-  type        = string
-  sensitive   = true
-}
-
-variable "pinecone_api_key" {
-  description = "Pinecone API key"
-  type        = string
-  sensitive   = true
 }
 
 variable "pinecone_index_name" {
   description = "Pinecone index name"
   type        = string
+}
+
+variable "enable_execute_command" {
+  description = "Enable ECS exec for troubleshooting"
+  type        = bool
+  default     = true
+}
+
+variable "log_retention_days" {
+  description = "CloudWatch Logs retention in days"
+  type        = number
 }

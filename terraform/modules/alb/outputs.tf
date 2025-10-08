@@ -13,12 +13,22 @@ output "arn_suffix" {
   value       = aws_lb.main.arn_suffix
 }
 
-output "target_group_arn" {
-  description = "Target group ARN"
-  value       = aws_lb_target_group.main.arn
+output "frontend_target_group_arn" {
+  description = "ARN of the frontend target group"
+  value       = aws_lb_target_group.frontend.arn
+}
+
+output "backend_target_group_arn" {
+  description = "ARN of the backend target group"
+  value       = aws_lb_target_group.backend.arn
 }
 
 output "security_group_id" {
   description = "ALB security group ID"
   value       = aws_security_group.alb.id
+}
+
+output "https_listener_arn" {
+  description = "ARN of the HTTPS listener"
+  value       = aws_lb_listener.https.arn
 }
