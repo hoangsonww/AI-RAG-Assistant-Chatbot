@@ -14,17 +14,25 @@
   - [Key Technologies](#key-technologies)
 - [Features](#features)
 - [Architecture](#architecture)
-  - [High-Level Architecture Flow Diagram](#high-level-architecture-flow-diagram)
+  - [High-Level System Architecture](#high-level-system-architecture)
+  - [RAG Flow](#rag-retrieval-augmented-generation-flow)
+  - [Data Flow Architecture](#data-flow-architecture)
+- [Detailed Architecture Documentation](#detailed-architecture-documentation)
 - [Setup & Installation](#setup--installation)
   - [Backend Setup](#backend-setup)
   - [Frontend Setup](#frontend-setup)
+  - [AI/ML Setup](#aiml-setup)
 - [Deployment](#deployment)
+  - [Current Deployment (Vercel)](#current-deployment-vercel)
+  - [Docker Deployment](#docker-deployment)
+  - [AWS Production Deployment](#aws-production-deployment)
 - [Usage](#usage)
 - [User Interface](#user-interface)
 - [API Endpoints](#api-endpoints)
   - [Authentication](#authentication)
   - [Conversations](#conversations)
   - [Chat](#chat)
+  - [Swagger API Documentation](#swagger-api-documentation)
   - [Swagger API Documentation](#swagger-api-documentation)
 - [Project Structure](#project-structure)
 - [Dockerization](#dockerization)
@@ -91,110 +99,188 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 
 ## Architecture
 
-The project is divided into two main parts:
+The project follows a modern, full-stack architecture with clear separation of concerns across three main layers:
 
-- **Backend:**  
-  An Express server written in TypeScript. It provides endpoints for:
+- **Frontend Layer:**
+  A React application built with TypeScript and Material-UI (MUI) that provides:
+  - Modern, animated user interface with responsive design
+  - Client-side routing with React Router
+  - JWT-based authentication and authorization
+  - Real-time chat interface with markdown support
+  - Theme toggling (dark/light mode)
+  - Collapsible sidebar for conversation history
 
-  - User authentication (signup, login).
-  - Conversation management (create, load, update, and search conversations).
-  - AI chat integration (simulated calls to external generative AI APIs).
-  - Additional endpoints for email verification and password reset.
-  - MongoDB is used for data storage, with Mongoose for object modeling.
+- **Backend Layer:**
+  An Express.js server written in TypeScript that handles:
+  - RESTful API endpoints for authentication and data management
+  - JWT token generation and validation
+  - User authentication (signup, login, password reset)
+  - Conversation management (CRUD operations)
+  - Integration with AI services
+  - Request validation and error handling
 
-- **Frontend:**  
-  A React application built with TypeScript and Material‑UI (MUI). It includes:
+- **AI/ML Layer:**
+  RAG (Retrieval-Augmented Generation) implementation that includes:
+  - **Retrieval**: Vector similarity search using Pinecone
+  - **Augmentation**: Context building with conversation history
+  - **Generation**: Response generation using Google Gemini AI
+  - **Knowledge Storage**: Document embeddings in Pinecone vector database
+  - **LangChain**: Orchestration of the entire RAG pipeline
 
-  - A modern, animated user interface for chatting with the AI.
-  - A landing page showcasing the app’s features.
-  - Pages for login, signup, and password reset.
-  - A collapsible sidebar for conversation history.
-  - Theme toggling (dark/light mode) and responsive design.
+For detailed architecture documentation, including component diagrams, data flows, and deployment strategies, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
-- **AI/ML:**  
-  Use RAG (Retrieval-Augmented Generation) & LangChain to enhance the AI's responses by retrieving relevant information from a knowledge base or external sources. This involves:
+### High-Level System Architecture
 
-  - **Retrieval**: Implement a retrieval mechanism to fetch relevant documents or data from a knowledge base or external sources.
-  - **Augmentation**: Combine the retrieved information with the user's query to provide a more informed response.
-  - **Generation**: Use a generative model to create a response based on the augmented input.
-  - **Feedback Loop**: Implement a **RLHF** feedback loop to continuously improve the system based on user interactions and feedback.
-  - **LangChain**: Use **LangChain** to manage the entire process, from retrieval to generation, ensuring a seamless integration of RAG into the chatbot's workflow.
-  - **Pinecone**: Use **Pinecone vector database** for vector similarity search to efficiently retrieve relevant documents or data for the RAG model.
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        Browser[Web Browser]
+        React[React Application]
+    end
 
-### High-Level Architecture Flow Diagram
+    subgraph "API Gateway"
+        LB[Load Balancer / CDN]
+    end
 
-```plaintext
-         ┌─────────────────────────────┐
-         │      User Interaction       │
-         │ (Chat, Signup, Login, etc.) │
-         └─────────────┬───────────────┘
-                       │
-                       ▼
-         ┌─────────────────────────────┐
-         │    Frontend (React + MUI)   │
-         │ - Responsive UI, Animations │
-         │ - Theme toggling, Sidebar   │
-         │ - API calls to backend      │
-         └─────────────┬───────────────┘
-                       │
-                       │ (REST API Calls)
-                       │
-                       ▼
-         ┌─────────────────────────────┐
-         │   Backend (Express + TS)    │
-         │ - Auth (JWT, Signup/Login)  │
-         │ - Chat & Convo Endpoints    │
-         │ - API orchestration         │
-         └─────────────┬───────────────┘
-                       │
-           ┌───────────┴────────────┬─────────────┐
-           │                        │             │
-           ▼                        ▼             ▼
-┌─────────────────┐       ┌─────────────────┐  ┌─────────────────────────┐
-│   MongoDB       │       │ Pinecone Vector │  │  (Additional Data:      │
-│ - User Data     │◄─────►│    Database     │  │  Analytics, Logs, etc.) │
-│ - Convo History │       │ - Upserted Docs │  └────────────┬────────────┘
-└─────────────────┘       │   /Knowledge    │               │
-       ▲                  │     Base        │               ▼
-       │                  └─────────┬───────┘      ┌─────────────────┐
-       │                            │              │   Analytics &   │
-       │    (Uses stored convo      │              │   Monitoring    │
-       │       & documents)         │              │   Services      │
-       ▼                            ▼              └─────────────────┘
-       ┌───────────────────────────────┐
-       │  AI/ML Component (RAG)        │
-       │ - Retrieval (Pinecone &       │
-       │   MongoDB conversation data)  │
-       │ - Augmentation (LangChain)    │
-       │ - Generation (OpenAI/Gemini)  │
-       │ - Feedback loop               │
-       └───────────────┬───────────────┘
-                       │
-                       ▼
-         ┌─────────────────────────────┐
-         │   Response Processing       │
-         │ - Compile AI answer         │
-         | - Uses NLP & ML models      │
-         │ - Generate response with    │
-         │   LLM & Gemini AI           │
-         │ - Update conversation data  │
-         │   (MongoDB via Backend)     │
-         └─────────────┬───────────────┘
-                       │
-                       │ (Returns API response)
-                       │ (skip AI/ML for login/signup)
-                       │
-                       ▼
-         ┌─────────────────────────────┐
-         │    Frontend Display         │
-         │ - Show chat response        │
-         │ - Update UI (convo history) │
-         │ - Sign user in/out, etc.    │
-         └─────────────────────────────┘
+    subgraph "Application Layer"
+        API[Express.js API Server]
+        Auth[Authentication Service]
+        Chat[Chat Service]
+        Conv[Conversation Service]
+    end
+
+    subgraph "AI/ML Layer"
+        RAG[RAG Pipeline]
+        Gemini[Google Gemini AI]
+        Embed[Embedding Service]
+    end
+
+    subgraph "Data Layer"
+        MongoDB[(MongoDB)]
+        Pinecone[(Pinecone Vector DB)]
+    end
+
+    Browser --> React
+    React --> LB
+    LB --> API
+
+    API --> Auth
+    API --> Chat
+    API --> Conv
+
+    Chat --> RAG
+    RAG --> Embed
+    RAG --> Gemini
+    RAG --> Pinecone
+
+    Auth --> MongoDB
+    Conv --> MongoDB
+    Chat --> MongoDB
+
+    style React fill:#4285F4
+    style API fill:#339933
+    style MongoDB fill:#47A248
+    style Pinecone fill:#FF6F61
+    style Gemini fill:#4285F4
+```
+
+### RAG (Retrieval-Augmented Generation) Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Backend
+    participant Pinecone
+    participant Gemini
+    participant MongoDB
+
+    User->>Frontend: Send chat message
+    Frontend->>Backend: POST /api/chat/auth
+    Backend->>MongoDB: Fetch conversation history
+    MongoDB-->>Backend: Previous messages
+
+    Note over Backend,Pinecone: Retrieval Phase
+    Backend->>Pinecone: Generate embedding & search
+    Pinecone-->>Backend: Top-3 relevant documents
+
+    Note over Backend,Gemini: Augmentation Phase
+    Backend->>Backend: Build augmented context
+    Backend->>Gemini: Send enriched prompt
+
+    Note over Gemini: Generation Phase
+    Gemini->>Gemini: Generate response
+    Gemini-->>Backend: AI response
+
+    Backend->>MongoDB: Save message & response
+    MongoDB-->>Backend: Saved
+    Backend-->>Frontend: Return AI response
+    Frontend-->>User: Display response
+```
+
+### Data Flow Architecture
+
+```mermaid
+flowchart LR
+    subgraph "Frontend"
+        UI[User Interface]
+        State[State Management]
+        API_Client[API Client]
+    end
+
+    subgraph "Backend API"
+        Routes[Route Handlers]
+        Middleware[Auth Middleware]
+        Services[Business Logic]
+    end
+
+    subgraph "Data Sources"
+        MongoDB[(MongoDB)]
+        Pinecone[(Pinecone)]
+        Gemini[Gemini API]
+    end
+
+    UI --> State
+    State --> API_Client
+    API_Client -.HTTP/REST.-> Routes
+    Routes --> Middleware
+    Middleware --> Services
+
+    Services --> MongoDB
+    Services --> Pinecone
+    Services --> Gemini
+
+    MongoDB -.Data.-> Services
+    Pinecone -.Vectors.-> Services
+    Gemini -.AI Response.-> Services
+
+    Services -.JSON.-> Routes
+    Routes -.Response.-> API_Client
+    API_Client --> State
+    State --> UI
+
+    style UI fill:#4285F4
+    style Services fill:#339933
+    style MongoDB fill:#47A248
+    style Pinecone fill:#FF6F61
+    style Gemini fill:#4285F4
 ```
 
 > [!NOTE]
-> This diagram might not cover every detail, but it provides a high-level overview of the architecture and data flow in the application. The AI/ML component is crucial for enhancing the chatbot's capabilities through RAG and LangChain, while the frontend and backend work together to provide a seamless user experience.
+> These diagrams provide a high-level overview of the system architecture. For detailed component interactions, database schemas, deployment strategies, and security architecture, please refer to [ARCHITECTURE.md](ARCHITECTURE.md).
+
+## Detailed Architecture Documentation
+
+For comprehensive architecture documentation including:
+- Detailed component diagrams and interactions
+- Database schema and data models
+- Security architecture and authentication flows
+- Deployment strategies (Docker, AWS, Terraform)
+- Performance optimization and scalability
+- Monitoring and observability
+- Disaster recovery and backup strategies
+
+Please see **[ARCHITECTURE.md](ARCHITECTURE.md)**
 
 ## Setup & Installation
 
@@ -280,11 +366,68 @@ The project is divided into two main parts:
 
 ## Deployment
 
-- **Backend:**  
-  Deploy the backend to your preferred Node.js hosting service (Heroku, AWS, etc.). Make sure to set your environment variables on the hosting platform.
+### Current Deployment (Vercel)
 
-- **Frontend:**  
-  Deploy the React frontend using services like Vercel, Netlify, or GitHub Pages. Update API endpoint URLs in the frontend accordingly.
+The application is currently deployed on Vercel with the following setup:
+
+- **Frontend**: Deployed at [https://lumina-david.vercel.app/](https://lumina-david.vercel.app)
+- **Backend**: Deployed at [https://ai-assistant-chatbot-server.vercel.app/](https://ai-assistant-chatbot-server.vercel.app/)
+- **Database**: MongoDB Atlas (cloud-hosted)
+- **Vector Database**: Pinecone (cloud-hosted)
+
+### Docker Deployment
+
+Run the entire application stack locally using Docker:
+
+```bash
+# Build and start all services
+docker-compose up --build
+
+# Or run in detached mode
+docker-compose up -d
+
+# Stop all services
+docker-compose down
+```
+
+This will start:
+- Frontend on `http://localhost:3000`
+- Backend on `http://localhost:5000`
+- MongoDB on `localhost:27017`
+
+### AWS Production Deployment
+
+For production-grade AWS deployment with high availability and scalability:
+
+```bash
+# Navigate to infrastructure directory
+cd terraform/
+
+# Initialize Terraform
+terraform init
+
+# Review deployment plan
+terraform plan
+
+# Deploy infrastructure
+terraform apply
+
+# Or use provided scripts
+cd ../aws/scripts/
+./deploy-production.sh
+```
+
+**AWS Infrastructure includes:**
+- ECS/Fargate for container orchestration
+- Application Load Balancer for traffic distribution
+- DocumentDB (MongoDB-compatible) for database
+- ElastiCache (Redis) for caching
+- CloudFront CDN for static asset delivery
+- CloudWatch for monitoring and logging
+- Auto-scaling groups for high availability
+- Multi-AZ deployment for fault tolerance
+
+See [aws/README.md](aws/README.md) and [terraform/README.md](terraform/README.md) for detailed deployment instructions.
 
 ## Usage
 
@@ -549,6 +692,6 @@ If you have any questions or suggestions, feel free to reach out to me:
 
 ---
 
-Thank you for checking out the AI Assistant Project! If you have any questions or feedback, feel free to reach out. Happy coding! 🚗
+Thank you for checking out the AI Assistant Project! If you have any questions or feedback, feel free to reach out. Happy coding! 🚀
 
 [⬆️ Back to Top](#table-of-contents)
