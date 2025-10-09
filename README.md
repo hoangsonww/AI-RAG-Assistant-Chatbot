@@ -33,7 +33,6 @@
   - [Conversations](#conversations)
   - [Chat](#chat)
   - [Swagger API Documentation](#swagger-api-documentation)
-  - [Swagger API Documentation](#swagger-api-documentation)
 - [Project Structure](#project-structure)
 - [Dockerization](#dockerization)
 - [OpenAPI Specification](#openapi-specification)
