@@ -1,4 +1,7 @@
-# ECS Cluster
+data "aws_region" "current" {}
+
+data "aws_caller_identity" "current" {}
+
 resource "aws_ecs_cluster" "main" {
   name = "${var.environment}-lumina-cluster"
 
@@ -12,7 +15,6 @@ resource "aws_ecs_cluster" "main" {
   }
 }
 
-# ECS Task Execution Role
 resource "aws_iam_role" "ecs_task_execution" {
   name = "${var.environment}-lumina-ecs-task-execution-role"
 
@@ -33,7 +35,27 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-# ECS Task Role
+resource "aws_iam_role_policy" "ecs_task_execution_secrets" {
+  name = "${var.environment}-lumina-ecs-execution-secrets"
+  role = aws_iam_role.ecs_task_execution.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue", "kms:Decrypt"]
+        Resource = [var.backend_env_secret_arn, "*"]
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogStream", "logs:PutLogEvents"]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role" "ecs_task" {
   name = "${var.environment}-lumina-ecs-task-role"
 
@@ -49,18 +71,16 @@ resource "aws_iam_role" "ecs_task" {
   })
 }
 
-# CloudWatch Log Groups
 resource "aws_cloudwatch_log_group" "frontend" {
   name              = "/ecs/${var.environment}-lumina-frontend"
-  retention_in_days = 30
+  retention_in_days = var.log_retention_days
 }
 
 resource "aws_cloudwatch_log_group" "backend" {
   name              = "/ecs/${var.environment}-lumina-backend"
-  retention_in_days = 30
+  retention_in_days = var.log_retention_days
 }
 
-# Security Group for ECS Tasks
 resource "aws_security_group" "ecs_tasks" {
   name        = "${var.environment}-lumina-ecs-tasks-sg"
   description = "Security group for ECS tasks"
@@ -95,23 +115,32 @@ resource "aws_security_group" "ecs_tasks" {
   }
 }
 
-# Frontend Task Definition
-resource "aws_ecs_task_definition" "frontend" {
-  family                   = "${var.environment}-lumina-frontend"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = var.frontend_cpu
-  memory                   = var.frontend_memory
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
-  task_role_arn            = aws_iam_role.ecs_task.arn
+locals {
+  backend_secret_keys = [
+    "MONGODB_URI",
+    "REDIS_ENDPOINT",
+    "JWT_SECRET",
+    "GOOGLE_AI_API_KEY",
+    "PINECONE_API_KEY"
+  ]
 
-  container_definitions = jsonencode([{
-    name  = "frontend"
-    image = var.frontend_image
-    portMappings = [{
-      containerPort = 3000
-      protocol      = "tcp"
-    }]
+  backend_secrets = [
+    for key in local.backend_secret_keys : {
+      name      = key
+      valueFrom = "${var.backend_env_secret_arn}:${key}::"
+    }
+  ]
+
+  frontend_container = {
+    name      = "frontend"
+    image     = var.frontend_image
+    essential = true
+    portMappings = [
+      {
+        containerPort = 3000
+        protocol      = "tcp"
+      }
+    ]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -126,30 +155,26 @@ resource "aws_ecs_task_definition" "frontend" {
         value = "production"
       },
       {
+        name  = "PORT"
+        value = "3000"
+      },
+      {
         name  = "REACT_APP_API_URL"
         value = "https://${var.backend_domain}"
       }
     ]
-  }])
-}
+  }
 
-# Backend Task Definition
-resource "aws_ecs_task_definition" "backend" {
-  family                   = "${var.environment}-lumina-backend"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = var.backend_cpu
-  memory                   = var.backend_memory
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
-  task_role_arn            = aws_iam_role.ecs_task.arn
-
-  container_definitions = jsonencode([{
-    name  = "backend"
-    image = var.backend_image
-    portMappings = [{
-      containerPort = 5000
-      protocol      = "tcp"
-    }]
+  backend_container = {
+    name      = "backend"
+    image     = var.backend_image
+    essential = true
+    portMappings = [
+      {
+        containerPort = 5000
+        protocol      = "tcp"
+      }
+    ]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -168,40 +193,60 @@ resource "aws_ecs_task_definition" "backend" {
         value = "5000"
       },
       {
-        name  = "MONGODB_URI"
-        value = var.mongodb_uri
-      },
-      {
-        name  = "REDIS_ENDPOINT"
-        value = var.redis_endpoint
-      },
-      {
-        name  = "JWT_SECRET"
-        value = var.jwt_secret
-      },
-      {
-        name  = "GOOGLE_AI_API_KEY"
-        value = var.google_ai_api_key
-      },
-      {
-        name  = "PINECONE_API_KEY"
-        value = var.pinecone_api_key
-      },
-      {
         name  = "PINECONE_INDEX_NAME"
         value = var.pinecone_index_name
       }
     ]
-  }])
+    secrets = local.backend_secrets
+  }
 }
 
-# Frontend Service
+resource "aws_ecs_task_definition" "frontend" {
+  family                   = "${var.environment}-lumina-frontend"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = var.frontend_cpu
+  memory                   = var.frontend_memory
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
+  runtime_platform {
+    operating_system_family = "LINUX"
+    cpu_architecture        = "X86_64"
+  }
+
+  container_definitions = jsonencode([local.frontend_container])
+}
+
+resource "aws_ecs_task_definition" "backend" {
+  family                   = "${var.environment}-lumina-backend"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = var.backend_cpu
+  memory                   = var.backend_memory
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
+  runtime_platform {
+    operating_system_family = "LINUX"
+    cpu_architecture        = "X86_64"
+  }
+
+  container_definitions = jsonencode([local.backend_container])
+}
+
 resource "aws_ecs_service" "frontend" {
-  name            = "${var.environment}-lumina-frontend"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.frontend.arn
-  desired_count   = var.frontend_desired_count
-  launch_type     = "FARGATE"
+  name                               = "${var.environment}-lumina-frontend"
+  cluster                            = aws_ecs_cluster.main.id
+  task_definition                    = aws_ecs_task_definition.frontend.arn
+  desired_count                      = var.frontend_desired_count
+  launch_type                        = "FARGATE"
+  enable_execute_command             = var.enable_execute_command
+  deployment_maximum_percent         = 200
+  deployment_minimum_healthy_percent = 50
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
 
   network_configuration {
     subnets          = var.private_subnet_ids
@@ -210,21 +255,31 @@ resource "aws_ecs_service" "frontend" {
   }
 
   load_balancer {
-    target_group_arn = var.alb_target_group_arn
+    target_group_arn = var.frontend_target_group_arn
     container_name   = "frontend"
     container_port   = 3000
   }
 
-  depends_on = [var.alb_target_group_arn]
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
 }
 
-# Backend Service
 resource "aws_ecs_service" "backend" {
-  name            = "${var.environment}-lumina-backend"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.backend.arn
-  desired_count   = var.backend_desired_count
-  launch_type     = "FARGATE"
+  name                               = "${var.environment}-lumina-backend"
+  cluster                            = aws_ecs_cluster.main.id
+  task_definition                    = aws_ecs_task_definition.backend.arn
+  desired_count                      = var.backend_desired_count
+  launch_type                        = "FARGATE"
+  enable_execute_command             = var.enable_execute_command
+  deployment_maximum_percent         = 200
+  deployment_minimum_healthy_percent = 50
+  health_check_grace_period_seconds  = 60
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
 
   network_configuration {
     subnets          = var.private_subnet_ids
@@ -233,12 +288,62 @@ resource "aws_ecs_service" "backend" {
   }
 
   load_balancer {
-    target_group_arn = var.alb_target_group_arn
+    target_group_arn = var.backend_target_group_arn
     container_name   = "backend"
     container_port   = 5000
   }
 
-  depends_on = [var.alb_target_group_arn]
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
 }
 
-data "aws_region" "current" {}
+resource "aws_appautoscaling_target" "frontend" {
+  max_capacity       = var.frontend_max_capacity
+  min_capacity       = var.frontend_min_capacity
+  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.frontend.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "frontend_cpu" {
+  name               = "${var.environment}-lumina-frontend-cpu-policy"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.frontend.resource_id
+  scalable_dimension = aws_appautoscaling_target.frontend.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.frontend.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    target_value       = 60
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    scale_in_cooldown  = 120
+    scale_out_cooldown = 60
+  }
+}
+
+resource "aws_appautoscaling_target" "backend" {
+  max_capacity       = var.backend_max_capacity
+  min_capacity       = var.backend_min_capacity
+  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.backend.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "backend_cpu" {
+  name               = "${var.environment}-lumina-backend-cpu-policy"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.backend.resource_id
+  scalable_dimension = aws_appautoscaling_target.backend.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.backend.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    target_value       = 55
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    scale_in_cooldown  = 120
+    scale_out_cooldown = 60
+  }
+}
