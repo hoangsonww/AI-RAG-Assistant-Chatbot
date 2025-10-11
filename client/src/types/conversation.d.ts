@@ -12,6 +12,16 @@ export interface IMessage {
 }
 
 /**
+ * Summary interface
+ */
+export interface ISummary {
+  summary: string;
+  highlights: string[];
+  actionItems: string[];
+  generatedAt: Date;
+}
+
+/**
  * Conversation interface
  */
 export interface IConversation {
@@ -19,6 +29,7 @@ export interface IConversation {
   user: string;
   title: string;
   messages: IMessage[];
+  summary?: ISummary;
   createdAt: string;
   updatedAt: string;
 }
