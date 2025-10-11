@@ -67,10 +67,18 @@ export interface IMessage {
   timestamp: Date;
 }
 
+export interface ISummary {
+  summary: string;
+  highlights: string[];
+  actionItems: string[];
+  generatedAt: Date;
+}
+
 export interface IConversation extends Document {
   user: mongoose.Types.ObjectId;
   title: string;
   messages: IMessage[];
+  summary?: ISummary;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -81,11 +89,19 @@ const MessageSchema: Schema = new Schema({
   timestamp: { type: Date, default: Date.now },
 });
 
+const SummarySchema: Schema = new Schema({
+  summary: { type: String, required: true },
+  highlights: [{ type: String }],
+  actionItems: [{ type: String }],
+  generatedAt: { type: Date, default: Date.now },
+});
+
 const ConversationSchema: Schema = new Schema(
   {
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     title: { type: String, default: "New Conversation" },
     messages: [MessageSchema],
+    summary: { type: SummarySchema, required: false },
   },
   { timestamps: true },
 );

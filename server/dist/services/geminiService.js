@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.chatWithAI = void 0;
+exports.generateConversationSummary = exports.chatWithAI = void 0;
 const generative_ai_1 = require("@google/generative-ai");
 const dotenv_1 = __importDefault(require("dotenv"));
 const queryKnowledge_1 = require("../scripts/queryKnowledge");
@@ -85,3 +85,62 @@ const chatWithAI = (history, message, systemInstruction) => __awaiter(void 0, vo
     return result.response.text();
 });
 exports.chatWithAI = chatWithAI;
+/**
+ * Generates a conversation summary including highlights and action items.
+ * @param messages - Array of conversation messages
+ * @returns A promise resolving with summary, highlights, and action items
+ */
+const generateConversationSummary = (messages) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!process.env.GOOGLE_AI_API_KEY) {
+        throw new Error("Missing GOOGLE_AI_API_KEY in environment variables");
+    }
+    if (!messages || messages.length === 0) {
+        throw new Error("No messages to summarize");
+    }
+    const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
+    const model = genAI.getGenerativeModel({
+        model: "gemini-2.0-flash-lite",
+    });
+    const conversationText = messages
+        .map((msg) => `${msg.sender === "user" ? "User" : "Assistant"}: ${msg.text}`)
+        .join("\n\n");
+    const prompt = `Analyze the following conversation and provide:
+1. A concise summary (2-3 sentences) of the main topics discussed
+2. Key highlights or important points (as a list of 3-5 items)
+3. Action items or follow-ups mentioned (as a list, or empty if none)
+
+Conversation:
+${conversationText}
+
+Please format your response as JSON with the following structure:
+{
+  "summary": "...",
+  "highlights": ["...", "..."],
+  "actionItems": ["...", "..."]
+}`;
+    const result = yield model.generateContent(prompt);
+    const responseText = result.response.text();
+    // Parse the JSON response
+    try {
+        // Remove markdown code block markers if present
+        const cleanedText = responseText
+            .replace(/```json\n?/g, "")
+            .replace(/```\n?/g, "")
+            .trim();
+        const parsed = JSON.parse(cleanedText);
+        return {
+            summary: parsed.summary || "No summary available",
+            highlights: Array.isArray(parsed.highlights) ? parsed.highlights : [],
+            actionItems: Array.isArray(parsed.actionItems) ? parsed.actionItems : [],
+        };
+    }
+    catch (error) {
+        // Fallback if JSON parsing fails
+        return {
+            summary: responseText.substring(0, 500),
+            highlights: [],
+            actionItems: [],
+        };
+    }
+});
+exports.generateConversationSummary = generateConversationSummary;

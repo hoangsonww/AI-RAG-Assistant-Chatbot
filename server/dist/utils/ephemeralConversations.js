@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ephemeralStore = void 0;
-exports.createEphemeralConversation = createEphemeralConversation;
+exports.createEphemeralConversation = exports.ephemeralStore = void 0;
 const uuid_1 = require("uuid");
 /**
  * Ephemeral conversation store for temporary conversations.
@@ -14,3 +13,4 @@ function createEphemeralConversation() {
     exports.ephemeralStore[newId] = [];
     return newId;
 }
+exports.createEphemeralConversation = createEphemeralConversation;

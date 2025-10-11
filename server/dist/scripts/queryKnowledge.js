@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchKnowledge = searchKnowledge;
+exports.searchKnowledge = void 0;
 const pineconeClient_1 = require("../services/pineconeClient");
 const generative_ai_1 = require("@google/generative-ai");
 const dotenv_1 = __importDefault(require("dotenv"));
@@ -26,9 +26,9 @@ const model = genAI.getGenerativeModel({ model: "models/text-embedding-004" });
  * @param query - The search query.
  * @param topK - The number of top results to return.
  */
-function searchKnowledge(query_1) {
-    return __awaiter(this, arguments, void 0, function* (query, topK = 3) {
-        var _a;
+function searchKnowledge(query, topK = 3) {
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
         try {
             const embeddingResponse = yield model.embedContent(query);
             const queryEmbedding = embeddingResponse.embedding.values;
@@ -53,6 +53,7 @@ function searchKnowledge(query_1) {
         }
     });
 }
+exports.searchKnowledge = searchKnowledge;
 // Example usage 1
 (() => __awaiter(void 0, void 0, void 0, function* () {
     const query = "Who is David Nguyen?";

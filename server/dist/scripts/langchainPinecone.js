@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.answerWithRAG = answerWithRAG;
+exports.answerWithRAG = void 0;
 const pineconeClient_1 = require("../services/pineconeClient");
 const generative_ai_1 = require("@google/generative-ai");
 const dotenv_1 = __importDefault(require("dotenv"));
@@ -92,8 +92,8 @@ function getRagChain() {
  * @param userQuestion - The user’s query
  */
 function answerWithRAG(userQuestion) {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
-        var _a;
         const chain = yield getRagChain();
         const res = yield chain.call({ question: userQuestion });
         const sources = ((_a = res.sourceDocuments) !== null && _a !== void 0 ? _a : []).map((doc, i) => {
@@ -110,3 +110,4 @@ function answerWithRAG(userQuestion) {
         };
     });
 }
+exports.answerWithRAG = answerWithRAG;

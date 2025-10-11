@@ -19,7 +19,7 @@ app.use((req, res, next) => {
     next();
 });
 const corsOptions = {
-    origin: "*", // Allow all origins
+    origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: false,
