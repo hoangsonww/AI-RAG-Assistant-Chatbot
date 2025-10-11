@@ -29,6 +29,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { motion, AnimatePresence } from "framer-motion";
 import CopyIcon from "./CopyIcon";
+import ConversationSummary from "./ConversationSummary";
 
 /**
  * Props:
@@ -517,6 +518,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           </Box>
         ) : (
           <AnimatePresence initial={false}>
+            {/* Conversation Summary - shown when authenticated and has a conversationId */}
+            {isAuthenticated() && conversationId && messages.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <ConversationSummary conversationId={conversationId} />
+              </Box>
+            )}
+
             {messages.map((msg, idx) => {
               const isUser = msg.sender === "user";
               const isBot = !isUser;

@@ -193,6 +193,40 @@ export const deleteConversation = async (id: string): Promise<void> => {
   return resp.data;
 };
 
+/**
+ * Generate a summary for a conversation
+ *
+ * @param conversationId The conversation ID
+ */
+export const generateConversationSummary = async (
+  conversationId: string,
+): Promise<{
+  summary: string;
+  highlights: string[];
+  actionItems: string[];
+  generatedAt: string;
+}> => {
+  const resp = await API.post(`/conversations/${conversationId}/summary`);
+  return resp.data;
+};
+
+/**
+ * Get the existing summary for a conversation
+ *
+ * @param conversationId The conversation ID
+ */
+export const getConversationSummary = async (
+  conversationId: string,
+): Promise<{
+  summary: string;
+  highlights: string[];
+  actionItems: string[];
+  generatedAt: string;
+}> => {
+  const resp = await API.get(`/conversations/${conversationId}/summary`);
+  return resp.data;
+};
+
 // --- Chat Endpoints ---
 
 /**

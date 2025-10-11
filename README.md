@@ -84,6 +84,7 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 - **AI Chatbot:** Ask questions about David Nguyen and general topics; receive responses from an AI.
 - **User Authentication:** Sign up, log in, and log out using JWT authentication.
 - **Conversation History:** Save, retrieve, rename, and search past conversations (only for authenticated users).
+- **Conversation Summaries:** Generate AI-powered summaries of conversations with key highlights and action items. Export summaries to Markdown format for easy sharing.
 - **Updated & Vast Knowledge Base:** Use RAG (Retrieval-Augmented Generation) & LangChain to enhance AI responses.
 - **Dynamic Responses:** AI-generated responses with `markdown` formatting for rich text.
 - **Interactive Chat:** Real-time chat interface with smooth animations and transitions.
@@ -539,6 +540,8 @@ See [aws/README.md](aws/README.md) and [terraform/README.md](terraform/README.md
 - **PUT /api/conversations/:id:** Rename a conversation.
 - **GET /api/conversations/search/:query:** Search for conversations by title or message content.
 - **DELETE /api/conversations/:id:** Delete a conversation.
+- **POST /api/conversations/:id/summary:** Generate an AI-powered summary for a conversation.
+- **GET /api/conversations/:id/summary:** Retrieve the existing summary for a conversation.
 
 ### Chat
 

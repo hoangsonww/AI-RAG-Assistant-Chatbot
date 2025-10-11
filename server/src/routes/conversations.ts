@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import { authenticateJWT, AuthRequest } from "../middleware/auth";
 import Conversation, { IConversation, IMessage } from "../models/Conversation";
+import { generateConversationSummary } from "../services/geminiService";
 
 const router = express.Router();
 
@@ -480,6 +481,183 @@ router.delete(
       }
       res.json({ message: "Conversation deleted successfully" });
     } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  },
+);
+
+/**
+ * @swagger
+ * /api/conversations/{id}/summary:
+ *   get:
+ *     summary: Get the stored summary of a conversation.
+ *     description: Retrieves the previously generated summary if it exists.
+ *     tags:
+ *       - Conversations
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The conversation ID.
+ *     responses:
+ *       200:
+ *         description: Summary retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 summary:
+ *                   type: string
+ *                 highlights:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 actionItems:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 generatedAt:
+ *                   type: string
+ *                   format: date-time
+ *       404:
+ *         description: Conversation or summary not found.
+ *       500:
+ *         description: Internal server error.
+ */
+router.get(
+  "/:id/summary",
+  authenticateJWT,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user.id;
+      const conversation = await Conversation.findOne({
+        _id: req.params.id,
+        user: userId,
+      });
+
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+
+      if (!conversation.summary) {
+        return res
+          .status(404)
+          .json({ message: "No summary available for this conversation" });
+      }
+
+      res.json({
+        summary: conversation.summary.summary,
+        highlights: conversation.summary.highlights,
+        actionItems: conversation.summary.actionItems,
+        generatedAt: conversation.summary.generatedAt,
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  },
+);
+
+/**
+ * @swagger
+ * /api/conversations/{id}/summary:
+ *   post:
+ *     summary: Generate AI-powered summary of a conversation.
+ *     description: >
+ *       Generates a concise summary, key highlights, and action items for the specified conversation.
+ *       The summary is stored in the conversation document for future reference.
+ *     tags:
+ *       - Conversations
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The conversation ID.
+ *     responses:
+ *       200:
+ *         description: Summary generated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 summary:
+ *                   type: string
+ *                   description: A concise summary of the conversation.
+ *                 highlights:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   description: Key highlights or important points.
+ *                 actionItems:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   description: Action items or follow-ups mentioned.
+ *                 generatedAt:
+ *                   type: string
+ *                   format: date-time
+ *                   description: When the summary was generated.
+ *               example:
+ *                 summary: "Discussion about AI implementation and project timeline"
+ *                 highlights: ["Decided on using RAG architecture", "Timeline set for Q2"]
+ *                 actionItems: ["Review documentation", "Set up meeting for next week"]
+ *                 generatedAt: "2023-02-06T00:00:00.000Z"
+ *       400:
+ *         description: No messages to summarize.
+ *       404:
+ *         description: Conversation not found.
+ *       500:
+ *         description: Internal server error.
+ */
+router.post(
+  "/:id/summary",
+  authenticateJWT,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user.id;
+      const conversation = await Conversation.findOne({
+        _id: req.params.id,
+        user: userId,
+      });
+
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+
+      if (!conversation.messages || conversation.messages.length === 0) {
+        return res.status(400).json({ message: "No messages to summarize" });
+      }
+
+      const summaryData = await generateConversationSummary(
+        conversation.messages,
+      );
+
+      conversation.summary = {
+        summary: summaryData.summary,
+        highlights: summaryData.highlights,
+        actionItems: summaryData.actionItems,
+        generatedAt: new Date(),
+      };
+
+      await conversation.save();
+
+      res.json({
+        summary: conversation.summary.summary,
+        highlights: conversation.summary.highlights,
+        actionItems: conversation.summary.actionItems,
+        generatedAt: conversation.summary.generatedAt,
+      });
+    } catch (error: any) {
+      console.error("Error generating summary:", error);
       res.status(500).json({ message: error.message });
     }
   },
