@@ -7,6 +7,12 @@ import {
   Typography,
   IconButton,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -52,6 +58,15 @@ const Sidebar: React.FC<SidebarProps> = ({
   const theme = useTheme();
   const [loadingRenameId, setLoadingRenameId] = useState<string | null>(null);
   const [loadingDeleteId, setLoadingDeleteId] = useState<string | null>(null);
+  
+  // Rename dialog state
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [renameConvId, setRenameConvId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  
+  // Delete confirmation dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConvId, setDeleteConvId] = useState<string | null>(null);
 
   // On mobile, set the sidebar to full width but below the navbar (assume navbar height = 64px)
   const widthValue = isMobile ? "100%" : "240px";
@@ -65,16 +80,22 @@ const Sidebar: React.FC<SidebarProps> = ({
    * @param convId The conversation ID
    * @param currentTitle The current conversation title
    */
-  const handleRename = async (convId: string, currentTitle: string) => {
-    const newTitle = window.prompt(
-      "Enter new conversation name:",
-      currentTitle,
-    );
-    if (newTitle && newTitle.trim() !== "" && newTitle !== currentTitle) {
+  const handleRename = (convId: string, currentTitle: string) => {
+    setRenameConvId(convId);
+    setRenameValue(currentTitle);
+    setRenameDialogOpen(true);
+  };
+
+  /**
+   * Execute the rename operation
+   */
+  const executeRename = async () => {
+    if (renameConvId && renameValue.trim() !== "") {
       try {
-        setLoadingRenameId(convId);
-        await renameConversation(convId, newTitle);
-        onRefresh(); // refresh conversation list after renaming
+        setLoadingRenameId(renameConvId);
+        await renameConversation(renameConvId, renameValue);
+        onRefresh();
+        setRenameDialogOpen(false);
       } catch (error) {
         console.error("Failed to rename conversation", error);
       } finally {
@@ -88,19 +109,26 @@ const Sidebar: React.FC<SidebarProps> = ({
    *
    * @param convId The conversation ID
    */
-  const handleDelete = async (convId: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this conversation?",
-    );
-    if (!confirmed) return;
-    try {
-      setLoadingDeleteId(convId);
-      await deleteConversation(convId);
-      onRefresh(); // refresh conversation list after deletion
-    } catch (error) {
-      console.error("Failed to delete conversation", error);
-    } finally {
-      setLoadingDeleteId(null);
+  const handleDelete = (convId: string) => {
+    setDeleteConvId(convId);
+    setDeleteDialogOpen(true);
+  };
+
+  /**
+   * Execute the delete operation
+   */
+  const executeDelete = async () => {
+    if (deleteConvId) {
+      try {
+        setLoadingDeleteId(deleteConvId);
+        await deleteConversation(deleteConvId);
+        onRefresh();
+        setDeleteDialogOpen(false);
+      } catch (error) {
+        console.error("Failed to delete conversation", error);
+      } finally {
+        setLoadingDeleteId(null);
+      }
     }
   };
 
@@ -220,6 +248,88 @@ const Sidebar: React.FC<SidebarProps> = ({
           </Typography>
         </Box>
       )}
+      
+      {/* Rename Dialog */}
+      <Dialog 
+        open={renameDialogOpen} 
+        onClose={() => setRenameDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Rename Conversation</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Conversation Name"
+            type="text"
+            fullWidth
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                executeRename();
+              }
+            }}
+            disabled={loadingRenameId !== null}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setRenameDialogOpen(false)}
+            disabled={loadingRenameId !== null}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={executeRename}
+            variant="contained"
+            disabled={loadingRenameId !== null || renameValue.trim() === ""}
+          >
+            {loadingRenameId ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              "Rename"
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog 
+        open={deleteDialogOpen} 
+        onClose={() => setDeleteDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Delete Conversation</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this conversation? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setDeleteDialogOpen(false)}
+            disabled={loadingDeleteId !== null}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={executeDelete}
+            variant="contained"
+            color="error"
+            disabled={loadingDeleteId !== null}
+          >
+            {loadingDeleteId ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              "Delete"
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

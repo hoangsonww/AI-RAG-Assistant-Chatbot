@@ -72,13 +72,15 @@ export const chatWithAI = async (
     },
   ];
 
-  history.push({ role: "user", parts: [{ text: message }] });
-  history.push({ role: "user", parts: [{ text: additionalContext }] });
+  const chatHistory = [
+    ...history,
+    { role: "user", parts: [{ text: additionalContext }] }
+  ];
 
   const chatSession = model.startChat({
     generationConfig,
     safetySettings,
-    history: history,
+    history: chatHistory,
   });
   const result = await chatSession.sendMessage(message);
   if (!result.response || !result.response.text) {
@@ -86,4 +88,94 @@ export const chatWithAI = async (
   }
 
   return result.response.text();
+};
+
+/**
+ * Streams a chat response from Gemini AI using Server-Sent Events.
+ * @param history - The conversation history.
+ * @param message - The new user message.
+ * @param onChunk - Callback function to handle each chunk of the response.
+ * @returns A promise resolving with the complete AI response text.
+ */
+export const streamChatWithAI = async (
+  history: Array<any>,
+  message: string,
+  onChunk: (chunk: string) => void,
+): Promise<string> => {
+  if (!process.env.GOOGLE_AI_API_KEY) {
+    throw new Error("Missing GOOGLE_AI_API_KEY in environment variables");
+  }
+
+  const pineconeResults = await searchKnowledge(message, 3);
+  let additionalContext = "";
+
+  if (pineconeResults.length > 0) {
+    additionalContext = `\n\nRelevant Information:\n${pineconeResults
+      .map((r) => `- ${r.text}`)
+      .join("\n")}`;
+  } else {
+    additionalContext =
+      "No relevant knowledge found in Pinecone. You are a highly intelligent AI assistant. If relevant information is found in the user's internal database, include it in your response. However, if no relevant information is found, use your general knowledge to answer the question accurately and in detail.\n";
+  }
+
+  const fullSystemInstruction = process.env.AI_INSTRUCTIONS || "";
+  const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash-lite",
+    systemInstruction: fullSystemInstruction,
+  });
+
+  const generationConfig: GenerationConfig = {
+    temperature: 1,
+    topP: 0.95,
+    topK: 64,
+    maxOutputTokens: 8192,
+  };
+
+  const safetySettings = [
+    {
+      category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+      threshold: HarmBlockThreshold.BLOCK_NONE,
+    },
+    {
+      category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+      threshold: HarmBlockThreshold.BLOCK_NONE,
+    },
+    {
+      category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+      threshold: HarmBlockThreshold.BLOCK_NONE,
+    },
+    {
+      category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+      threshold: HarmBlockThreshold.BLOCK_NONE,
+    },
+  ];
+
+  const chatHistory = [
+    ...history,
+    { role: "user", parts: [{ text: additionalContext }] }
+  ];
+
+  const chatSession = model.startChat({
+    generationConfig,
+    safetySettings,
+    history: chatHistory,
+  });
+
+  const result = await chatSession.sendMessageStream(message);
+  let fullResponse = "";
+
+  for await (const chunk of result.stream) {
+    const chunkText = chunk.text();
+    if (chunkText) {
+      fullResponse += chunkText;
+      onChunk(chunkText);
+    }
+  }
+
+  if (!fullResponse) {
+    throw new Error("Failed to get text response from the AI.");
+  }
+
+  return fullResponse;
 };

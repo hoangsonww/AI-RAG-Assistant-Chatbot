@@ -15,11 +15,16 @@ import {
   getConversationById,
   sendAuthedChatMessage,
   sendGuestChatMessage,
+  streamAuthedChatMessage,
+  streamGuestChatMessage,
   createNewConversation,
   isAuthenticated,
   getGuestIdFromLocalStorage,
   setGuestIdInLocalStorage,
   clearGuestIdFromLocalStorage,
+  getGuestMessagesFromLocalStorage,
+  setGuestMessagesInLocalStorage,
+  clearGuestMessagesFromLocalStorage,
 } from "../services/api";
 import { IMessage, IConversation } from "../types/conversation";
 import ReactMarkdown from "react-markdown";
@@ -124,6 +129,7 @@ const CitationBubble: React.FC<CitationBubbleProps> = ({ isAboutMe }) => {
               padding: "0.4rem 0.6rem",
               whiteSpace: "nowrap",
               boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+              zIndex: 10001,
             }}
           >
             {isAboutMe ? (
@@ -174,23 +180,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 }) => {
   const theme = useTheme();
 
-  // Clear guestConversationId on a page reload:
-  useEffect(() => {
-    // Modern approach to detect reload:
-    const [navEntry] = performance.getEntriesByType(
-      "navigation",
-    ) as PerformanceNavigationTiming[];
-    if (navEntry && navEntry.type === "reload") {
-      localStorage.removeItem("guestConversationId");
-    }
-    // Fallback for older browsers:
-    if (performance.navigation.type === 1) {
-      localStorage.removeItem("guestConversationId");
-    }
-  }, []);
-
+  // Load guest messages from localStorage on initial mount (before clearing anything)
+  const initialMessages = !isAuthenticated() ? getGuestMessagesFromLocalStorage() || [] : [];
+  
   // The messages to render
-  const [messages, setMessages] = useState<IMessage[]>([]);
+  const [messages, setMessages] = useState<IMessage[]>(initialMessages);
 
   // The user's current input
   const [input, setInput] = useState("");
@@ -206,23 +200,45 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   // Loading states
   const [loadingState, setLoadingState] = useState<
-    "idle" | "processing" | "thinking" | "generating" | "done"
+    "idle" | "processing" | "thinking" | "streaming" | "error" | "done"
   >("idle");
   const [loadingConversation, setLoadingConversation] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
 
   // State to control auto-scrolling. We'll only auto-scroll if the user is already near the bottom.
   const [isAtBottom, setIsAtBottom] = useState(true);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Clear guestConversationId on page reload (but keep messages for persistence)
+  useEffect(() => {
+    const [navEntry] = performance.getEntriesByType(
+      "navigation",
+    ) as PerformanceNavigationTiming[];
+    if (navEntry && navEntry.type === "reload") {
+      localStorage.removeItem("guestConversationId");
+    }
+    // Fallback for older browsers:
+    if (performance.navigation.type === 1) {
+      localStorage.removeItem("guestConversationId");
+    }
+  }, []);
+
   // If we have an authenticated conversationId, load it from the server
   useEffect(() => {
     if (conversationId && isAuthenticated()) {
       loadConversation(conversationId);
-    } else {
+    } else if (isAuthenticated()) {
       setMessages([]);
     }
   }, [conversationId]);
+
+  // Save guest messages to localStorage whenever they change
+  useEffect(() => {
+    if (!isAuthenticated() && messages.length > 0) {
+      setGuestMessagesInLocalStorage(messages);
+    }
+  }, [messages]);
 
   /**
    * Load a conversation by its ID.
@@ -253,13 +269,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   };
 
   /**
-   * Send the user's message to the server and receive a response.
+   * Send the user's message to the server and receive a streaming response.
    */
   const handleSendMessage = async () => {
     if (!input.trim()) return;
     if (loadingState !== "idle" && loadingState !== "done") return;
 
-    const startTime = Date.now();
     let currentConvId = conversationId;
 
     try {
@@ -285,6 +300,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
       // Update state: processing immediately.
       setLoadingState("processing");
+      setIsStreaming(false);
 
       // Schedule state transitions:
       setTimeout(() => {
@@ -292,57 +308,85 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       }, 300);
 
       setTimeout(() => {
-        setLoadingState("generating");
+        setLoadingState("streaming");
+        setIsStreaming(true);
       }, 600);
 
-      // Start the API call concurrently.
-      let answer = "";
-      let returnedId = "";
+      // Handle streaming response
+      const handleChunk = (chunk: string) => {
+        // When first chunk arrives, immediately show it (hide loading spinners)
+        setLoadingState("done");
+        setIsStreaming(true);
+        
+        // Update the LAST message in the messages array (the bot's streaming message)
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          const lastMsg = newMessages[newMessages.length - 1];
+          if (lastMsg && lastMsg.sender === "assistant") {
+            // Append chunk to existing bot message
+            lastMsg.text += chunk;
+          } else {
+            // Create the bot message on first chunk if it doesn't exist
+            newMessages.push({
+              sender: "assistant",
+              text: chunk,
+              timestamp: new Date(),
+            });
+          }
+          return newMessages;
+        });
+      };
+
+      const handleComplete = (id: string) => {
+        setIsStreaming(false);
+        setLoadingState("done");
+      };
+
+      const handleError = (error: Error) => {
+        console.error("Streaming error:", error);
+        setIsStreaming(false);
+        setLoadingState("error");
+        
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "assistant",
+            text: "Sorry, I encountered an error while streaming the response. Please try again.",
+            timestamp: new Date(),
+          },
+        ]);
+        
+        setTimeout(() => setLoadingState("done"), 2000);
+      };
+
+      // Don't add empty bot message - it will be created on first chunk
+      
       if (isAuthenticated()) {
-        const resp = await sendAuthedChatMessage(
+        await streamAuthedChatMessage(
           userMessage.text,
           currentConvId!,
+          handleChunk,
+          handleComplete,
+          handleError,
         );
-        answer = resp.answer;
-        returnedId = resp.conversationId;
       } else {
         const guestId = getGuestIdFromLocalStorage();
-        const resp = await sendGuestChatMessage(userMessage.text, guestId);
-        answer = resp.answer;
-        returnedId = resp.guestId;
-        if (!guestId) {
-          setGuestIdInLocalStorage(returnedId);
-        }
-      }
-
-      // Calculate elapsed time since start.
-      const elapsed = Date.now() - startTime;
-      const minimumTotalDelay = 900;
-
-      // If API call finished too quickly, wait the remaining time.
-      if (elapsed < minimumTotalDelay) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, minimumTotalDelay - elapsed),
+        await streamGuestChatMessage(
+          userMessage.text,
+          guestId,
+          handleChunk,
+          (newGuestId: string) => {
+            if (!guestId) {
+              setGuestIdInLocalStorage(newGuestId);
+            }
+            handleComplete(newGuestId);
+          },
+          handleError,
         );
-      }
-
-      // Add the assistant's response locally.
-      const botMessage: IMessage = {
-        sender: "assistant",
-        text: answer,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botMessage]);
-
-      // Finalize state.
-      setLoadingState("done");
-
-      // Optionally reload the conversation from the server.
-      if (currentConvId) {
-        await loadConversationAux(currentConvId);
       }
     } catch (err) {
       console.error("Error sending message:", err);
+      setIsStreaming(false);
       setMessages((prev) => [
         ...prev,
         {
@@ -430,6 +474,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
    */
   const handleNewGuestConversation = () => {
     clearGuestIdFromLocalStorage();
+    clearGuestMessagesFromLocalStorage();
     setMessages([]);
     setMessageHistory([]);
     setHistoryIndex(-1);
@@ -497,7 +542,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         {/* If no messages yet, show placeholder */}
         {messages.length === 0 &&
         !loadingConversation &&
-        loadingState !== "generating" &&
+        loadingState !== "streaming" &&
         loadingState !== "thinking" &&
         loadingState !== "processing" ? (
           <Box
@@ -601,7 +646,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                         transition: "background-color 0.3s",
                         wordBreak: "break-word",
                         maxWidth: "75%",
-                        overflow: "auto",
+                        overflow: "visible",
                         "&:hover": {
                           backgroundColor: isUser
                             ? theme.palette.primary.dark
@@ -959,7 +1004,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           </AnimatePresence>
         )}
 
-        {/* Show "processing" or "generating" or "thinking" messages */}
+        {/* Show "processing" or "streaming" or "thinking" messages */}
         {loadingState === "processing" && (
           <Box display="flex" alignItems="center" gap="0.5rem" mt="0.5rem">
             <CircularProgress size={18} />
@@ -980,12 +1025,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           </Box>
         )}
 
-        {loadingState === "generating" && (
+        {loadingState === "error" && (
           <Box display="flex" alignItems="center" gap="0.5rem" mt="0.5rem">
-            <CircularProgress size={18} />
-            <Typography variant="caption" color="textSecondary">
-              Generating Response
-              <AnimatedEllipsis />
+            <Typography variant="caption" color="error">
+              Connection error. Retrying...
             </Typography>
           </Box>
         )}

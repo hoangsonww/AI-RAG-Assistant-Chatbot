@@ -42,6 +42,7 @@ API.interceptors.request.use((config) => {
 
 // For guest users, store or retrieve the guestId
 const GUEST_KEY = "guestConversationId";
+const GUEST_MESSAGES_KEY = "guestMessages";
 
 /**
  * Store the guestId in local storage
@@ -64,6 +65,30 @@ export const getGuestIdFromLocalStorage = (): string | null => {
  */
 export const clearGuestIdFromLocalStorage = (): void => {
   localStorage.removeItem(GUEST_KEY);
+};
+
+/**
+ * Store guest messages in local storage
+ *
+ * @param messages - The messages to store
+ */
+export const setGuestMessagesInLocalStorage = (messages: any[]) => {
+  localStorage.setItem(GUEST_MESSAGES_KEY, JSON.stringify(messages));
+};
+
+/**
+ * Retrieve guest messages from local storage
+ */
+export const getGuestMessagesFromLocalStorage = (): any[] | null => {
+  const data = localStorage.getItem(GUEST_MESSAGES_KEY);
+  return data ? JSON.parse(data) : null;
+};
+
+/**
+ * Clear guest messages from local storage
+ */
+export const clearGuestMessagesFromLocalStorage = (): void => {
+  localStorage.removeItem(GUEST_MESSAGES_KEY);
 };
 
 // --- Auth Endpoints ---
@@ -279,4 +304,167 @@ export const validateToken = async (retries: number = 3): Promise<boolean> => {
   console.warn("All token validation attempts failed. Removing token.");
   localStorage.removeItem("token");
   return false;
+};
+
+/**
+ * Helper function to handle SSE streaming with retries
+ */
+async function streamWithRetries(
+  url: string,
+  body: any,
+  onChunk: (chunk: string) => void,
+  onComplete: (conversationId?: string, guestId?: string) => void,
+  onError: (error: Error) => void,
+  maxRetries: number = 3,
+): Promise<void> {
+  let retryCount = 0;
+  const token = getTokenFromLocalStorage();
+
+  const attemptStream = async (): Promise<void> => {
+    try {
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await fetch(
+        `${API.defaults.baseURL}${url}`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      if (!response.body) {
+        throw new Error("Response body is null");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let conversationId: string | undefined;
+      let guestId: string | undefined;
+      let buffer = ""; // Buffer for incomplete lines
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        
+        // Keep the last incomplete line in the buffer
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.type === "chunk") {
+                onChunk(data.text);
+              } else if (data.type === "conversationId") {
+                conversationId = data.conversationId;
+              } else if (data.type === "guestId") {
+                guestId = data.guestId;
+              } else if (data.type === "done") {
+                onComplete(conversationId, guestId);
+                return;
+              } else if (data.type === "error") {
+                throw new Error(data.message || "Streaming error");
+              }
+            } catch (e) {
+              console.warn("Failed to parse SSE data:", line, e);
+            }
+          }
+        }
+      }
+      
+      // Process any remaining data in buffer
+      if (buffer.trim() && buffer.startsWith("data: ")) {
+        try {
+          const data = JSON.parse(buffer.slice(6));
+          if (data.type === "chunk") {
+            onChunk(data.text);
+          } else if (data.type === "done") {
+            onComplete(conversationId, guestId);
+            return;
+          }
+        } catch (e) {
+          console.warn("Failed to parse final SSE data:", buffer, e);
+        }
+      }
+    } catch (error: any) {
+      console.error(`Stream attempt ${retryCount + 1} failed:`, error);
+      
+      if (retryCount < maxRetries - 1) {
+        retryCount++;
+        const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
+        console.log(`Retrying in ${delay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return attemptStream();
+      } else {
+        onError(error);
+      }
+    }
+  };
+
+  return attemptStream();
+}
+
+/**
+ * Stream authenticated user chat with retry logic
+ * @param message The chat message
+ * @param conversationId The conversation ID
+ * @param onChunk Callback for each chunk
+ * @param onComplete Callback when complete
+ * @param onError Callback on error
+ */
+export const streamAuthedChatMessage = async (
+  message: string,
+  conversationId: string | null,
+  onChunk: (chunk: string) => void,
+  onComplete: (conversationId: string) => void,
+  onError: (error: Error) => void,
+) => {
+  return streamWithRetries(
+    "/chat/auth/stream",
+    { message, conversationId },
+    onChunk,
+    (convId) => onComplete(convId!),
+    onError,
+  );
+};
+
+/**
+ * Stream guest user chat with retry logic
+ * @param message The chat message
+ * @param guestId The guest ID
+ * @param onChunk Callback for each chunk
+ * @param onComplete Callback when complete
+ * @param onError Callback on error
+ */
+export const streamGuestChatMessage = async (
+  message: string,
+  guestId: string | null,
+  onChunk: (chunk: string) => void,
+  onComplete: (guestId: string) => void,
+  onError: (error: Error) => void,
+) => {
+  const payload: any = { message };
+  if (guestId) payload.guestId = guestId;
+
+  return streamWithRetries(
+    "/chat/guest/stream",
+    payload,
+    onChunk,
+    (_, gId) => onComplete(gId!),
+    onError,
+  );
 };

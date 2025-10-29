@@ -43,7 +43,7 @@ const Signup: React.FC = () => {
       // Automatically log in after sign up.
       const token = await loginUser(email, password);
       setTokenInLocalStorage(token);
-      navigate("/");
+      navigate("/chat");
     } catch (err: any) {
       alert(err?.response?.data?.message || err.message);
     } finally {
