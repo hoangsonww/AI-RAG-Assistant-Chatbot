@@ -53,20 +53,35 @@ interface ChatAreaProps {
  * @returns (string): The processed text with URLs turned into Markdown links.
  */
 function linkifyText(text: string): string {
-  // Regex that detects:
-  //   1) Optional http(s)://
-  //   2) Some domain (with dots)
-  //   3) Optional path/query/fragment
+  // First, protect existing Markdown links by temporarily replacing them
+  const markdownLinks: string[] = [];
+  const markdownLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  
+  // Store existing Markdown links and replace with placeholders
+  let protectedText = text.replace(markdownLinkRegex, (match) => {
+    markdownLinks.push(match);
+    return `__MARKDOWN_LINK_${markdownLinks.length - 1}__`;
+  });
+
+  // Regex that detects plain URLs not already in Markdown format
   const urlRegex =
     /((?:https?:\/\/)?(?:[\w-]+\.)+[a-zA-Z]{2,}(?:\/[\w.,@?^=%&:/~+#-]*)?)/g;
 
-  return text.replace(urlRegex, (match) => {
+  // Convert plain URLs to Markdown links
+  protectedText = protectedText.replace(urlRegex, (match) => {
     // If it doesn't start with "http", prepend "https://"
     const hasProtocol =
       match.startsWith("http://") || match.startsWith("https://");
     const link = hasProtocol ? match : `https://${match}`;
     return `[${match}](${link})`;
   });
+
+  // Restore the original Markdown links
+  protectedText = protectedText.replace(/__MARKDOWN_LINK_(\d+)__/g, (match, index) => {
+    return markdownLinks[parseInt(index)];
+  });
+
+  return protectedText;
 }
 
 // Default avatar URLs (in public folder)
