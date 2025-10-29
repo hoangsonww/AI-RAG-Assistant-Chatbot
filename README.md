@@ -27,6 +27,13 @@
   - [Docker Deployment](#docker-deployment)
   - [AWS Production Deployment](#aws-production-deployment)
 - [Usage](#usage)
+- [Streaming Responses](#streaming-responses)
+  - [How It Works](#how-it-works)
+  - [Technical Implementation](#technical-implementation)
+  - [Key Features](#key-features)
+  - [API Endpoints](#api-endpoints-1)
+  - [Event Types](#event-types)
+  - [Error Recovery](#error-recovery)
 - [User Interface](#user-interface)
 - [API Endpoints](#api-endpoints)
   - [Authentication](#authentication)
@@ -374,6 +381,81 @@ The application is currently deployed on Vercel with the following setup:
 - **Database**: MongoDB Atlas (cloud-hosted)
 - **Vector Database**: Pinecone (cloud-hosted)
 
+#### Deployment Architecture
+
+```mermaid
+graph TB
+    subgraph "Client Devices"
+        Browser[Web Browser]
+        Mobile[Mobile Browser]
+    end
+    
+    subgraph "CDN Layer"
+        Vercel[Vercel Edge Network]
+        Netlify[Netlify CDN - Backup]
+    end
+    
+    subgraph "Frontend Deployment"
+        FrontendVercel[React App on Vercel]
+        FrontendNetlify[React App on Netlify]
+        StaticAssets[Static Assets]
+    end
+    
+    subgraph "Backend Deployment"
+        BackendVercel[Express API on Vercel]
+        ServerlessFunctions[Serverless Functions]
+    end
+    
+    subgraph "External Services"
+        MongoDB[(MongoDB Atlas)]
+        Pinecone[(Pinecone Vector DB)]
+        GeminiAPI[Google Gemini AI API]
+    end
+    
+    subgraph "CI/CD Pipeline"
+        GitHub[GitHub Repository]
+        GitHubActions[GitHub Actions]
+        AutoDeploy[Auto Deploy on Push]
+    end
+    
+    subgraph "Monitoring & Analytics"
+        VercelAnalytics[Vercel Analytics]
+        Logs[Application Logs]
+    end
+    
+    Browser --> Vercel
+    Mobile --> Vercel
+    Vercel --> FrontendVercel
+    Netlify --> FrontendNetlify
+    
+    FrontendVercel --> StaticAssets
+    FrontendVercel --> BackendVercel
+    FrontendNetlify --> BackendVercel
+    
+    BackendVercel --> ServerlessFunctions
+    ServerlessFunctions --> MongoDB
+    ServerlessFunctions --> Pinecone
+    ServerlessFunctions --> GeminiAPI
+    
+    GitHub --> GitHubActions
+    GitHubActions --> AutoDeploy
+    AutoDeploy --> Vercel
+    AutoDeploy --> Netlify
+    
+    BackendVercel --> VercelAnalytics
+    BackendVercel --> Logs
+    FrontendVercel --> VercelAnalytics
+    
+    style Browser fill:#4285F4
+    style Vercel fill:#000000
+    style FrontendVercel fill:#61DAFB
+    style BackendVercel fill:#339933
+    style MongoDB fill:#47A248
+    style Pinecone fill:#FF6F61
+    style GeminiAPI fill:#4285F4
+    style GitHub fill:#181717
+```
+
 ### Docker Deployment
 
 Run the entire application stack locally using Docker:
@@ -441,6 +523,100 @@ See [aws/README.md](aws/README.md) and [terraform/README.md](terraform/README.md
 
 - **Theme:**  
   Toggle between dark and light mode via the navbar. The chosen theme is saved in local storage and persists across sessions.
+
+## Streaming Responses
+
+Lumina features real-time streaming responses that make conversations feel more natural and engaging. Instead of waiting for the complete response, you'll see the AI's thoughts appear word-by-word as they're generated.
+
+### How It Works
+
+The streaming implementation uses **Server-Sent Events (SSE)** to deliver AI responses in real-time:
+
+1. **User sends a message** → Frontend displays "Processing Message..."
+2. **Backend processes** → Shows "Thinking & Reasoning..."
+3. **Connection established** → Displays "Connecting..."
+4. **Streaming begins** → Text appears word-by-word with a blinking cursor
+5. **Response complete** → Message is saved to conversation history
+
+### Technical Implementation
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Backend
+    participant Gemini AI
+    
+    User->>Frontend: Send message
+    Frontend->>Frontend: Show "Processing..."
+    Frontend->>Backend: POST /api/chat/auth/stream
+    Backend->>Gemini AI: Request streaming response
+    
+    loop For each chunk
+        Gemini AI-->>Backend: Stream text chunk
+        Backend-->>Frontend: SSE: chunk data
+        Frontend->>Frontend: Append to message bubble
+        Frontend->>User: Display growing text + cursor
+    end
+    
+    Gemini AI-->>Backend: Stream complete
+    Backend->>Backend: Save to database
+    Backend-->>Frontend: SSE: done event
+    Frontend->>Frontend: Finalize message
+```
+
+### Key Features
+
+- **Live Text Rendering:** See responses appear in real-time with markdown formatting
+- **Visual Feedback:** Multiple loading states (Processing → Thinking → Connecting → Streaming)
+- **Blinking Cursor:** Animated cursor indicates active streaming
+- **Automatic Retries:** Up to 3 retry attempts with exponential backoff (1s, 2s, 4s)
+- **Error Handling:** Graceful degradation with user-friendly error messages
+- **Works Everywhere:** Available for both authenticated and guest users
+
+### API Endpoints
+
+**Authenticated Streaming:**
+```
+POST /api/chat/auth/stream
+Content-Type: application/json
+Authorization: Bearer <token>
+
+{
+  "message": "Your question here",
+  "conversationId": "optional-conversation-id"
+}
+```
+
+**Guest Streaming:**
+```
+POST /api/chat/guest/stream
+Content-Type: application/json
+
+{
+  "message": "Your question here",
+  "guestId": "optional-guest-id"
+}
+```
+
+### Event Types
+
+The SSE stream sends different event types:
+
+- **`conversationId`/`guestId`:** Sent at the start with the conversation identifier
+- **`chunk`:** Each piece of text as it's generated from the AI
+- **`done`:** Signals that streaming is complete
+- **`error`:** Indicates an error occurred during streaming
+
+### Error Recovery
+
+If a connection fails during streaming:
+1. **First retry:** Wait 1 second, then retry
+2. **Second retry:** Wait 2 seconds, then retry
+3. **Third retry:** Wait 4 seconds, then retry
+4. **All failed:** Display error message to user
+
+The retry logic uses exponential backoff to avoid overwhelming the server while providing a smooth user experience.
 
 ## User Interface
 
@@ -530,6 +706,56 @@ See [aws/README.md](aws/README.md) and [terraform/README.md](terraform/README.md
 - **POST /api/auth/login:** Authenticate a user and return a JWT.
 - **GET /api/auth/verify-email?email=example@example.com:** Check if an email exists.
 - **POST /api/auth/reset-password:** Reset a user's password.
+- **GET /api/auth/validate-token:** Validate the current JWT token.
+
+#### Authentication Flow
+
+```mermaid
+flowchart TB
+    Start([User Visits App]) --> CheckAuth{Has Valid<br/>Token?}
+    
+    CheckAuth -->|Yes| Dashboard[Access Dashboard]
+    CheckAuth -->|No| Landing[Landing Page]
+    
+    Landing --> Choice{User Choice}
+    Choice -->|Sign Up| SignupForm[Signup Form]
+    Choice -->|Login| LoginForm[Login Form]
+    Choice -->|Guest| GuestChat[Guest Chat Mode]
+    
+    SignupForm --> ValidateSignup{Valid<br/>Credentials?}
+    ValidateSignup -->|No| SignupError[Show Error]
+    SignupError --> SignupForm
+    ValidateSignup -->|Yes| CreateUser[Create User in MongoDB]
+    CreateUser --> GenerateToken[Generate JWT Token]
+    
+    LoginForm --> ValidateLogin{Valid<br/>Credentials?}
+    ValidateLogin -->|No| LoginError[Show Error]
+    LoginError --> LoginForm
+    ValidateLogin -->|Yes| VerifyPassword[Verify Password with bcrypt]
+    VerifyPassword -->|Invalid| LoginError
+    VerifyPassword -->|Valid| GenerateToken
+    
+    GenerateToken --> StoreToken[Store Token in LocalStorage]
+    StoreToken --> Dashboard
+    
+    Dashboard --> Protected[Protected Routes]
+    Protected --> ConvHistory[Conversation History]
+    Protected --> SavedChats[Saved Chats]
+    Protected --> Settings[User Settings]
+    
+    GuestChat --> TempStorage[Temporary Storage]
+    TempStorage --> LimitedFeatures[Limited Features]
+    
+    Dashboard --> Logout{Logout?}
+    Logout -->|Yes| ClearToken[Clear Token]
+    ClearToken --> Landing
+    
+    style Start fill:#4285F4
+    style Dashboard fill:#34A853
+    style GuestChat fill:#FBBC04
+    style GenerateToken fill:#EA4335
+    style CreateUser fill:#34A853
+```
 
 ### Conversations
 
@@ -540,9 +766,77 @@ See [aws/README.md](aws/README.md) and [terraform/README.md](terraform/README.md
 - **GET /api/conversations/search/:query:** Search for conversations by title or message content.
 - **DELETE /api/conversations/:id:** Delete a conversation.
 
+#### Conversation Management Flow
+
+```mermaid
+flowchart LR
+    subgraph User["👤 User Actions"]
+        NewChat[Start New Chat]
+        LoadChat[Load Existing Chat]
+        SearchChat[Search Conversations]
+        RenameChat[Rename Conversation]
+        DeleteChat[Delete Conversation]
+    end
+    
+    subgraph Frontend["⚛️ React Frontend"]
+        ChatUI[Chat Interface]
+        Sidebar[Conversation Sidebar]
+        SearchBar[Search Bar]
+    end
+    
+    subgraph API["🔌 Express API"]
+        ConvRoutes[api/conversations Route]
+        AuthMiddleware{JWT Auth}
+    end
+    
+    subgraph Database["🗄️ MongoDB"]
+        ConvCollection[(Conversations Collection)]
+        UserCollection[(Users Collection)]
+    end
+    
+    subgraph Operations["📊 CRUD Operations"]
+        Create[Create]
+        Read[Read]
+        Update[Update]
+        Delete[Delete]
+    end
+    
+    NewChat --> ChatUI
+    LoadChat --> Sidebar
+    SearchChat --> SearchBar
+    RenameChat --> Sidebar
+    DeleteChat --> Sidebar
+    
+    ChatUI --> ConvRoutes
+    Sidebar --> ConvRoutes
+    SearchBar --> ConvRoutes
+    
+    ConvRoutes --> AuthMiddleware
+    AuthMiddleware -->|Valid Token| Operations
+    AuthMiddleware -->|Invalid Token| ErrorAuth[401 Unauthorized]
+    
+    Create --> ConvCollection
+    Read --> ConvCollection
+    Update --> ConvCollection
+    Delete --> ConvCollection
+    
+    ConvCollection -.User Reference.-> UserCollection
+    
+    ConvCollection --> ConvRoutes
+    ConvRoutes --> Frontend
+    
+    style ChatUI fill:#4285F4
+    style ConvCollection fill:#47A248
+    style AuthMiddleware fill:#EA4335
+    style Operations fill:#34A853
+```
+
 ### Chat
 
-- **POST /api/chat:** Process a chat query and return an AI-generated response.
+- **POST /api/chat/auth:** Process a chat query for authenticated users and return an AI-generated response.
+- **POST /api/chat/auth/stream:** Stream AI responses in real-time for authenticated users using Server-Sent Events (SSE).
+- **POST /api/chat/guest:** Process a chat query for guest users and return an AI-generated response.
+- **POST /api/chat/guest/stream:** Stream AI responses in real-time for guest users using Server-Sent Events (SSE).
 
 ### Swagger API Documentation
 
@@ -557,12 +851,16 @@ AI-Assistant-Chatbot/
 ├── docker-compose.yml
 ├── openapi.yaml
 ├── README.md
+├── ARCHITECTURE.md
 ├── LICENSE
 ├── Jenkinsfile
 ├── package.json
 ├── tsconfig.json
 ├── .env
 ├── shell/                          # Shell scripts for app setups
+├── terraform/                      # Infrastructure as Code (Terraform)
+├── aws/                            # AWS deployment configurations
+├── img/                            # Images and screenshots
 ├── client/                         # Frontend React application
 │   ├── package.json
 │   ├── tsconfig.json
@@ -572,27 +870,33 @@ AI-Assistant-Chatbot/
 │       ├── App.tsx
 │       ├── index.tsx
 │       ├── theme.ts
+│       ├── globals.css
+│       ├── index.css
 │       ├── dev/
 │       │   ├── palette.tsx
 │       │   ├── previews.tsx
 │       │   ├── index.ts
 │       │   └── useInitial.ts
 │       ├── services/
-│       │   └── api.ts
+│       │   └── api.ts              # API client with streaming support
 │       ├── types/
 │       │   ├── conversation.d.ts
 │       │   └── user.d.ts
 │       ├── components/
 │       │   ├── Navbar.tsx
 │       │   ├── Sidebar.tsx
-│       │   └── ChatArea.tsx
+│       │   ├── ChatArea.tsx        # Main chat interface with streaming
+│       │   └── CopyIcon.tsx
+│       ├── styles/
+│       │   └── (various style files)
 │       └── pages/
 │           ├── LandingPage.tsx
 │           ├── Home.tsx
 │           ├── Login.tsx
 │           ├── Signup.tsx
 │           ├── NotFoundPage.tsx
-│           └── ForgotPassword.tsx
+│           ├── ForgotPassword.tsx
+│           └── Terms.tsx
 └── server/                         # Backend Express application
     ├── package.json
     ├── tsconfig.json
@@ -602,17 +906,26 @@ AI-Assistant-Chatbot/
         ├── server.ts
         ├── models/
         │   ├── Conversation.ts
+        │   ├── GuestConversation.ts
         │   └── User.ts
         ├── routes/
         │   ├── auth.ts
         │   ├── conversations.ts
-        │   └── chat.ts
+        │   ├── chat.ts             # Authenticated chat with streaming
+        │   └── guest.ts            # Guest chat with streaming
         ├── services/
-        │   └── authService.ts
+        │   ├── geminiService.ts    # AI service with streaming support
+        │   └── pineconeClient.ts
+        ├── scripts/
+        │   ├── storeKnowledge.ts
+        │   ├── queryKnowledge.ts
+        │   └── langchainPinecone.ts
         ├── utils/
-        │   └── ephemeralConversations.ts
-        └── middleware/
-            └── auth.ts
+        │   └── (utility functions)
+        ├── middleware/
+        │   └── auth.ts
+        └── public/
+            └── favicon.ico
 ```
 
 ## Dockerization

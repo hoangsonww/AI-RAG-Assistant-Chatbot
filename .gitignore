@@ -62,3 +62,6 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+server/dist
+client/dist

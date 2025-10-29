@@ -12,6 +12,7 @@ import {
   CircularProgress,
   Menu,
   MenuItem,
+  Tooltip,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import SearchIcon from "@mui/icons-material/Search";
@@ -26,6 +27,7 @@ import {
   searchConversations,
   isAuthenticated,
   validateToken,
+  clearGuestMessagesFromLocalStorage,
 } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import { IConversation } from "../types/conversation";
@@ -164,6 +166,9 @@ const Navbar: React.FC<NavbarProps> = ({
     if (localStorage.getItem("guestConversationId")) {
       localStorage.removeItem("guestConversationId");
     }
+    
+    // Clear guest messages from localStorage
+    clearGuestMessagesFromLocalStorage();
 
     try {
       const newConv = await createNewConversation();
@@ -215,23 +220,27 @@ const Navbar: React.FC<NavbarProps> = ({
       >
         <Box display="flex" alignItems="center" flex="1">
           {/* Sidebar Toggle */}
-          <IconButton
-            color="inherit"
-            onClick={onToggleSidebar}
-            edge="start"
-            sx={{ mr: 1 }}
-          >
-            <MenuIcon />
-          </IconButton>
+          <Tooltip title="Toggle Sidebar" arrow>
+            <IconButton
+              color="inherit"
+              onClick={onToggleSidebar}
+              edge="start"
+              sx={{ mr: 1 }}
+            >
+              <MenuIcon />
+            </IconButton>
+          </Tooltip>
 
           {/* Dark/Light Mode Toggle */}
-          <IconButton
-            color="inherit"
-            onClick={handleToggleTheme}
-            sx={{ mr: 1 }}
-          >
-            {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
-          </IconButton>
+          <Tooltip title={darkMode ? "Light Mode" : "Dark Mode"} arrow>
+            <IconButton
+              color="inherit"
+              onClick={handleToggleTheme}
+              sx={{ mr: 1 }}
+            >
+              {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
+            </IconButton>
+          </Tooltip>
 
           {/* Search Bar */}
           <Box
@@ -266,31 +275,35 @@ const Navbar: React.FC<NavbarProps> = ({
           </Box>
 
           {/* New Conversation Icon Button */}
-          <IconButton
-            sx={{ ml: 1 }}
-            color="inherit"
-            onClick={handleCreateNewConversation}
-            title="New Conversation"
-            disabled={newConvLoading}
-          >
-            {newConvLoading ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : (
-              <AddCommentIcon />
-            )}
-          </IconButton>
+          <Tooltip title="New Conversation" arrow>
+            <span>
+              <IconButton
+                sx={{ ml: 1 }}
+                color="inherit"
+                onClick={handleCreateNewConversation}
+                disabled={newConvLoading}
+              >
+                {newConvLoading ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  <AddCommentIcon />
+                )}
+              </IconButton>
+            </span>
+          </Tooltip>
 
           {/* Login/Signup (if token is invalid) OR Logout */}
           {!isTokenValid ? (
             <>
-              <IconButton
-                sx={{ ml: 1 }}
-                color="inherit"
-                onClick={handleMenuOpen}
-                title="Login or Register"
-              >
-                <AccountCircle />
-              </IconButton>
+              <Tooltip title="Login or Register" arrow>
+                <IconButton
+                  sx={{ ml: 1 }}
+                  color="inherit"
+                  onClick={handleMenuOpen}
+                >
+                  <AccountCircle />
+                </IconButton>
+              </Tooltip>
               <Menu
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
@@ -315,12 +328,14 @@ const Navbar: React.FC<NavbarProps> = ({
               </Menu>
             </>
           ) : (
-            <IconButton
-              onClick={handleLogout}
-              sx={{ ml: 1, color: "error.main" }}
-            >
-              <LogoutIcon />
-            </IconButton>
+            <Tooltip title="Logout" arrow>
+              <IconButton
+                onClick={handleLogout}
+                sx={{ ml: 1, color: "error.main" }}
+              >
+                <LogoutIcon />
+              </IconButton>
+            </Tooltip>
           )}
         </Box>
 

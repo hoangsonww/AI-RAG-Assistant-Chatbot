@@ -3,7 +3,7 @@ import GuestConversation, {
   IGuestConversation,
   IGuestMessage,
 } from "../models/GuestConversation";
-import { chatWithAI } from "../services/geminiService";
+import { chatWithAI, streamChatWithAI } from "../services/geminiService";
 import { v4 as uuidv4 } from "uuid";
 
 const router = express.Router();
@@ -98,7 +98,6 @@ async function handleGuestConversation(
     role: m.sender === "user" ? "user" : "model",
     parts: [{ text: m.text }],
   }));
-  history.push({ role: "user", parts: [{ text: userMessage }] });
   const aiResponse = await chatWithAI(history, userMessage);
   guestConv.messages.push({
     sender: "user",
@@ -115,6 +114,124 @@ async function handleGuestConversation(
     answer: aiResponse,
     guestId: guestConv.guestId,
   });
+}
+
+/**
+ * @swagger
+ * /api/chat/guest/stream:
+ *   post:
+ *     summary: Stream chat responses from the AI assistant for guest users.
+ *     description: >
+ *       Streams a chat response from the AI assistant using Server-Sent Events.
+ *       No authentication required.
+ *     tags:
+ *       - Chat
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               message:
+ *                 type: string
+ *                 example: "Hello from a guest user"
+ *               guestId:
+ *                 type: string
+ *                 description: The ID returned from a previous request if continuing the same conversation (optional).
+ *     responses:
+ *       200:
+ *         description: Streamed AI response
+ *         content:
+ *           text/event-stream:
+ *             schema:
+ *               type: string
+ *       400:
+ *         description: Bad Request
+ *       500:
+ *         description: Server error
+ */
+router.post("/stream", async (req: Request, res: Response) => {
+  try {
+    const { message, guestId } = req.body;
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({ message: "Invalid or empty message." });
+    }
+    let guestConversation: IGuestConversation | null = null;
+
+    if (guestId) {
+      guestConversation = await GuestConversation.findOne({ guestId });
+    }
+
+    if (!guestId) {
+      const newGuestId = uuidv4();
+      const newGuestConv = new GuestConversation({
+        guestId: newGuestId,
+        messages: [],
+      });
+      await newGuestConv.save();
+      return handleGuestConversationStream(res, newGuestConv, message);
+    } else if (!guestConversation && guestId) {
+      const newGuestConv = new GuestConversation({
+        guestId,
+        messages: [],
+      });
+      await newGuestConv.save();
+      return handleGuestConversationStream(res, newGuestConv, message);
+    } else {
+      // @ts-ignore
+      return handleGuestConversationStream(res, guestConversation, message);
+    }
+  } catch (error: any) {
+    console.error("Error in POST /api/chat/guest/stream:", error);
+    if (!res.headersSent) {
+      return res.status(500).json({ message: error.message });
+    }
+  }
+});
+
+async function handleGuestConversationStream(
+  res: Response,
+  guestConv: IGuestConversation,
+  userMessage: string,
+) {
+  const history = guestConv.messages.map((m) => ({
+    role: m.sender === "user" ? "user" : "model",
+    parts: [{ text: m.text }],
+  }));
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  res.write(`data: ${JSON.stringify({ type: "guestId", guestId: guestConv.guestId })}\n\n`);
+
+  let fullResponse = "";
+  try {
+    fullResponse = await streamChatWithAI(history, userMessage, (chunk: string) => {
+      res.write(`data: ${JSON.stringify({ type: "chunk", text: chunk })}\n\n`);
+    });
+
+    guestConv.messages.push({
+      sender: "user",
+      text: userMessage,
+      timestamp: new Date(),
+    });
+    guestConv.messages.push({
+      sender: "model",
+      text: fullResponse,
+      timestamp: new Date(),
+    });
+    await guestConv.save();
+
+    res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+    res.end();
+  } catch (error: any) {
+    console.error("Error streaming guest message:", error);
+    res.write(`data: ${JSON.stringify({ type: "error", message: error.message })}\n\n`);
+    res.end();
+  }
 }
 
 export default router;
