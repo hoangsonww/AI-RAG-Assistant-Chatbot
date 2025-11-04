@@ -928,6 +928,15 @@ AI-Assistant-Chatbot/
             └── favicon.ico
 ```
 
+## Agentic AI Pipeline
+
+There is also an Agentic AI pipeline implemented in Python using LangChain. This pipeline demonstrates how to create an autonomous agent that can perform tasks using tools and interact with the AI model.
+
+The pipeline is located in the `agentic_ai/` directory. It was developed to complement the main RAG-based AI assistant by showcasing advanced AI capabilities, as well as enhancing the RAG responses with agentic reasoning when needed (e.g. for complex queries).
+
+> [!TIP]
+> For more information on the Agentic AI pipeline, please refer to the [`agentic_ai/README.md`](agentic_ai/README.md) file.
+
 ## Dockerization
 
 To run the application using Docker, simply run `docker-compose up` in the root directory of the project. This will start both the backend and frontend services as defined in the `docker-compose.yml` file.
