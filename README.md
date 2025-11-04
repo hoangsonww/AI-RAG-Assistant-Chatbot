@@ -41,6 +41,7 @@
   - [Chat](#chat)
   - [Swagger API Documentation](#swagger-api-documentation)
 - [Project Structure](#project-structure)
+- [Agentic AI Pipeline](#agentic-ai-pipeline)
 - [Dockerization](#dockerization)
 - [OpenAPI Specification](#openapi-specification)
 - [CI / CD with GitHub Actions](#ci--cd-with-github-actions)
@@ -861,6 +862,7 @@ AI-Assistant-Chatbot/
 ├── terraform/                      # Infrastructure as Code (Terraform)
 ├── aws/                            # AWS deployment configurations
 ├── img/                            # Images and screenshots
+├── agentic_ai/                     # Agentic AI pipeline in Python
 ├── client/                         # Frontend React application
 │   ├── package.json
 │   ├── tsconfig.json
@@ -927,6 +929,15 @@ AI-Assistant-Chatbot/
         └── public/
             └── favicon.ico
 ```
+
+## Agentic AI Pipeline
+
+There is also an Agentic AI pipeline implemented in Python using LangChain. This pipeline demonstrates how to create an autonomous agent that can perform tasks using tools and interact with the AI model.
+
+The pipeline is located in the `agentic_ai/` directory. It was developed to complement the main RAG-based AI assistant by showcasing advanced AI capabilities, as well as enhancing the RAG responses with agentic reasoning when needed (e.g. for complex queries).
+
+> [!TIP]
+> For more information on the Agentic AI pipeline, please refer to the [`agentic_ai/README.md`](agentic_ai/README.md) file.
 
 ## Dockerization
 

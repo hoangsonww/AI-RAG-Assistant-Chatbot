@@ -3,6 +3,9 @@
 A sophisticated, production-ready multi-agent AI system built with LangGraph and LangChain, featuring an assembly line architecture for complex task execution.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![LangChain](https://img.shields.io/badge/LangChain-0.0.208-blue.svg)](https://pypi.org/project/langchain/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-latest-green.svg)](https://pypi.org/project/langgraph/)
+[![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-orange.svg)](https://pypi.org/project/mcp/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## 🌟 Features
