@@ -41,6 +41,7 @@
   - [Chat](#chat)
   - [Swagger API Documentation](#swagger-api-documentation)
 - [Project Structure](#project-structure)
+- [Agentic AI Pipeline](#agentic-ai-pipeline)
 - [Dockerization](#dockerization)
 - [OpenAPI Specification](#openapi-specification)
 - [CI / CD with GitHub Actions](#ci--cd-with-github-actions)
@@ -861,6 +862,7 @@ AI-Assistant-Chatbot/
 ├── terraform/                      # Infrastructure as Code (Terraform)
 ├── aws/                            # AWS deployment configurations
 ├── img/                            # Images and screenshots
+├── agentic_ai/                     # Agentic AI pipeline in Python
 ├── client/                         # Frontend React application
 │   ├── package.json
 │   ├── tsconfig.json
