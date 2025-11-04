@@ -1,0 +1,92 @@
+# Agentic AI Pipeline Configuration
+
+# LLM Configuration
+llm:
+  provider: "openai"  # openai, anthropic, azure
+  model: "gpt-4"
+  temperature: 0.7
+  max_tokens: 4096
+  params:
+    # Additional provider-specific parameters
+    top_p: 0.9
+    frequency_penalty: 0.0
+    presence_penalty: 0.0
+
+# Agent Configuration
+agents:
+  planner:
+    enabled: true
+    timeout: 60
+    max_retries: 2
+
+  researcher:
+    enabled: true
+    timeout: 120
+    max_retries: 2
+    tools:
+      - search
+      - document_retriever
+
+  analyzer:
+    enabled: true
+    timeout: 90
+    max_retries: 2
+
+  synthesizer:
+    enabled: true
+    timeout: 90
+    max_retries: 2
+
+  validator:
+    enabled: true
+    timeout: 60
+    max_retries: 1
+    min_score: 0.7
+
+  executor:
+    enabled: true
+    timeout: 120
+    max_retries: 2
+
+  reviewer:
+    enabled: true
+    timeout: 60
+    max_retries: 1
+
+# Pipeline Configuration
+pipeline:
+  max_retries: 3
+  timeout_seconds: 600
+  enable_parallel: false
+  enable_caching: true
+  cache_ttl: 3600
+
+# Monitoring Configuration
+monitoring:
+  enabled: true
+  log_level: "INFO"
+  export_path: "logs/metrics"
+  export_interval: 300  # seconds
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/pipeline.log"
+  max_bytes: 10485760  # 10MB
+  backup_count: 5
+
+# Security Configuration
+security:
+  api_key_required: true
+  rate_limit:
+    enabled: true
+    requests_per_minute: 60
+  allowed_origins:
+    - "*"
+
+# Performance Configuration
+performance:
+  max_concurrent_pipelines: 10
+  agent_pool_size: 5
+  enable_streaming: true
