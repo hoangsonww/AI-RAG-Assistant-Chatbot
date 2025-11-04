@@ -1,0 +1,77 @@
+# Production Configuration for Agentic AI Pipeline
+
+# LLM Configuration
+llm:
+  provider: "openai"
+  model: "gpt-4"
+  temperature: 0.5
+  max_tokens: 4096
+
+# Agent Configuration
+agents:
+  planner:
+    enabled: true
+    timeout: 90
+
+  researcher:
+    enabled: true
+    timeout: 180
+
+  analyzer:
+    enabled: true
+    timeout: 120
+
+  synthesizer:
+    enabled: true
+    timeout: 120
+
+  validator:
+    enabled: true
+    timeout: 90
+    min_score: 0.8
+
+  executor:
+    enabled: true
+    timeout: 180
+
+  reviewer:
+    enabled: true
+    timeout: 90
+
+# Pipeline Configuration
+pipeline:
+  max_retries: 5
+  timeout_seconds: 900
+  enable_parallel: true
+  enable_caching: true
+  cache_ttl: 7200
+
+# Monitoring Configuration
+monitoring:
+  enabled: true
+  log_level: "WARNING"
+  export_path: "/var/log/agentic_ai/metrics"
+  export_interval: 60
+
+# Logging Configuration
+logging:
+  level: "WARNING"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "/var/log/agentic_ai/pipeline.log"
+  max_bytes: 52428800  # 50MB
+  backup_count: 10
+
+# Security Configuration
+security:
+  api_key_required: true
+  rate_limit:
+    enabled: true
+    requests_per_minute: 120
+  allowed_origins:
+    - "https://your-domain.com"
+
+# Performance Configuration
+performance:
+  max_concurrent_pipelines: 50
+  agent_pool_size: 20
+  enable_streaming: true
