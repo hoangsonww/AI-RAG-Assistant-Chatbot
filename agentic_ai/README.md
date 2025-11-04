@@ -87,14 +87,6 @@ graph TB
     G --> Q
     G --> R
     G --> S
-
-    style I fill:#e1f5ff
-    style J fill:#e1f5ff
-    style K fill:#e1f5ff
-    style L fill:#e1f5ff
-    style M fill:#e1f5ff
-    style N fill:#e1f5ff
-    style O fill:#e1f5ff
 ```
 
 ### Assembly Line Agent Flow
