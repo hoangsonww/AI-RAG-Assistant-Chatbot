@@ -932,12 +932,121 @@ AI-Assistant-Chatbot/
 
 ## Agentic AI Pipeline
 
-There is also an Agentic AI pipeline implemented in Python using LangChain. This pipeline demonstrates how to create an autonomous agent that can perform tasks using tools and interact with the AI model.
+This project includes a sophisticated **Agentic AI Pipeline** built with **LangGraph** and **LangChain**, featuring an assembly line architecture for complex task execution. The pipeline orchestrates multiple specialized AI agents that work together to solve complex problems through a structured workflow.
 
-The pipeline is located in the `agentic_ai/` directory. It was developed to complement the main RAG-based AI assistant by showcasing advanced AI capabilities, as well as enhancing the RAG responses with agentic reasoning when needed (e.g. for complex queries).
+### Key Features
+
+- **Multi-Agent Orchestration**: Seven specialized agents (Planner, Researcher, Analyzer, Synthesizer, Validator, Executor, Reviewer) working in an assembly line
+- **LangGraph Integration**: State-of-the-art graph-based workflow orchestration with conditional routing
+- **MCP Server**: Model Context Protocol server for seamless integration with MCP-compatible clients
+- **Production Ready**: Comprehensive logging, monitoring, error handling, and retry mechanisms
+- **Cloud Deployments**: Ready-to-use configurations for AWS (CloudFormation) and Azure (ARM templates)
+- **Scalable Architecture**: Built for high-performance concurrent execution with async/await patterns
+- **Flexible Configuration**: YAML-based configuration for easy customization
+
+### Architecture Overview
+
+```mermaid
+graph LR
+    A[Task Input] --> B[Planner Agent]
+    B --> C[Researcher Agent]
+    C --> D[Analyzer Agent]
+    D --> E[Synthesizer Agent]
+    E --> F[Validator Agent]
+    F -->|Valid| G[Executor Agent]
+    F -->|Retry| C
+    G --> H[Reviewer Agent]
+    H --> I[Final Results]
+
+    style A fill:#4285F4
+    style B fill:#34A853
+    style C fill:#FBBC04
+    style D fill:#EA4335
+    style E fill:#4285F4
+    style F fill:#34A853
+    style G fill:#FBBC04
+    style H fill:#EA4335
+    style I fill:#34A853
+```
+
+### Quick Start
+
+```python
+from agentic_ai import AgenticPipeline
+
+# Initialize pipeline
+pipeline = AgenticPipeline(config_path="agentic_ai/config/default_config.yaml")
+
+# Run a task
+result = await pipeline.run(
+    task="Analyze the impact of AI on healthcare",
+    context={"focus": "patient outcomes", "timeframe": "last 5 years"}
+)
+
+print(f"Summary: {result['summary']}")
+print(f"Quality Score: {result['quality_score']}")
+```
+
+### Agent Assembly Line
+
+1. **Planner Agent**: Analyzes tasks and creates detailed execution plans with step-by-step breakdown
+2. **Researcher Agent**: Gathers information from various sources including documents, APIs, and databases
+3. **Analyzer Agent**: Extracts insights, identifies patterns, and draws meaningful conclusions
+4. **Synthesizer Agent**: Combines information from all agents into coherent, comprehensive output
+5. **Validator Agent**: Ensures quality, accuracy, and completeness with configurable validation criteria
+6. **Executor Agent**: Executes specific actions, API calls, or system commands as needed
+7. **Reviewer Agent**: Final quality review and professional report generation
+
+### Deployment
+
+The Agentic AI Pipeline can be deployed to multiple cloud platforms:
+
+**AWS Deployment:**
+```bash
+cd agentic_ai/deployments/aws
+export OPENAI_API_KEY=your-key
+./deploy.sh
+```
+
+**Azure Deployment:**
+```bash
+cd agentic_ai/deployments/azure
+export OPENAI_API_KEY=your-key
+az login
+./deploy.sh
+```
+
+**Docker Deployment:**
+```bash
+docker build -t agentic-ai:latest -f agentic_ai/deployments/aws/Dockerfile agentic_ai/
+docker run -d -p 8080:8080 -e OPENAI_API_KEY=your-key agentic-ai:latest
+```
+
+### MCP Server
+
+The pipeline includes an MCP (Model Context Protocol) server that exposes the agentic AI system as a service:
+
+```bash
+# Start MCP server
+python -m agentic_ai.mcp_server.server --config agentic_ai/config/production_config.yaml
+```
+
+**Available Tools:**
+- `run_pipeline`: Execute the agentic AI pipeline
+- `get_pipeline_status`: Check pipeline execution status
+- `list_pipelines`: List all active pipelines
+- `get_graph_visualization`: Get pipeline graph visualization
+
+### Integration with Main Application
+
+The Agentic AI Pipeline complements the main RAG-based chatbot by providing:
+- **Enhanced Reasoning**: Complex query handling with multi-agent collaboration
+- **Task Decomposition**: Breaking down complex questions into manageable sub-tasks
+- **Quality Assurance**: Built-in validation and review steps ensure high-quality responses
+- **Extensibility**: Easy to add new agents or modify the workflow for specific use cases
 
 > [!TIP]
-> For more information on the Agentic AI pipeline, please refer to the [`agentic_ai/README.md`](agentic_ai/README.md) file.
+> For comprehensive documentation including architecture diagrams, API reference, configuration options, and deployment guides, please refer to **[`agentic_ai/README.md`](agentic_ai/README.md)**.
 
 ## Dockerization
 
