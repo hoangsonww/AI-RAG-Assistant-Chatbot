@@ -74,7 +74,7 @@ export const chatWithAI = async (
 
   const chatHistory = [
     ...history,
-    { role: "user", parts: [{ text: additionalContext }] }
+    { role: "user", parts: [{ text: additionalContext }] },
   ];
 
   const chatSession = model.startChat({
@@ -153,7 +153,7 @@ export const streamChatWithAI = async (
 
   const chatHistory = [
     ...history,
-    { role: "user", parts: [{ text: additionalContext }] }
+    { role: "user", parts: [{ text: additionalContext }] },
   ];
 
   const chatSession = model.startChat({
@@ -178,4 +178,40 @@ export const streamChatWithAI = async (
   }
 
   return fullResponse;
+};
+
+/**
+ * Generate a concise conversation title based on the conversation messages.
+ * @param messages - The conversation messages.
+ * @returns A promise resolving with a suggested title (max 50 characters).
+ */
+export const generateConversationTitle = async (
+  messages: Array<{ sender: string; text: string }>,
+): Promise<string> => {
+  if (!process.env.GOOGLE_AI_API_KEY) {
+    throw new Error("Missing GOOGLE_AI_API_KEY in environment variables");
+  }
+
+  if (messages.length === 0) {
+    return "New Conversation";
+  }
+
+  const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash-lite",
+    systemInstruction:
+      "You are a helpful assistant that generates concise, descriptive conversation titles. Generate a short title (maximum 50 characters) that captures the essence of the conversation. Only return the title, nothing else.",
+  });
+
+  const conversationText = messages
+    .slice(0, 10)
+    .map((msg) => `${msg.sender}: ${msg.text}`)
+    .join("\n");
+
+  const prompt = `Based on this conversation, generate a concise title (max 50 characters):\n\n${conversationText}`;
+
+  const result = await model.generateContent(prompt);
+  const title = result.response.text().trim();
+
+  return title.length > 50 ? title.substring(0, 47) + "..." : title;
 };

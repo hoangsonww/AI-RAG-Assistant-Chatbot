@@ -16,10 +16,15 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { isAuthenticated } from "../services/api";
 import { IConversation } from "../types/conversation";
 import { useTheme } from "@mui/material/styles";
-import { renameConversation, deleteConversation } from "../services/api";
+import {
+  renameConversation,
+  deleteConversation,
+  generateConversationTitle,
+} from "../services/api";
 
 /**
  * Props: The Sidebar component props
@@ -58,12 +63,13 @@ const Sidebar: React.FC<SidebarProps> = ({
   const theme = useTheme();
   const [loadingRenameId, setLoadingRenameId] = useState<string | null>(null);
   const [loadingDeleteId, setLoadingDeleteId] = useState<string | null>(null);
-  
+  const [loadingGenerateTitle, setLoadingGenerateTitle] = useState(false);
+
   // Rename dialog state
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [renameConvId, setRenameConvId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
-  
+
   // Delete confirmation dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConvId, setDeleteConvId] = useState<string | null>(null);
@@ -128,6 +134,23 @@ const Sidebar: React.FC<SidebarProps> = ({
         console.error("Failed to delete conversation", error);
       } finally {
         setLoadingDeleteId(null);
+      }
+    }
+  };
+
+  /**
+   * Generate a conversation title using AI
+   */
+  const handleGenerateTitle = async () => {
+    if (renameConvId) {
+      try {
+        setLoadingGenerateTitle(true);
+        const response = await generateConversationTitle(renameConvId);
+        setRenameValue(response.title);
+      } catch (error) {
+        console.error("Failed to generate conversation title", error);
+      } finally {
+        setLoadingGenerateTitle(false);
       }
     }
   };
@@ -248,10 +271,10 @@ const Sidebar: React.FC<SidebarProps> = ({
           </Typography>
         </Box>
       )}
-      
+
       {/* Rename Dialog */}
-      <Dialog 
-        open={renameDialogOpen} 
+      <Dialog
+        open={renameDialogOpen}
         onClose={() => setRenameDialogOpen(false)}
         maxWidth="sm"
         fullWidth
@@ -272,20 +295,38 @@ const Sidebar: React.FC<SidebarProps> = ({
                 executeRename();
               }
             }}
-            disabled={loadingRenameId !== null}
+            disabled={loadingRenameId !== null || loadingGenerateTitle}
           />
+          <Button
+            onClick={handleGenerateTitle}
+            startIcon={<AutoAwesomeIcon />}
+            disabled={loadingRenameId !== null || loadingGenerateTitle}
+            sx={{ mt: 2 }}
+            variant="outlined"
+            fullWidth
+          >
+            {loadingGenerateTitle ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              "Generate Name with AI"
+            )}
+          </Button>
         </DialogContent>
         <DialogActions>
-          <Button 
+          <Button
             onClick={() => setRenameDialogOpen(false)}
-            disabled={loadingRenameId !== null}
+            disabled={loadingRenameId !== null || loadingGenerateTitle}
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={executeRename}
             variant="contained"
-            disabled={loadingRenameId !== null || renameValue.trim() === ""}
+            disabled={
+              loadingRenameId !== null ||
+              renameValue.trim() === "" ||
+              loadingGenerateTitle
+            }
           >
             {loadingRenameId ? (
               <CircularProgress size={20} color="inherit" />
@@ -297,8 +338,8 @@ const Sidebar: React.FC<SidebarProps> = ({
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog 
-        open={deleteDialogOpen} 
+      <Dialog
+        open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
         maxWidth="xs"
         fullWidth
@@ -306,17 +347,18 @@ const Sidebar: React.FC<SidebarProps> = ({
         <DialogTitle>Delete Conversation</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete this conversation? This action cannot be undone.
+            Are you sure you want to delete this conversation? This action
+            cannot be undone.
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button 
+          <Button
             onClick={() => setDeleteDialogOpen(false)}
             disabled={loadingDeleteId !== null}
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={executeDelete}
             variant="contained"
             color="error"

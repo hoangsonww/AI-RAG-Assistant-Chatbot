@@ -205,13 +205,21 @@ async function handleGuestConversationStream(
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
 
-  res.write(`data: ${JSON.stringify({ type: "guestId", guestId: guestConv.guestId })}\n\n`);
+  res.write(
+    `data: ${JSON.stringify({ type: "guestId", guestId: guestConv.guestId })}\n\n`,
+  );
 
   let fullResponse = "";
   try {
-    fullResponse = await streamChatWithAI(history, userMessage, (chunk: string) => {
-      res.write(`data: ${JSON.stringify({ type: "chunk", text: chunk })}\n\n`);
-    });
+    fullResponse = await streamChatWithAI(
+      history,
+      userMessage,
+      (chunk: string) => {
+        res.write(
+          `data: ${JSON.stringify({ type: "chunk", text: chunk })}\n\n`,
+        );
+      },
+    );
 
     guestConv.messages.push({
       sender: "user",
@@ -229,7 +237,9 @@ async function handleGuestConversationStream(
     res.end();
   } catch (error: any) {
     console.error("Error streaming guest message:", error);
-    res.write(`data: ${JSON.stringify({ type: "error", message: error.message })}\n\n`);
+    res.write(
+      `data: ${JSON.stringify({ type: "error", message: error.message })}\n\n`,
+    );
     res.end();
   }
 }

@@ -1,8 +1,6 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(chmod:*)"
-    ],
+    "allow": ["Bash(chmod:*)"],
     "deny": [],
     "ask": []
   }

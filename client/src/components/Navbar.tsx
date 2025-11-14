@@ -166,7 +166,7 @@ const Navbar: React.FC<NavbarProps> = ({
     if (localStorage.getItem("guestConversationId")) {
       localStorage.removeItem("guestConversationId");
     }
-    
+
     // Clear guest messages from localStorage
     clearGuestMessagesFromLocalStorage();
 

@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import { authenticateJWT, AuthRequest } from "../middleware/auth";
 import Conversation, { IConversation, IMessage } from "../models/Conversation";
+import { generateConversationTitle } from "../services/geminiService";
 
 const router = express.Router();
 
@@ -427,6 +428,60 @@ router.get(
         ],
       });
       res.json(conversations);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  },
+);
+
+/**
+ * @swagger
+ * /api/conversations/{id}/generate-title:
+ *   post:
+ *     summary: Generate a conversation title using AI.
+ *     tags:
+ *       - Conversations
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The conversation ID.
+ *     responses:
+ *       200:
+ *         description: A suggested title for the conversation.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 title:
+ *                   type: string
+ *                   example: "Discussion about AI and Machine Learning"
+ *       404:
+ *         description: Conversation not found.
+ *       500:
+ *         description: Internal server error.
+ */
+router.post(
+  "/:id/generate-title",
+  authenticateJWT,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user.id;
+      const conversation = await Conversation.findOne({
+        _id: req.params.id,
+        user: userId,
+      });
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+
+      const title = await generateConversationTitle(conversation.messages);
+      res.json({ title });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

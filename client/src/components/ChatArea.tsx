@@ -56,7 +56,7 @@ function linkifyText(text: string): string {
   // First, protect existing Markdown links by temporarily replacing them
   const markdownLinks: string[] = [];
   const markdownLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-  
+
   // Store existing Markdown links and replace with placeholders
   let protectedText = text.replace(markdownLinkRegex, (match) => {
     markdownLinks.push(match);
@@ -77,9 +77,12 @@ function linkifyText(text: string): string {
   });
 
   // Restore the original Markdown links
-  protectedText = protectedText.replace(/__MARKDOWN_LINK_(\d+)__/g, (match, index) => {
-    return markdownLinks[parseInt(index)];
-  });
+  protectedText = protectedText.replace(
+    /__MARKDOWN_LINK_(\d+)__/g,
+    (match, index) => {
+      return markdownLinks[parseInt(index)];
+    },
+  );
 
   return protectedText;
 }
@@ -196,8 +199,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const theme = useTheme();
 
   // Load guest messages from localStorage on initial mount (before clearing anything)
-  const initialMessages = !isAuthenticated() ? getGuestMessagesFromLocalStorage() || [] : [];
-  
+  const initialMessages = !isAuthenticated()
+    ? getGuestMessagesFromLocalStorage() || []
+    : [];
+
   // The messages to render
   const [messages, setMessages] = useState<IMessage[]>(initialMessages);
 
@@ -332,7 +337,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         // When first chunk arrives, immediately show it (hide loading spinners)
         setLoadingState("done");
         setIsStreaming(true);
-        
+
         // Update the LAST message in the messages array (the bot's streaming message)
         setMessages((prev) => {
           const newMessages = [...prev];
@@ -361,7 +366,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         console.error("Streaming error:", error);
         setIsStreaming(false);
         setLoadingState("error");
-        
+
         setMessages((prev) => [
           ...prev,
           {
@@ -370,12 +375,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             timestamp: new Date(),
           },
         ]);
-        
+
         setTimeout(() => setLoadingState("done"), 2000);
       };
 
       // Don't add empty bot message - it will be created on first chunk
-      
+
       if (isAuthenticated()) {
         await streamAuthedChatMessage(
           userMessage.text,
