@@ -218,6 +218,18 @@ export const deleteConversation = async (id: string): Promise<void> => {
   return resp.data;
 };
 
+/**
+ * Generate a conversation title using AI
+ *
+ * @param id The conversation ID
+ */
+export const generateConversationTitle = async (
+  id: string,
+): Promise<{ title: string }> => {
+  const resp = await API.post(`/conversations/${id}/generate-title`);
+  return resp.data;
+};
+
 // --- Chat Endpoints ---
 
 /**
@@ -329,14 +341,11 @@ async function streamWithRetries(
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const response = await fetch(
-        `${API.defaults.baseURL}${url}`,
-        {
-          method: "POST",
-          headers,
-          body: JSON.stringify(body),
-        }
-      );
+      const response = await fetch(`${API.defaults.baseURL}${url}`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -358,7 +367,7 @@ async function streamWithRetries(
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
-        
+
         // Keep the last incomplete line in the buffer
         buffer = lines.pop() || "";
 
@@ -366,7 +375,7 @@ async function streamWithRetries(
           if (line.startsWith("data: ")) {
             try {
               const data = JSON.parse(line.slice(6));
-              
+
               if (data.type === "chunk") {
                 onChunk(data.text);
               } else if (data.type === "conversationId") {
@@ -385,7 +394,7 @@ async function streamWithRetries(
           }
         }
       }
-      
+
       // Process any remaining data in buffer
       if (buffer.trim() && buffer.startsWith("data: ")) {
         try {
@@ -402,7 +411,7 @@ async function streamWithRetries(
       }
     } catch (error: any) {
       console.error(`Stream attempt ${retryCount + 1} failed:`, error);
-      
+
       if (retryCount < maxRetries - 1) {
         retryCount++;
         const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);

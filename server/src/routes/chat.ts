@@ -211,13 +211,21 @@ router.post("/stream", async (req: Request, res: Response) => {
     res.setHeader("Connection", "keep-alive");
     res.flushHeaders();
 
-    res.write(`data: ${JSON.stringify({ type: "conversationId", conversationId: conversation._id })}\n\n`);
+    res.write(
+      `data: ${JSON.stringify({ type: "conversationId", conversationId: conversation._id })}\n\n`,
+    );
 
     let fullResponse = "";
     try {
-      fullResponse = await streamChatWithAI(history, message, (chunk: string) => {
-        res.write(`data: ${JSON.stringify({ type: "chunk", text: chunk })}\n\n`);
-      });
+      fullResponse = await streamChatWithAI(
+        history,
+        message,
+        (chunk: string) => {
+          res.write(
+            `data: ${JSON.stringify({ type: "chunk", text: chunk })}\n\n`,
+          );
+        },
+      );
 
       conversation.messages.push({
         sender: "user",
@@ -235,7 +243,9 @@ router.post("/stream", async (req: Request, res: Response) => {
       res.end();
     } catch (error: any) {
       console.error("Error streaming message:", error);
-      res.write(`data: ${JSON.stringify({ type: "error", message: error.message })}\n\n`);
+      res.write(
+        `data: ${JSON.stringify({ type: "error", message: error.message })}\n\n`,
+      );
       res.end();
     }
   } catch (error: any) {
