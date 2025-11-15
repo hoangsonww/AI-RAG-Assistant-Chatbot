@@ -84,7 +84,20 @@ const Home: React.FC<HomeProps> = ({ onToggleTheme, darkMode }) => {
    */
   const handleNewConversation = (conv: IConversation) => {
     setSelectedConversationId(conv._id);
-    loadConversations();
+
+    // Update the conversation in the list instead of reloading everything
+    setConversations((prev) => {
+      const existingIndex = prev.findIndex((c) => c._id === conv._id);
+      if (existingIndex >= 0) {
+        // Update existing conversation
+        const updated = [...prev];
+        updated[existingIndex] = conv;
+        return updated;
+      } else {
+        // Add new conversation to the beginning
+        return [conv, ...prev];
+      }
+    });
   };
 
   return (

@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Basic Meta Tags -->
+    <meta charset="utf-8" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1976d2" />
+    <meta
+      name="description"
+      content="Lumina is David Nguyen's personal AI assistant that boosts productivity, organization, and life management with personalized, instant responses powered by state‑of‑the‑art AI."
+    />
+    <meta name="author" content="David Nguyen" />
+    <meta name="generator" content="React, Material-UI" />
+    <meta
+      name="keywords"
+      content="lumina, personal ai, assistant, productivity, organization, chat, gpt, openai, ai assistant, David Nguyen, chatbot, web app, artificial intelligence, NLP, life management"
+    />
+    <meta name="robots" content="index, follow" />
+    <meta name="revisit-after" content="3 days" />
+    <meta name="distribution" content="global" />
+    <meta name="language" content="en" />
+    <link rel="canonical" href="https://lumina-david.vercel.app/" />
+    <link
+      rel="alternate"
+      hreflang="en"
+      href="https://lumina-david.vercel.app/"
+    />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content="Lumina - David Nguyen's AI Assistant" />
+    <meta
+      property="og:description"
+      content="Lumina is David Nguyen's personal AI assistant that enhances productivity, organization, and life management with instant, personalized AI-powered responses."
+    />
+    <meta property="og:image" content="/android-chrome-512x512.png" />
+    <meta property="og:url" content="https://lumina-david.vercel.app/" />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:site_name"
+      content="Lumina - David Nguyen's AI Assistant"
+    />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Cards -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta
+      property="twitter:title"
+      content="Lumina - David Nguyen's AI Assistant"
+    />
+    <meta
+      property="twitter:description"
+      content="Experience Lumina, David Nguyen's AI-powered personal assistant that streamlines productivity, organization, and daily life with advanced AI."
+    />
+    <meta property="twitter:image" content="/android-chrome-512x512.png" />
+    <meta property="twitter:site" content="@davidnguyen" />
+    <meta property="twitter:creator" content="@davidnguyen" />
+
+    <!-- Apple Touch Icon and Fonts -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
+    />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Structured Data: Primary JSON-LD for Web Application -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Lumina",
+        "url": "https://lumina-david.vercel.app/",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "description": "Lumina is David Nguyen's personal AI assistant that provides instant, personalized responses to boost productivity and organization.",
+        "author": {
+          "@type": "Person",
+          "name": "David Nguyen"
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "5",
+          "reviewCount": "100"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
+
+    <!-- Extended Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "name": "Lumina",
+            "url": "https://lumina-david.vercel.app/",
+            "logo": "https://lumina-david.vercel.app/path-to-logo.png",
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "contactType": "customer support",
+              "email": "support@lumina-david.vercel.app",
+              "telephone": "+1-800-123-4567",
+              "areaServed": "US"
+            },
+            "sameAs": [
+              "https://www.facebook.com/DavidNguyen",
+              "https://twitter.com/davidnguyen",
+              "https://www.linkedin.com/in/davidnguyen"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "url": "https://lumina-david.vercel.app/",
+            "name": "Lumina",
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://lumina-david.vercel.app/search?q={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          },
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://lumina-david.vercel.app/"
+              }
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What is Lumina?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Lumina is David Nguyen's personal AI assistant designed to help boost productivity and organization by delivering instant, personalized AI responses."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How does Lumina work?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Lumina leverages advanced AI and natural language processing to understand and respond to user queries, providing tailored insights and assistance."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I save my conversation history?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes, users can log in to Lumina to save and manage their conversation history, or interact with the assistant as guests."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+
+    <title>Lumina - David Nguyen's AI Assistant</title>
+
+    <!-- Google Analytics -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-71FYKGRF2E"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-71FYKGRF2E");
+    </script>
+  </head>
+  <body style="transition: background-color 0.3s ease">
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/index.tsx"></script>
+
+    <!-- Hidden SEO-Boosting Content (Non-Visible to Users) -->
+    <div style="display: none; visibility: hidden">
+      <h1>Lumina - David Nguyen's AI Assistant</h1>
+      <p>
+        Lumina is a cutting-edge AI personal assistant created by David Nguyen
+        to enhance productivity, organization, and daily life management.
+        Powered by state‑of‑the‑art AI, Lumina provides instant, personalized
+        responses that make managing your tasks easier than ever.
+      </p>
+      <h2>Features of Lumina</h2>
+      <ul>
+        <li>Instant, AI-powered responses</li>
+        <li>Personalized assistance for productivity and organization</li>
+        <li>User authentication with conversation history saving</li>
+        <li>Sleek, responsive interface built with React and Material‑UI</li>
+        <li>Guest mode for quick and easy access</li>
+        <li>Dark and light theme support</li>
+        <li>Secure and private user interactions</li>
+      </ul>
+      <h2>Technical Overview</h2>
+      <p>
+        Built with modern technologies including React, TypeScript, Material‑UI,
+        Node.js, and Express, Lumina utilizes advanced AI algorithms and natural
+        language processing to deliver accurate, context-aware responses. The
+        application offers seamless integration between a responsive frontend
+        and a robust backend, ensuring a smooth user experience.
+      </p>
+      <h2>Who Benefits from Lumina?</h2>
+      <ul>
+        <li>Professionals seeking to optimize their workflow</li>
+        <li>Individuals looking for personalized assistance</li>
+        <li>Tech enthusiasts interested in the latest AI innovations</li>
+        <li>Anyone aiming to improve daily organization and productivity</li>
+      </ul>
+      <h2>About David Nguyen</h2>
+      <p>
+        David Nguyen is an innovator and technology enthusiast dedicated to
+        leveraging artificial intelligence to transform everyday tasks. With
+        Lumina, he offers a personal assistant that not only responds
+        intelligently but also enhances your overall life management.
+      </p>
+    </div>
+  </body>
+</html>

@@ -1,6 +1,11 @@
 {
   "permissions": {
-    "allow": ["Bash(chmod:*)"],
+    "allow": [
+      "Bash(chmod:*)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)"
+    ],
     "deny": [],
     "ask": []
   }

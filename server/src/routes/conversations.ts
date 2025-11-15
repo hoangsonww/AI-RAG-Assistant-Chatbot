@@ -10,7 +10,7 @@ const router = express.Router();
  * /api/conversations:
  *   post:
  *     summary: Create a new conversation.
- *     description: Creates a new conversation for the authenticated user with a default title of "New Conversation".
+ *     description: Creates a new conversation for the authenticated user with a default title of "Untitled Conversation".
  *     tags:
  *       - Conversations
  *     security:
@@ -59,7 +59,7 @@ const router = express.Router();
  *               example:
  *                 _id: "603e5e534cc7d52e2c2f7c90"
  *                 user: "603e5e534cc7d52e2c2f7c90"
- *                 title: "New Conversation"
+ *                 title: "Untitled Conversation"
  *                 messages: []
  *                 createdAt: "2023-02-06T00:00:00.000Z"
  *                 updatedAt: "2023-02-06T00:00:00.000Z"
@@ -71,7 +71,6 @@ router.post("/", authenticateJWT, async (req: AuthRequest, res: Response) => {
     const userId = req.user.id;
     const conversation = new Conversation({
       user: userId,
-      title: "New Conversation",
       messages: [],
     });
     await conversation.save();
@@ -146,7 +145,9 @@ router.post("/", authenticateJWT, async (req: AuthRequest, res: Response) => {
 router.get("/", authenticateJWT, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;
-    const conversations = await Conversation.find({ user: userId });
+    const conversations = await Conversation.find({ user: userId }).sort({
+      createdAt: -1,
+    });
     res.json(conversations);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -213,7 +214,7 @@ router.get("/", authenticateJWT, async (req: AuthRequest, res: Response) => {
  *               example:
  *                 _id: "603e5e534cc7d52e2c2f7c90"
  *                 user: "603e5e534cc7d52e2c2f7c90"
- *                 title: "New Conversation"
+ *                 title: "Untitled Conversation"
  *                 messages:
  *                   - sender: user
  *                     text: "Hello"
@@ -326,16 +327,24 @@ router.put("/:id", authenticateJWT, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;
     const { title } = req.body;
+    console.log(
+      `[AUTO-TITLE] Updating conversation ${req.params.id} with title: "${title}"`,
+    );
     const conversation = await Conversation.findOneAndUpdate(
       { _id: req.params.id, user: userId },
       { title },
       { new: true },
     );
     if (!conversation) {
+      console.log(
+        `[AUTO-TITLE] Conversation not found for update: ${req.params.id}`,
+      );
       return res.status(404).json({ message: "Conversation not found" });
     }
+    console.log(`[AUTO-TITLE] Successfully updated conversation title`);
     res.json(conversation);
   } catch (error: any) {
+    console.error(`[AUTO-TITLE] Error updating conversation:`, error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -472,17 +481,26 @@ router.post(
   async (req: AuthRequest, res: Response) => {
     try {
       const userId = req.user.id;
+      console.log(
+        `[AUTO-TITLE] Generating title for conversation ${req.params.id}`,
+      );
       const conversation = await Conversation.findOne({
         _id: req.params.id,
         user: userId,
       });
       if (!conversation) {
+        console.log(`[AUTO-TITLE] Conversation not found: ${req.params.id}`);
         return res.status(404).json({ message: "Conversation not found" });
       }
 
+      console.log(
+        `[AUTO-TITLE] Found conversation with ${conversation.messages.length} messages`,
+      );
       const title = await generateConversationTitle(conversation.messages);
+      console.log(`[AUTO-TITLE] Generated title: "${title}"`);
       res.json({ title });
     } catch (error: any) {
+      console.error(`[AUTO-TITLE] Error generating title:`, error);
       res.status(500).json({ message: error.message });
     }
   },

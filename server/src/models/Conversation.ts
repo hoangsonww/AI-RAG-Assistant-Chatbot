@@ -53,7 +53,7 @@ import mongoose, { Schema, Document } from "mongoose";
  *       example:
  *         _id: "603e5e534cc7d52e2c2f7c90"
  *         user: "603e5e534cc7d52e2c2f7c90"
- *         title: "New Conversation"
+ *         title: "Untitled Conversation"
  *         messages:
  *           - sender: user
  *             text: "Hello"
@@ -84,7 +84,7 @@ const MessageSchema: Schema = new Schema({
 const ConversationSchema: Schema = new Schema(
   {
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    title: { type: String, default: "New Conversation" },
+    title: { type: String, default: "Untitled Conversation" },
     messages: [MessageSchema],
   },
   { timestamps: true },

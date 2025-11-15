@@ -25,6 +25,8 @@ import {
   getGuestMessagesFromLocalStorage,
   setGuestMessagesInLocalStorage,
   clearGuestMessagesFromLocalStorage,
+  generateConversationTitle,
+  renameConversation,
 } from "../services/api";
 import { IMessage, IConversation } from "../types/conversation";
 import ReactMarkdown from "react-markdown";
@@ -244,12 +246,27 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
   }, []);
 
+  // Track the previous conversationId to avoid reloading when switching to a newly created conversation
+  const prevConversationIdRef = useRef<string | null>(null);
+  const isCreatingMessageRef = useRef<boolean>(false);
+
   // If we have an authenticated conversationId, load it from the server
   useEffect(() => {
     if (conversationId && isAuthenticated()) {
-      loadConversation(conversationId);
+      // Only load if the conversationId actually changed AND we're not actively creating a message
+      if (
+        prevConversationIdRef.current !== conversationId &&
+        !isCreatingMessageRef.current
+      ) {
+        loadConversation(conversationId);
+        prevConversationIdRef.current = conversationId;
+      } else if (prevConversationIdRef.current !== conversationId) {
+        // Just update the ref without reloading
+        prevConversationIdRef.current = conversationId;
+      }
     } else if (isAuthenticated()) {
       setMessages([]);
+      prevConversationIdRef.current = null;
     }
   }, [conversationId]);
 
@@ -296,12 +313,27 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     if (loadingState !== "idle" && loadingState !== "done") return;
 
     let currentConvId = conversationId;
+    let isNewConversation = false;
+
+    // Capture whether this is the first message BEFORE adding it
+    const isFirstMessage = messages.length === 0;
+
+    // Set flag to prevent conversation reload during message creation
+    isCreatingMessageRef.current = true;
 
     try {
       // Create new conversation if needed for authenticated users.
       if (isAuthenticated() && !currentConvId) {
+        console.log("[AUTO-TITLE] Creating new conversation...");
         const newConv = await createNewConversation();
         currentConvId = newConv._id;
+        isNewConversation = true;
+        console.log(
+          "[AUTO-TITLE] New conversation created, ID:",
+          currentConvId,
+          "isNewConversation:",
+          isNewConversation,
+        );
         if (onNewConversation) onNewConversation(newConv);
       }
 
@@ -360,12 +392,53 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       const handleComplete = (id: string) => {
         setIsStreaming(false);
         setLoadingState("done");
+
+        // Clear the flag to allow conversation reloading again
+        isCreatingMessageRef.current = false;
+
+        // Automatically generate title for new conversations
+        // Use the captured isFirstMessage value from the outer scope
+        if (isAuthenticated() && isFirstMessage && currentConvId) {
+          console.log(
+            "[AUTO-TITLE] Starting auto-title generation for conversation:",
+            currentConvId,
+          );
+
+          // Run title generation asynchronously without blocking
+          (async () => {
+            try {
+              console.log(
+                "[AUTO-TITLE] Calling generateConversationTitle API...",
+              );
+              const { title } = await generateConversationTitle(currentConvId);
+              console.log("[AUTO-TITLE] Generated title:", title);
+
+              await renameConversation(currentConvId, title);
+              console.log("[AUTO-TITLE] Title updated successfully");
+
+              // Update the conversation in the parent component
+              if (onNewConversation) {
+                const updatedConv = await getConversationById(currentConvId);
+                onNewConversation(updatedConv);
+              }
+            } catch (error) {
+              // Silently fail - keep the conversation with default title
+              console.error(
+                "[AUTO-TITLE] Failed to auto-generate conversation title:",
+                error,
+              );
+            }
+          })();
+        }
       };
 
       const handleError = (error: Error) => {
         console.error("Streaming error:", error);
         setIsStreaming(false);
         setLoadingState("error");
+
+        // Clear the flag on error as well
+        isCreatingMessageRef.current = false;
 
         setMessages((prev) => [
           ...prev,
@@ -407,6 +480,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     } catch (err) {
       console.error("Error sending message:", err);
       setIsStreaming(false);
+      isCreatingMessageRef.current = false; // Clear flag on catch error too
       setMessages((prev) => [
         ...prev,
         {
