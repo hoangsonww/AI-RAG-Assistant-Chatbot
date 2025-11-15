@@ -63,6 +63,7 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 
 ### Key Technologies
 
+![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
 ![Express](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
@@ -92,10 +93,12 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 - **AI Chatbot:** Ask questions about David Nguyen and general topics; receive responses from an AI.
 - **User Authentication:** Sign up, log in, and log out using JWT authentication.
 - **Conversation History:** Save, retrieve, rename, and search past conversations (only for authenticated users).
+- **Auto-Generated Titles:** AI automatically generates concise, descriptive titles for new conversations based on the first message.
 - **Updated & Vast Knowledge Base:** Use RAG (Retrieval-Augmented Generation) & LangChain to enhance AI responses.
 - **Dynamic Responses:** AI-generated responses with `markdown` formatting for rich text.
 - **Interactive Chat:** Real-time chat interface with smooth animations and transitions.
-- **Reset Password:** Verify email and reset a user’s password.
+- **Reset Password:** Verify email and reset a user's password.
+- **Lightning-Fast Development:** Built with Vite for instant HMR and optimized production builds.
 - **Responsive UI:** Built with React and Material‑UI (MUI) with a fully responsive, modern, and animated interface.
 - **Landing Page:** A dynamic landing page with animations, feature cards, and call-to-action buttons.
 - **Guest Mode:** Users may interact with the AI assistant as a guest, though conversations will not be saved.

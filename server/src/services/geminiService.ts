@@ -193,7 +193,7 @@ export const generateConversationTitle = async (
   }
 
   if (messages.length === 0) {
-    return "New Conversation";
+    return "Untitled Conversation";
   }
 
   const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);

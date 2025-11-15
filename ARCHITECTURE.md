@@ -172,6 +172,7 @@ graph LR
 
 | Technology | Purpose | Version |
 |------------|---------|---------|
+| **Vite** | Build Tool & Dev Server | 7.2.2 |
 | **React** | UI Framework | 18.2.0 |
 | **TypeScript** | Type Safety | 4.9.5 |
 | **Material-UI (MUI)** | UI Component Library | 5.16.14 |
@@ -374,6 +375,7 @@ graph LR
         PUT_Conv[PUT /api/conversations/:id]
         DELETE_Conv[DELETE /api/conversations/:id]
         GET_Search[GET /api/conversations/search/:query]
+        POST_GenTitle[POST /api/conversations/:id/generate-title]
     end
 
     subgraph "Chat API"
@@ -691,6 +693,11 @@ flowchart TD
     PutConv --> UpdateMongo[Update title in MongoDB]
     UpdateMongo --> Return4[Return updated conversation]
 
+    Action -->|Auto-Generate Title| GenTitle[POST /api/conversations/:id/generate-title]
+    GenTitle --> GetMessages[Fetch conversation messages]
+    GetMessages --> CallAI[Call Gemini AI for title]
+    CallAI --> ReturnTitle[Return generated title]
+
     Action -->|Search| SearchConv[GET /api/conversations/search/:query]
     SearchConv --> TextSearch[MongoDB text search]
     TextSearch --> Return5[Return matching conversations]
@@ -702,6 +709,7 @@ flowchart TD
     style CreateConv fill:#4CAF50
     style QueryMongo1 fill:#47A248
     style SaveMongo1 fill:#47A248
+    style GenTitle fill:#4285F4
 ```
 
 ### Guest vs Authenticated User Flow
@@ -767,7 +775,7 @@ flowchart TD
 {
   _id: ObjectId,
   user: ObjectId (ref: 'User', indexed),
-  title: String (default: "New Conversation"),
+  title: String (default: "Untitled Conversation"),
   messages: [
     {
       sender: String ("user" | "model"),

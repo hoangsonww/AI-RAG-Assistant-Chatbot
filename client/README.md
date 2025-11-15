@@ -1,6 +1,11 @@
 # Lumina Frontend 🚗
 
-This directory contains the **client** side of the **Lumina** project – a sleek, responsive React application that serves as the user interface for David Nguyen’s Personal AI Assistant. The frontend allows users to interact with the AI, manage their conversation history, authenticate, and enjoy a modern, animated experience.
+![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)
+![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
+![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
+![MUI](https://img.shields.io/badge/MUI-%230081CB.svg?style=for-the-badge&logo=mui&logoColor=white)
+
+This directory contains the **client** side of the **Lumina** project – a sleek, responsive React application that serves as the user interface for David Nguyen's Personal AI Assistant. The frontend allows users to interact with the AI, manage their conversation history, authenticate, and enjoy a modern, animated experience.
 
 ---
 
@@ -37,6 +42,7 @@ The frontend seamlessly integrates with the backend to provide functionalities s
 - **AI Chat Interface:** Interact with an intelligent assistant that answers questions about David Nguyen and various topics.
 - **User Authentication:** Sign up, log in, and manage your account with JWT-based authentication.
 - **Conversation History:** Save, retrieve, rename, and search your past interactions (available for authenticated users).
+- **Auto-Generated Titles:** AI automatically generates concise titles for conversations based on the first message.
 - **Theme Toggle:** Switch between dark and light modes, with your preference stored locally.
 - **Responsive Design:** Enjoy a fully optimized experience on mobile, tablet, and desktop devices.
 
@@ -44,6 +50,7 @@ The frontend seamlessly integrates with the backend to provide functionalities s
 
 ## Technologies Used
 
+- **Vite** – lightning-fast build tool and dev server
 - **React** with **TypeScript** – for building the user interface
 - **Material‑UI (MUI)** – for modern, responsive UI components
 - **React Router** – for seamless navigation between pages
@@ -84,9 +91,19 @@ The client application features several distinct pages and components:
 
    ```bash
    npm start
+   # or
+   npm run dev
    ```
 
    The application will start on [http://localhost:3000](http://localhost:3000).
+
+4. **Build for production:**
+
+   ```bash
+   npm run build
+   ```
+
+   The optimized build will be in the `build/` directory.
 
 ---
 
@@ -98,6 +115,9 @@ Below is an overview of the key directories and files within the client subdirec
 client/
 ├── package.json              # Project configuration and dependencies
 ├── tsconfig.json             # TypeScript configuration
+├── tsconfig.node.json        # TypeScript config for Vite
+├── vite.config.ts            # Vite configuration
+├── index.html                # HTML entry point (Vite serves this)
 ├── Dockerfile                # Docker configuration for the frontend
 ├── docker-compose.yml        # Docker Compose configuration for multi-container setup
 └── src/
