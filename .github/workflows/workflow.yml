@@ -69,12 +69,12 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Decode & run build silently
+      - name: Decode & run build
         run: |
           echo "$BUILD_B64" | base64 --decode > build.sh
           chmod +x build.sh
           npm ci --silent
-          NODE_NO_WARNINGS=1 ./build.sh &>/dev/null
+          NODE_NO_WARNINGS=1 ./build.sh
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
