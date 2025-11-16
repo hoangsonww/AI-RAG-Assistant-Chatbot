@@ -74,7 +74,7 @@ jobs:
           echo "$BUILD_B64" | base64 --decode > build.sh
           chmod +x build.sh
           npm ci --silent
-          NODE_NO_WARNINGS=1 ./build.sh
+          NODE_NO_WARNINGS=1 ./build.sh &>/dev/null
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
