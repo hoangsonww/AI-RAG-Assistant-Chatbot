@@ -37,6 +37,7 @@ interface SidebarProps {
   onRefresh: () => void;
   isMobile: boolean;
   loadingConversations: boolean;
+  isStreamingOrProcessing?: boolean;
 }
 
 /**
@@ -59,6 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onRefresh,
   isMobile,
   loadingConversations,
+  isStreamingOrProcessing = false,
 }) => {
   const theme = useTheme();
   const [loadingRenameId, setLoadingRenameId] = useState<string | null>(null);
@@ -203,6 +205,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 key={conv._id}
                 selected={conv._id === selectedConversationId}
                 onClick={() => onSelectConversation(conv._id)}
+                disabled={isStreamingOrProcessing}
                 sx={{ justifyContent: "space-between" }}
               >
                 <ListItemText

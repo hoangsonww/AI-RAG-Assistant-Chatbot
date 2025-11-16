@@ -28,6 +28,7 @@ const Home: React.FC<HomeProps> = ({ onToggleTheme, darkMode }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [loading, setLoading] = useState(false);
+  const [isStreamingOrProcessing, setIsStreamingOrProcessing] = useState(false);
 
   useEffect(() => {
     // On mobile, default the sidebar to closed; on desktop open it.
@@ -126,6 +127,7 @@ const Home: React.FC<HomeProps> = ({ onToggleTheme, darkMode }) => {
           onRefresh={loadConversations}
           isMobile={isMobile}
           loadingConversations={loading}
+          isStreamingOrProcessing={isStreamingOrProcessing}
         />
         {/* Fix ChatArea container to have a fixed height and hidden overflow */}
         <Box
@@ -139,6 +141,7 @@ const Home: React.FC<HomeProps> = ({ onToggleTheme, darkMode }) => {
           <ChatArea
             conversationId={selectedConversationId}
             onNewConversation={handleNewConversation}
+            onStreamingChange={setIsStreamingOrProcessing}
           />
         </Box>
       </Box>

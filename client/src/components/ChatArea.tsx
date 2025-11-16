@@ -45,6 +45,7 @@ import CopyIcon from "./CopyIcon";
 interface ChatAreaProps {
   conversationId: string | null; // For authenticated only
   onNewConversation?: (conv: IConversation) => void;
+  onStreamingChange?: (isStreaming: boolean) => void;
 }
 
 /**
@@ -197,6 +198,7 @@ function isMessageAboutMe(text: string): boolean {
 const ChatArea: React.FC<ChatAreaProps> = ({
   conversationId,
   onNewConversation,
+  onStreamingChange,
 }) => {
   const theme = useTheme();
 
@@ -226,6 +228,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   >("idle");
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+
+  // Notify parent when streaming state changes
+  useEffect(() => {
+    if (onStreamingChange) {
+      onStreamingChange(
+        isStreaming || (loadingState !== "idle" && loadingState !== "done"),
+      );
+    }
+  }, [isStreaming, loadingState, onStreamingChange]);
 
   // State to control auto-scrolling. We'll only auto-scroll if the user is already near the bottom.
   const [isAtBottom, setIsAtBottom] = useState(true);
