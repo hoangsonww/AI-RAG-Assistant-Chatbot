@@ -83,6 +83,11 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Jupyter Notebook](https://img.shields.io/badge/Jupyter_Notebook-FFCA28?style=for-the-badge&logo=jupyter&logoColor=black)
+![AWS](https://img.shields.io/badge/AWS-232F3E?style=for-the-badge&logo=task&logoColor=white)
+![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=for-the-badge&logo=terraform&logoColor=white)
+![Docker Compose](https://img.shields.io/badge/Docker_Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Nodemon](https://img.shields.io/badge/Nodemon-76D04B?style=for-the-badge&logo=nodemon&logoColor=white)
+![ESLint](https://img.shields.io/badge/ESLint-4B32C3?style=for-the-badge&logo=eslint&logoColor=white)
 ![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)
 ![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)
@@ -106,6 +111,9 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 - **Collapsible Sidebar:** A sidebar that displays conversation history, allowing users to switch between conversations easily.
 - **Reinforced Learning from Human Feedback (RLHF):** Implement a feedback loop to continuously improve the AI's responses based on user interactions.
 - **Dark/Light Mode:** Users can toggle between dark and light themes, with the preference stored in local storage.
+- **Enterprise-Grade Deployment:** Deployed with blue/green & canary deployment strategies on AWS & Terraform for zero-downtime updates.
+- **Comprehensive Testing:** Unit and integration tests for both frontend and backend using Jest and React Testing Library.
+- **CI/CD Pipeline:** Automated testing and deployment using GitHub Actions.
 
 ## Architecture
 
