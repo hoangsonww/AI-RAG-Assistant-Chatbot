@@ -386,7 +386,8 @@ async function streamWithRetries(
                 onComplete(conversationId, guestId);
                 return;
               } else if (data.type === "error") {
-                throw new Error(data.message || "Streaming error");
+                onError(new Error(data.message || "Streaming error"));
+                return;
               }
             } catch (e) {
               console.warn("Failed to parse SSE data:", line, e);
@@ -401,6 +402,9 @@ async function streamWithRetries(
           const data = JSON.parse(buffer.slice(6));
           if (data.type === "chunk") {
             onChunk(data.text);
+          } else if (data.type === "error") {
+            onError(new Error(data.message || "Streaming error"));
+            return;
           } else if (data.type === "done") {
             onComplete(conversationId, guestId);
             return;

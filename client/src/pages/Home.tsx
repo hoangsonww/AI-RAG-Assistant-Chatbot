@@ -19,7 +19,17 @@ interface HomeProps {
  * @constructor The Home component
  */
 const Home: React.FC<HomeProps> = ({ onToggleTheme, darkMode }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const guestSidebarKey = "guestSidebarOpen";
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (isAuthenticated()) {
+      return true;
+    }
+    const storedPreference = localStorage.getItem(guestSidebarKey);
+    if (storedPreference === null) {
+      return false;
+    }
+    return storedPreference === "true";
+  });
   const [conversations, setConversations] = useState<IConversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
@@ -31,11 +41,16 @@ const Home: React.FC<HomeProps> = ({ onToggleTheme, darkMode }) => {
   const [isStreamingOrProcessing, setIsStreamingOrProcessing] = useState(false);
 
   useEffect(() => {
-    // On mobile, default the sidebar to closed; on desktop open it.
-    if (isMobile) {
+    // Auth users follow responsive defaults; guests restore or default closed.
+    if (isAuthenticated()) {
+      setSidebarOpen(!isMobile);
+      return;
+    }
+    const storedPreference = localStorage.getItem(guestSidebarKey);
+    if (storedPreference === null) {
       setSidebarOpen(false);
     } else {
-      setSidebarOpen(true);
+      setSidebarOpen(storedPreference === "true");
     }
   }, [isMobile]);
 
@@ -43,7 +58,13 @@ const Home: React.FC<HomeProps> = ({ onToggleTheme, darkMode }) => {
    * Toggle the sidebar open state
    */
   const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
+    setSidebarOpen((prev) => {
+      const nextOpen = !prev;
+      if (!isAuthenticated()) {
+        localStorage.setItem(guestSidebarKey, String(nextOpen));
+      }
+      return nextOpen;
+    });
   };
 
   /**

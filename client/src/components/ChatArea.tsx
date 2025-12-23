@@ -3,13 +3,14 @@ import {
   Box,
   TextField,
   IconButton,
+  ButtonBase,
   Typography,
   CircularProgress,
   useTheme,
   Link as MuiLink,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import SendIcon from "@mui/icons-material/Send";
-import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import {
   getConversationById,
@@ -93,6 +94,23 @@ function linkifyText(text: string): string {
 // Default avatar URLs (in public folder)
 const BOT_AVATAR = "/bot.jpg";
 const USER_AVATAR = "/OIP5.png";
+
+const PROMPT_ROWS = [
+  [
+    "Summarize this article in 5 bullets",
+    "Draft a polite follow-up email",
+    "Plan a 3-day Tokyo itinerary",
+    "Outline a product launch checklist",
+    "Explain transformers in simple terms",
+  ],
+  [
+    "Turn notes into a meeting agenda",
+    "Suggest a 30-minute workout plan",
+    "Brainstorm names for a travel app",
+    "Write a SQL query for weekly sales",
+    "Improve this resume bullet",
+  ],
+];
 
 /**
  * Props for CitationBubble.
@@ -242,6 +260,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const [isAtBottom, setIsAtBottom] = useState(true);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Clear guestConversationId on page reload (but keep messages for persistence)
   useEffect(() => {
@@ -451,11 +470,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         // Clear the flag on error as well
         isCreatingMessageRef.current = false;
 
+        const errorMessage =
+          error.message && error.message.trim().length > 0
+            ? error.message
+            : "An unexpected error occurred while streaming the response.";
+
         setMessages((prev) => [
           ...prev,
           {
             sender: "assistant",
-            text: "Sorry, I encountered an error while streaming the response. Please try again.",
+            text: `Streaming error: ${errorMessage}`,
             timestamp: new Date(),
           },
         ]);
@@ -544,6 +568,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
   };
 
+  const handlePromptSelect = (prompt: string) => {
+    setInput(prompt);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
   /**
    * Handle copying text to clipboard.
    *
@@ -621,21 +652,100 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     },
   };
 
+  const isEmptyState =
+    messages.length === 0 &&
+    !loadingConversation &&
+    loadingState !== "streaming" &&
+    loadingState !== "thinking" &&
+    loadingState !== "processing";
+
   return (
     <Box
       display="flex"
       flexDirection="column"
       height="100%"
-      sx={{ overflowX: "hidden" }}
+      sx={{ overflowX: "hidden", position: "relative" }}
     >
+      <Box
+        sx={{
+          position: "absolute",
+          inset: 0,
+          overflow: "hidden",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      >
+        <Box
+          component={motion.div}
+          animate={{ x: [0, 40, 0], y: [0, -30, 0] }}
+          transition={{ duration: 26, repeat: Infinity, ease: "easeInOut" }}
+          sx={{
+            position: "absolute",
+            width: { xs: 220, sm: 320, md: 380 },
+            height: { xs: 220, sm: 320, md: 380 },
+            top: "-12%",
+            left: "-8%",
+            opacity: theme.palette.mode === "dark" ? 0.5 : 0.7,
+            background: `radial-gradient(circle at 30% 30%, ${alpha(
+              theme.palette.primary.main,
+              0.35,
+            )}, transparent 65%)`,
+            filter: "blur(6px)",
+          }}
+        />
+        <Box
+          component={motion.div}
+          animate={{ x: [0, -35, 0], y: [0, 25, 0] }}
+          transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
+          sx={{
+            position: "absolute",
+            width: { xs: 240, sm: 360, md: 420 },
+            height: { xs: 240, sm: 360, md: 420 },
+            bottom: "-18%",
+            right: "-10%",
+            opacity: theme.palette.mode === "dark" ? 0.45 : 0.6,
+            background: `radial-gradient(circle at 70% 30%, ${alpha(
+              theme.palette.info.main,
+              0.3,
+            )}, transparent 70%)`,
+            filter: "blur(10px)",
+          }}
+        />
+        <Box
+          component={motion.div}
+          animate={{ x: [0, 25, 0], y: [0, 20, 0] }}
+          transition={{ duration: 34, repeat: Infinity, ease: "easeInOut" }}
+          sx={{
+            position: "absolute",
+            width: { xs: 180, sm: 240, md: 300 },
+            height: { xs: 180, sm: 240, md: 300 },
+            top: "35%",
+            right: "20%",
+            opacity: theme.palette.mode === "dark" ? 0.35 : 0.5,
+            background: `radial-gradient(circle at 50% 50%, ${alpha(
+              theme.palette.warning.main,
+              0.25,
+            )}, transparent 70%)`,
+            filter: "blur(8px)",
+          }}
+        />
+      </Box>
       {/* Main chat area - displays messages */}
       <Box
         flex="1"
         overflow="auto"
         padding="1rem"
         ref={scrollRef}
-        bgcolor={theme.palette.background.default}
-        sx={{ transition: "background-color 0.3s ease", overflowX: "hidden" }}
+        sx={{
+          position: "relative",
+          zIndex: 1,
+          backgroundColor: alpha(
+            theme.palette.background.default,
+            theme.palette.mode === "dark" ? 0.94 : 0.98,
+          ),
+          transition: "background-color 0.3s ease",
+          overflowX: "hidden",
+        }}
         onScroll={() => {
           if (scrollRef.current) {
             const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
@@ -644,26 +754,180 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           }
         }}
       >
-        {/* If no messages yet, show placeholder */}
-        {messages.length === 0 &&
-        !loadingConversation &&
-        loadingState !== "streaming" &&
-        loadingState !== "thinking" &&
-        loadingState !== "processing" ? (
+        {isEmptyState ? (
           <Box
-            display="flex"
-            flexDirection="column"
-            alignItems="center"
-            justifyContent="center"
-            height="100%"
+            sx={{
+              minHeight: "100%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              px: { xs: 1, sm: 2 },
+            }}
           >
-            <ChatBubbleOutlineIcon
-              sx={{ fontSize: 80, color: theme.palette.text.secondary, mb: 2 }}
-            />
-            <Typography variant="h6" align="center" color="textSecondary">
-              Hello! 👋 I'm Lumina - David Nguyen's personal assistant. Send me
-              a message to get started! 🚀
-            </Typography>
+            <Box sx={{ width: "100%", maxWidth: 720 }}>
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: 600, mb: 1, color: "text.primary" }}
+              >
+                Start a conversation with Lumina
+              </Typography>
+              <Typography
+                variant="body2"
+                color="textSecondary"
+                sx={{ mb: { xs: 2, sm: 3 } }}
+              >
+                Ask a question or pick a prompt below to get going.
+              </Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  width: "100%",
+                }}
+              >
+                <TextField
+                  fullWidth
+                  placeholder="Type your message..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  inputRef={inputRef}
+                  sx={{
+                    backgroundColor: theme.palette.background.paper,
+                    borderRadius: 1,
+                    transition: "background-color 0.3s ease",
+                  }}
+                />
+                <IconButton
+                  color="primary"
+                  onClick={handleSendMessage}
+                  disabled={loadingState !== "idle" && loadingState !== "done"}
+                  sx={{
+                    backgroundColor: theme.palette.primary.main,
+                    color: theme.palette.primary.contrastText,
+                    borderRadius: 1,
+                    transition: "background-color 0.3s ease",
+                    "&:hover": { backgroundColor: theme.palette.primary.dark },
+                  }}
+                >
+                  <SendIcon />
+                </IconButton>
+              </Box>
+            </Box>
+            <Box
+              sx={{
+                width: "100%",
+                maxWidth: 960,
+                mt: { xs: 2.5, sm: 3.5 },
+              }}
+            >
+              <Typography
+                variant="caption"
+                color="textSecondary"
+                sx={{
+                  display: "block",
+                  mb: 1,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                }}
+              >
+                Suggested prompts
+              </Typography>
+              {PROMPT_ROWS.map((row, rowIndex) => {
+                const marqueeItems = [...row, ...row];
+                const isLeft = rowIndex % 2 === 0;
+                return (
+                  <Box
+                    key={`prompt-row-${rowIndex}`}
+                    sx={{
+                      overflow: "hidden",
+                      width: "100%",
+                      mt: rowIndex === 0 ? 0 : { xs: 1.25, sm: 1.75 },
+                      maskImage:
+                        "linear-gradient(90deg, transparent, black 8%, black 92%, transparent)",
+                      WebkitMaskImage:
+                        "linear-gradient(90deg, transparent, black 8%, black 92%, transparent)",
+                    }}
+                  >
+                    <Box
+                      component={motion.div}
+                      animate={{
+                        x: isLeft ? ["0%", "-50%"] : ["-50%", "0%"],
+                      }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: isLeft ? 28 : 32,
+                        ease: "linear",
+                      }}
+                      sx={{
+                        display: "flex",
+                        gap: { xs: 1, sm: 1.5 },
+                        width: "max-content",
+                        py: { xs: 0.5, sm: 0.75 },
+                      }}
+                    >
+                      {marqueeItems.map((prompt, idx) => (
+                        <ButtonBase
+                          key={`${prompt}-${idx}`}
+                          disableRipple
+                          onClick={() => handlePromptSelect(prompt)}
+                          sx={{
+                            flex: "0 0 auto",
+                            borderRadius: 999,
+                            border: `1px solid ${alpha(
+                              theme.palette.divider,
+                              0.7,
+                            )}`,
+                            backgroundColor: alpha(
+                              theme.palette.background.paper,
+                              theme.palette.mode === "dark" ? 0.6 : 0.9,
+                            ),
+                            px: { xs: 1.5, sm: 2 },
+                            py: { xs: 0.75, sm: 1 },
+                            textAlign: "left",
+                            boxShadow:
+                              theme.palette.mode === "dark"
+                                ? "0 6px 18px rgba(0,0,0,0.35)"
+                                : "0 6px 18px rgba(15,23,42,0.08)",
+                            transition:
+                              "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease",
+                            "&:hover": {
+                              transform: "translateY(-2px)",
+                              borderColor: alpha(
+                                theme.palette.primary.main,
+                                0.7,
+                              ),
+                              backgroundColor: alpha(
+                                theme.palette.background.paper,
+                                theme.palette.mode === "dark" ? 0.75 : 1,
+                              ),
+                              boxShadow:
+                                theme.palette.mode === "dark"
+                                  ? "0 10px 22px rgba(0,0,0,0.4)"
+                                  : "0 10px 24px rgba(15,23,42,0.12)",
+                            },
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              whiteSpace: "nowrap",
+                              fontSize: { xs: "0.8rem", sm: "0.9rem" },
+                              color: "text.primary",
+                            }}
+                          >
+                            {prompt}
+                          </Typography>
+                        </ButtonBase>
+                      ))}
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Box>
           </Box>
         ) : (
           <AnimatePresence initial={false}>
@@ -1170,43 +1434,47 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       </Box>
 
       {/* Input area */}
-      <Box
-        display="flex"
-        flexDirection="column"
-        p="1rem"
-        pb="0.5rem"
-        borderTop={`1px solid ${theme.palette.divider}`}
-      >
-        <Box display="flex">
-          <TextField
-            fullWidth
-            placeholder="Type your message..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            sx={{
-              backgroundColor: theme.palette.background.paper,
-              borderRadius: 1,
-              transition: "background-color 0.3s ease",
-            }}
-          />
-          <IconButton
-            color="primary"
-            onClick={handleSendMessage}
-            disabled={loadingState !== "idle" && loadingState !== "done"}
-            sx={{
-              backgroundColor: theme.palette.primary.main,
-              color: theme.palette.primary.contrastText,
-              borderRadius: 1,
-              marginLeft: "0.5rem",
-              transition: "background-color 0.3s ease",
-              "&:hover": { backgroundColor: theme.palette.primary.dark },
-            }}
-          >
-            <SendIcon />
-          </IconButton>
+      {!isEmptyState && (
+        <Box
+          display="flex"
+          flexDirection="column"
+          p="1rem"
+          pb="0.5rem"
+          borderTop={`1px solid ${theme.palette.divider}`}
+          sx={{ position: "relative", zIndex: 1 }}
+        >
+          <Box display="flex">
+            <TextField
+              fullWidth
+              placeholder="Type your message..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              inputRef={inputRef}
+              sx={{
+                backgroundColor: theme.palette.background.paper,
+                borderRadius: 1,
+                transition: "background-color 0.3s ease",
+              }}
+            />
+            <IconButton
+              color="primary"
+              onClick={handleSendMessage}
+              disabled={loadingState !== "idle" && loadingState !== "done"}
+              sx={{
+                backgroundColor: theme.palette.primary.main,
+                color: theme.palette.primary.contrastText,
+                borderRadius: 1,
+                marginLeft: "0.5rem",
+                transition: "background-color 0.3s ease",
+                "&:hover": { backgroundColor: theme.palette.primary.dark },
+              }}
+            >
+              <SendIcon />
+            </IconButton>
+          </Box>
         </Box>
-      </Box>
+      )}
 
       {/* Terms and conditions */}
       <Typography
@@ -1215,6 +1483,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         mt={0}
         mb={1}
         color="textSecondary"
+        sx={{ position: "relative", zIndex: 1 }}
       >
         By using this AI assistant, you agree to its{" "}
         <MuiLink
