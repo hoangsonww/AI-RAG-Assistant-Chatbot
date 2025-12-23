@@ -97,18 +97,18 @@ const USER_AVATAR = "/OIP5.png";
 
 const PROMPT_ROWS = [
   [
-    "Summarize this article in 5 bullets",
-    "Draft a polite follow-up email",
-    "Plan a 3-day Tokyo itinerary",
-    "Outline a product launch checklist",
-    "Explain transformers in simple terms",
+    "Summarize David Nguyen's background in 5 bullets",
+    "What projects has David Nguyen worked on recently?",
+    "Highlight David Nguyen's core skills and strengths",
+    "Give a short bio of David Nguyen for LinkedIn",
+    "What makes David Nguyen's work unique?",
   ],
   [
-    "Turn notes into a meeting agenda",
-    "Suggest a 30-minute workout plan",
-    "Brainstorm names for a travel app",
-    "Write a SQL query for weekly sales",
-    "Improve this resume bullet",
+    "List David Nguyen's areas of expertise",
+    "Show key career milestones for David Nguyen",
+    "What tech stack does David Nguyen use most?",
+    "Create a one-paragraph intro for David Nguyen",
+    "Summarize David Nguyen's recent achievements",
   ],
 ];
 

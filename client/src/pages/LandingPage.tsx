@@ -317,18 +317,18 @@ const LandingPage: React.FC = () => {
 
   const promptGallery = [
     [
-      "Draft a go-to-market brief for a new SaaS",
-      "Summarize these notes into an agenda",
-      "Create a 90-day product roadmap",
-      "Explain vector search to a PM",
-      "Write a customer success update",
+      "Summarize David Nguyen's background in 3 sentences",
+      "What are David Nguyen's key projects and impact?",
+      "Generate a short bio for David Nguyen",
+      "What technologies does David Nguyen specialize in?",
+      "Highlight David Nguyen's core strengths",
     ],
     [
-      "Build a launch checklist with owners",
-      "Compare two competitors quickly",
-      "Turn research into key insights",
-      "Suggest a better onboarding flow",
-      "Outline a funding narrative",
+      "List David Nguyen's recent achievements",
+      "Describe David Nguyen's experience with AI",
+      "Create an intro email about David Nguyen",
+      "What is David Nguyen known for professionally?",
+      "Summarize David Nguyen's career milestones",
     ],
   ];
 
