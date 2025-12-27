@@ -93,7 +93,7 @@ function linkifyText(text: string): string {
   return protectedText;
 }
 
-const CITATION_REGEX = /\[(\d{1,3})\]/g;
+const CITATION_REGEX = /\[(\d{1,3}(?:\s*,\s*\d{1,3})*)\]/g;
 
 const CitationBadge = ({
   children,
@@ -152,14 +152,33 @@ const renderTextWithCitations = (
     if (matchIndex > lastIndex) {
       nodes.push(text.slice(lastIndex, matchIndex));
     }
-    const citationNumber = Number(match[1]);
+    const citationNumbers = match[1]
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .map((value) => Number(value))
+      .filter((value) => Number.isFinite(value));
     nodes.push(
-      <CitationBadge
+      <Box
         key={`${matchIndex}-${match[1]}`}
-        onClick={() => onCitationClick(citationNumber)}
+        component="span"
+        sx={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "0.2em",
+          marginLeft: "0.05em",
+          marginRight: "0.05em",
+        }}
       >
-        {match[1]}
-      </CitationBadge>,
+        {citationNumbers.map((citationNumber) => (
+          <CitationBadge
+            key={`${matchIndex}-${citationNumber}`}
+            onClick={() => onCitationClick(citationNumber)}
+          >
+            {citationNumber}
+          </CitationBadge>
+        ))}
+      </Box>,
     );
     lastIndex = matchIndex + match[0].length;
   }
