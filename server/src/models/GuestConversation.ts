@@ -3,7 +3,19 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IGuestMessage {
   sender: "user" | "model";
   text: string;
+  sources?: IGuestSourceCitation[];
   timestamp: Date;
+}
+
+export interface IGuestSourceCitation {
+  id: string;
+  sourceId?: string;
+  title?: string;
+  url?: string;
+  snippet: string;
+  score?: number;
+  sourceType?: string;
+  chunkIndex?: number;
 }
 
 export interface IGuestConversation extends Document {
@@ -13,10 +25,25 @@ export interface IGuestConversation extends Document {
   updatedAt?: Date;
 }
 
+const GuestSourceSchema = new Schema<IGuestSourceCitation>(
+  {
+    id: { type: String, required: true },
+    sourceId: { type: String },
+    title: { type: String },
+    url: { type: String },
+    snippet: { type: String, required: true },
+    score: { type: Number },
+    sourceType: { type: String },
+    chunkIndex: { type: Number },
+  },
+  { _id: false },
+);
+
 const GuestMessageSchema = new Schema<IGuestMessage>(
   {
     sender: { type: String, enum: ["user", "model"], required: true },
     text: { type: String, required: true },
+    sources: [GuestSourceSchema],
     timestamp: { type: Date, default: Date.now },
   },
   { _id: false },

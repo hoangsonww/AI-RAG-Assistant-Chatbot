@@ -77,7 +77,6 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 ![Netlify](https://img.shields.io/badge/Netlify-00C7B7?style=for-the-badge&logo=netlify&logoColor=white)
 ![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=white)
 ![RAG](https://img.shields.io/badge/Retrieval_Augmented_Generation-FFCA28?style=for-the-badge&logo=chatbot&logoColor=black)
-![LangChain](https://img.shields.io/badge/LangChain-000000?style=for-the-badge&logo=langchain&logoColor=white)
 ![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)
 ![Google AI](https://img.shields.io/badge/GoogleAI-4285F4?style=for-the-badge&logo=google&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
@@ -99,7 +98,7 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 - **User Authentication:** Sign up, log in, and log out using JWT authentication.
 - **Conversation History:** Save, retrieve, rename, and search past conversations (only for authenticated users).
 - **Auto-Generated Titles:** AI automatically generates concise, descriptive titles for new conversations based on the first message.
-- **Updated & Vast Knowledge Base:** Use RAG (Retrieval-Augmented Generation) & LangChain to enhance AI responses.
+- **Grounded Knowledge Base:** RAG (Retrieval-Augmented Generation) with Pinecone and inline citations; knowledge is managed via CLI (REPL or one-off commands).
 - **Dynamic Responses:** AI-generated responses with `markdown` formatting for rich text.
 - **Interactive Chat:** Real-time chat interface with smooth animations and transitions.
 - **Reset Password:** Verify email and reset a user's password.
@@ -142,8 +141,7 @@ The project follows a modern, full-stack architecture with clear separation of c
   - **Retrieval**: Vector similarity search using Pinecone
   - **Augmentation**: Context building with conversation history
   - **Generation**: Response generation using Google Gemini AI
-  - **Knowledge Storage**: Document embeddings in Pinecone vector database
-  - **LangChain**: Orchestration of the entire RAG pipeline
+  - **Knowledge Storage**: CLI-driven ingestion into Pinecone with citations returned in responses
 
 For detailed architecture documentation, including component diagrams, data flows, and deployment strategies, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -220,7 +218,7 @@ sequenceDiagram
 
     Note over Backend,Pinecone: Retrieval Phase
     Backend->>Pinecone: Generate embedding & search
-    Pinecone-->>Backend: Top-3 relevant documents
+    Pinecone-->>Backend: Top-K relevant documents
 
     Note over Backend,Gemini: Augmentation Phase
     Backend->>Backend: Build augmented context
@@ -228,9 +226,9 @@ sequenceDiagram
 
     Note over Gemini: Generation Phase
     Gemini->>Gemini: Generate response
-    Gemini-->>Backend: AI response
+    Gemini-->>Backend: AI response + citations
 
-    Backend->>MongoDB: Save message & response
+    Backend->>MongoDB: Save message & sources
     MongoDB-->>Backend: Saved
     Backend-->>Frontend: Return AI response
     Frontend-->>User: Display response
@@ -325,9 +323,8 @@ Please see **[ARCHITECTURE.md](ARCHITECTURE.md)**
    MONGODB_URI=mongodb://localhost:27017/ai-assistant
    JWT_SECRET=your_jwt_secret_here
    GOOGLE_AI_API_KEY=your_google_ai_api_key_here
-   AI_INSTRUCTIONS=Your system instructions for the AI assistant
    PINECONE_API_KEY=your_pinecone_api_key_here
-   PINECONE_INDEX_NAME=your_pinecone_index_name_here
+   PINECONE_INDEX_NAME=lumina-index
    ```
 
 4. **Run the server in development mode:**
@@ -368,19 +365,25 @@ Please see **[ARCHITECTURE.md](ARCHITECTURE.md)**
    npm install
    ```
 
-2. Store knowledge data in Pinecone vector database:
+2. Ingest knowledge into Pinecone with the CLI (run from `server/`):
 
    ```bash
-   npm run store
+   npm run knowledge:repl
    ```
 
-   Or
+   Or run a single upsert command (use `--external-id` to update later):
 
    ```bash
-   ts-node server/src/scripts/storeKnowledge.ts
+   npm run knowledge:upsert -- \
+     --title "Resume 2025" \
+     --file ./knowledge/resume.txt \
+     --type resume \
+     --tags "resume,profile" \
+     --external-id "resume-2025"
    ```
 
-3. Ensure you run this command before starting the backend server to store the knowledge data in the Pinecone vector database.
+3. Use the REPL to edit or delete sources (`edit <id>`, `delete <id>`) as your profile changes.
+4. Ensure you ingest at least one knowledge source before using the chatbot so responses can be grounded and cited.
 
 ## Deployment
 
@@ -920,6 +923,7 @@ AI-Assistant-Chatbot/
         ├── models/
         │   ├── Conversation.ts
         │   ├── GuestConversation.ts
+        │   ├── KnowledgeSource.ts
         │   └── User.ts
         ├── routes/
         │   ├── auth.ts
@@ -928,11 +932,10 @@ AI-Assistant-Chatbot/
         │   └── guest.ts            # Guest chat with streaming
         ├── services/
         │   ├── geminiService.ts    # AI service with streaming support
+        │   ├── knowledgeBase.ts    # Chunking, embeddings, retrieval
         │   └── pineconeClient.ts
         ├── scripts/
-        │   ├── storeKnowledge.ts
-        │   ├── queryKnowledge.ts
-        │   └── langchainPinecone.ts
+        │   └── knowledgeCli.ts     # CLI + REPL ingestion
         ├── utils/
         │   └── (utility functions)
         ├── middleware/
@@ -943,9 +946,9 @@ AI-Assistant-Chatbot/
 
 ## Agentic AI Pipeline
 
-There is also an Agentic AI pipeline implemented in Python using LangChain. This pipeline demonstrates how to create an autonomous agent that can perform tasks using tools and interact with the AI model.
+There is also a separate Agentic AI pipeline implemented in Python. This pipeline demonstrates how to create an autonomous agent that can perform tasks using tools and interact with the AI model.
 
-The pipeline is located in the `agentic_ai/` directory. It was developed to complement the main RAG-based AI assistant by showcasing advanced AI capabilities, as well as enhancing the RAG responses with agentic reasoning when needed (e.g. for complex queries).
+The pipeline is located in the `agentic_ai/` directory and is optional for the main assistant.
 
 > [!TIP]
 > For more information on the Agentic AI pipeline, please refer to the [`agentic_ai/README.md`](agentic_ai/README.md) file.

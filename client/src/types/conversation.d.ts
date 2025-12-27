@@ -6,9 +6,21 @@
  * Message interface
  */
 export interface IMessage {
-  sender: "user" | "assistant";
+  sender: "user" | "assistant" | "model";
   text: string;
+  sources?: ISourceCitation[];
   timestamp: Date;
+}
+
+export interface ISourceCitation {
+  id: string;
+  sourceId?: string;
+  title?: string;
+  url?: string;
+  snippet: string;
+  score?: number;
+  sourceType?: string;
+  chunkIndex?: number;
 }
 
 /**

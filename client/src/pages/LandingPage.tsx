@@ -76,8 +76,7 @@ const LandingPage: React.FC = () => {
     border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
     backdropFilter: "blur(16px)",
     color: theme.palette.text.primary,
-    transition:
-      "transform 0.35s, box-shadow 0.35s, border-color 0.35s",
+    transition: "transform 0.35s, box-shadow 0.35s, border-color 0.35s",
     "&:hover": {
       transform: "translateY(-8px)",
       boxShadow:
@@ -224,14 +223,12 @@ const LandingPage: React.FC = () => {
     },
     {
       title: "Sharper reasoning",
-      description:
-        "RAG + vector search keep replies grounded and up to date.",
+      description: "RAG + vector search keep replies grounded and up to date.",
       icon: InsightsIcon,
     },
     {
       title: "Composable stack",
-      description:
-        "OpenAPI, modular services, and clean boundaries for teams.",
+      description: "OpenAPI, modular services, and clean boundaries for teams.",
       icon: ExtensionIcon,
     },
   ];
@@ -264,8 +261,7 @@ const LandingPage: React.FC = () => {
     },
     {
       title: "Customer support",
-      description:
-        "Draft helpful replies and FAQ answers with the right tone.",
+      description: "Draft helpful replies and FAQ answers with the right tone.",
       tags: ["FAQs", "Tone", "Escalation"],
       icon: SupportAgentIcon,
     },
@@ -285,8 +281,7 @@ const LandingPage: React.FC = () => {
       role: "SaaS Platform",
     },
     {
-      quote:
-        "Our team moved from idea to launch plan in a single afternoon.",
+      quote: "Our team moved from idea to launch plan in a single afternoon.",
       name: "Founder",
       role: "Venture Lab",
     },
@@ -503,11 +498,7 @@ const LandingPage: React.FC = () => {
           zIndex: 1,
         }}
       >
-        <Grid
-          container
-          spacing={{ xs: 6, md: 8 }}
-          alignItems="center"
-        >
+        <Grid container spacing={{ xs: 6, md: 8 }} alignItems="center">
           <Grid item xs={12} md={6}>
             <Box
               component={motion.div}
@@ -608,10 +599,7 @@ const LandingPage: React.FC = () => {
                     transition: "border-color 0.3s, background-color 0.3s",
                     "&:hover": {
                       borderColor: theme.palette.primary.main,
-                      backgroundColor: alpha(
-                        theme.palette.primary.main,
-                        0.08,
-                      ),
+                      backgroundColor: alpha(theme.palette.primary.main, 0.08),
                     },
                   }}
                 >
@@ -640,10 +628,7 @@ const LandingPage: React.FC = () => {
                         theme.palette.background.paper,
                         theme.palette.mode === "dark" ? 0.6 : 0.8,
                       ),
-                      border: `1px solid ${alpha(
-                        theme.palette.divider,
-                        0.6,
-                      )}`,
+                      border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
                       color: secondaryTextColor,
                     }}
                   >
@@ -677,7 +662,11 @@ const LandingPage: React.FC = () => {
               <Box
                 component={motion.div}
                 animate={{ y: [0, -14, 0] }}
-                transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+                transition={{
+                  duration: 7,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
                 sx={{
                   position: { xs: "relative", md: "absolute" },
                   top: { md: 0 },
@@ -708,14 +697,22 @@ const LandingPage: React.FC = () => {
                   “Here&rsquo;s a crisp summary and a next‑step checklist for
                   your launch.”
                 </Typography>
-                <Typography variant="body2" color={secondaryTextColor} sx={{ mt: 1 }}>
+                <Typography
+                  variant="body2"
+                  color={secondaryTextColor}
+                  sx={{ mt: 1 }}
+                >
                   Sources: personal knowledge base + curated web context
                 </Typography>
               </Box>
               <Box
                 component={motion.div}
                 animate={{ y: [0, 12, 0] }}
-                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                transition={{
+                  duration: 8,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
                 sx={{
                   position: { xs: "relative", md: "absolute" },
                   top: { md: 140 },
@@ -773,7 +770,11 @@ const LandingPage: React.FC = () => {
               <Box
                 component={motion.div}
                 animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+                transition={{
+                  duration: 9,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
                 sx={{
                   position: { xs: "relative", md: "absolute" },
                   bottom: { md: 0 },
@@ -817,10 +818,7 @@ const LandingPage: React.FC = () => {
                         borderRadius: 999,
                         fontSize: "0.75rem",
                         fontWeight: 600,
-                        backgroundColor: alpha(
-                          theme.palette.info.main,
-                          0.12,
-                        ),
+                        backgroundColor: alpha(theme.palette.info.main, 0.12),
                         border: `1px solid ${alpha(
                           theme.palette.info.main,
                           0.3,
@@ -949,10 +947,7 @@ const LandingPage: React.FC = () => {
                       theme.palette.background.paper,
                       theme.palette.mode === "dark" ? 0.65 : 0.9,
                     ),
-                    border: `1px solid ${alpha(
-                      theme.palette.divider,
-                      0.6,
-                    )}`,
+                    border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
                     color: secondaryTextColor,
                   }}
                 >
@@ -1244,10 +1239,7 @@ const LandingPage: React.FC = () => {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          backgroundColor: alpha(
-                            theme.palette.info.main,
-                            0.15,
-                          ),
+                          backgroundColor: alpha(theme.palette.info.main, 0.15),
                           border: `1px solid ${alpha(
                             theme.palette.info.main,
                             0.35,
@@ -1601,10 +1593,16 @@ const LandingPage: React.FC = () => {
                           )}`,
                         }}
                       >
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: 600 }}
+                        >
                           {signal.title}
                         </Typography>
-                        <Typography variant="caption" color={secondaryTextColor}>
+                        <Typography
+                          variant="caption"
+                          color={secondaryTextColor}
+                        >
                           {signal.value}
                         </Typography>
                       </Box>

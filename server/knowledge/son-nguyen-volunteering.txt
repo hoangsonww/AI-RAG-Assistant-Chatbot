@@ -1,0 +1,56 @@
+Volunteering and Community Roles
+
+Phi (Swing Phi)
+Software Engineer | Jan 2025 - Jun 2025
+- Volunteer founding SWE; developed AI-powered tools for stock price prediction and investment analysis.
+- Led backend system design using Python, FastAPI, and PostgreSQL for 30% faster model inference.
+- Built a modular pipeline for ingesting and preprocessing 100K+ real-time financial records (stocks, indices, news), enabling robust backtesting of predictive ML models.
+- Integrated sentiment analysis and technical indicators into ensemble learning models (XGBoost, LSTM), improving backtested ROI by 18% over benchmark strategies.
+- Deployed early-stage dashboards with React, Flask, and Plotly to visualize predictions and risk metrics, validating use cases with 10+ retail investors.
+- Led GitHub repo setup, CI/CD workflows, and issue triage, accelerating development iteration by 40% across a team of four while coordinating vision, sprints, and technical roadmap.
+
+Google Developer Student Clubs
+Project Manager and Tech Lead | Aug 2023 - May 2025
+- Spearheaded six large-scale technical projects addressing real-world challenges in Vietnam and Chapel Hill, NC, benefiting 350+ people.
+- Managed end-to-end project lifecycles including ideation, scoping, team coordination, and deployment.
+- Mentored 20+ student developers through code reviews, training sessions on Git, clean architecture, and scalable app design.
+- Established agile workflows and collaborative development using GitHub and Notion, increasing team productivity and transparency.
+- Improved club retention by 35% through technical support, inclusive leadership, and project-based learning.
+- Facilitated cross-functional collaboration with designers, PMs, and developers to align execution with user needs and mission.
+
+UNC CS + Social Good
+Full Stack Developer | Aug 2022 - Nov 2024
+- Developed a volunteer management platform using React, Node.js, and MongoDB, reducing administrative workload by 30%.
+- Designed responsive UI with Figma and React, increasing user engagement by 40%.
+- Integrated secure authentication (JWT, OAuth) and data-driven insights for better user data protection.
+- Optimized deployment with Docker and AWS, lowering infrastructure costs by 25%.
+- Collaborated in a mission-driven team to solve community-based challenges.
+
+Microsoft Learn Student Ambassador
+Member | Aug 2022 - May 2025
+- Led 15 workshops and webinars, engaging 150+ students to deepen proficiency in Microsoft technologies.
+- Supported certification progress with 95% of attendees advancing toward completion.
+
+App Team Carolina
+iOS Software Developer | Aug 2022 - Dec 2024
+- Contributed to a native iOS app in Swift supporting community initiatives and local resources.
+- Designed UI with UIKit and SwiftUI, improving user engagement and retention by 40%.
+- Integrated CoreData for offline support and data persistence.
+- Implemented secure authentication with Firebase Auth and Apple Sign-In.
+- Collaborated in a student-led, mission-driven team delivering solutions for nonprofit partners across North Carolina.
+
+Carolina Analytics and Data Science
+Data Analyst and Project Contributor | Aug 2023 - May 2025
+- Collaborated on data science projects in public health, education, and community development.
+- Used Python, pandas, and scikit-learn to clean, analyze, and model complex datasets.
+- Built Tableau and Streamlit dashboards to improve stakeholder decision-making.
+- Conducted statistical analysis and hypothesis testing to support evidence-based recommendations.
+- Worked with faculty, students, and community clients to align technical work with real-world needs and ethical data use.
+
+Development Society at Carolina
+Software Developer | Aug 2022 - May 2024
+- Built and contributed to open-source, student-led software projects solving campus and local community issues.
+- Collaborated in cross-functional teams using agile methodologies to deliver full-stack apps with React, Node.js, and Firebase.
+- Participated in code reviews, workshops, and hackathons to improve code quality.
+- Led features that improved user experience and accessibility, increasing adoption by student organizations.
+- Fostered an inclusive development culture focused on mentorship and collaboration.

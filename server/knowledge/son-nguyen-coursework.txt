@@ -1,0 +1,43 @@
+Coursework
+
+COMP 550 - Algorithms and Analysis
+COMP 560 - Artificial Intelligence
+MATH 233 - Calculus III (Multivariable Calculus)
+COMP 520 - Compilers
+COMP 572 - Computational Photography
+COMP 435 - Computer Security
+COMP 488 - Data Science in Business
+COMP 210 - Data Structures
+MATH 383 - Differential Equations
+COMP 283 - Discrete Structures and Mathematics
+ECON 400 - Econometrics and Data Science
+ECON 455 - Environmental Economics Theory
+COMP 421 - Files and Databases
+BUSI 407 - Financial Accounting
+CHEM 101 and CHEM 102 - General Descriptive Chemistry I and II
+ECON 420 - Intermediate Macroeconomics
+ECON 410 - Intermediate Microeconomics
+POLI 150 - International Relations and Global Politics
+COMP 431 - Internet Services and Protocols
+COMP 293 - Internship in Computer Science
+ENEC 202 - Intro to Environmental Sciences
+ENGL 163 - Intro to Health Humanities
+ECON 101 - Intro to Micro and Macroeconomics
+STOR 435 - Intro to Probability
+COMP 110 - Intro to Programming
+MATH 347 - Linear Algebra
+COMP 311 - Logic Design and Computer Organization
+GEOG 115 - Maps and Geographic Information Systems
+COMP 433 - Mobile Computing Systems
+COMP 455 - Models of Languages and Computation
+COMP 426 - Modern Web Programming
+COMP 486 - Natural Language Processing Applications
+PHIL 150 - Philosophy of Science
+COMP 126 - Practical Web Development and Design
+CHEM 101L and CHEM 102L - Quantitative Chemistry Labs I and II
+COMP 301 - Software Design Patterns
+COMP 523 - Software Engineering Laboratory
+STOR 120 - Statistics and Data Science
+COMP 211 - System Fundamentals and Programming
+COMP 380 - Technology, Ethics, and Culture
+LING 460 - Textual Analysis with R

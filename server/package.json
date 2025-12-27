@@ -36,10 +36,14 @@
     "start": "node dist/server.js",
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/server.ts",
     "lint": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,scss,md,html}\"",
-    "store": "ts-node src/scripts/storeKnowledge.ts",
     "test": "echo \"Tests run successfully\" && exit 0",
     "vercel": "vercel --prod",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,scss,md,html}\""
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,scss,md,html}\"",
+    "knowledge:upsert": "ts-node src/scripts/knowledgeCli.ts upsert",
+    "knowledge:delete": "ts-node src/scripts/knowledgeCli.ts delete",
+    "knowledge:list": "ts-node src/scripts/knowledgeCli.ts list",
+    "knowledge:repl": "ts-node src/scripts/knowledgeCli.ts repl",
+    "knowledge:sync": "ts-node src/scripts/knowledgeCli.ts sync"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",

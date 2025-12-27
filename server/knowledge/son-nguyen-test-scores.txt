@@ -1,0 +1,28 @@
+Test Scores
+
+AP Calculus AB
+- Score: 5
+- Date: May 2022
+
+AP Computer Science Principles
+- Score: 5
+- Date: May 2022
+
+AP Environmental Science
+- Score: 4
+- Date: May 2022
+
+International English Language Testing System (IELTS)
+- Score: 8.0
+- Date: Oct 2021
+- CEFR Level: C1
+
+SAT
+- Score: 1500/1600
+- Date: Oct 2021
+- Details: Superscored with Evidence-Based Reading and Writing 700/800, Math 800/800.
+
+Duolingo English Test
+- Score: 140/160
+- Date: Sep 2021
+- Details: Equivalent to IELTS 8.0 (CEFR Level C1).

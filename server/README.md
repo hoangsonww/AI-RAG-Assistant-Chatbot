@@ -102,9 +102,8 @@ For additional API details, please refer to the OpenAPI specification file (`ope
    MONGODB_URI=mongodb://localhost:27017/ai-assistant
    JWT_SECRET=your_jwt_secret_here
    GOOGLE_AI_API_KEY=your_google_ai_api_key_here
-   AI_INSTRUCTIONS=Your system instructions for the AI assistant
    PINECONE_API_KEY=your_pinecone_api_key_here
-   PINECONE_INDEX_NAME=your_pinecone_index_name_here
+   PINECONE_INDEX_NAME=lumina-index
    ```
 
 4. **Run the server in development mode:**
@@ -114,6 +113,41 @@ For additional API details, please refer to the OpenAPI specification file (`ope
    ```
 
    This command uses `nodemon` with `ts-node` to automatically restart the server upon changes.
+
+---
+
+## Knowledge Base Ingestion (CLI)
+
+All knowledge ingestion is handled via CLI to keep the production UI locked down.
+
+1. Ensure your `.env` has `PINECONE_INDEX_NAME=lumina-index` (or your target index name).
+2. Run one of the commands below from the `server` directory.
+
+Examples:
+
+```bash
+# Launch interactive REPL
+npm run knowledge:repl
+
+# Use the REPL to edit or delete sources as your profile changes.
+
+# Upsert a single source from a file
+npm run knowledge:upsert -- \
+  --title "Resume 2025" \
+  --file ./knowledge/resume.txt \
+  --type resume \
+  --tags "resume,profile" \
+  --external-id "resume-2025"
+
+# List sources
+npm run knowledge:list
+
+# Delete a source by id
+npm run knowledge:delete -- --id <sourceId>
+
+# Batch sync from a manifest
+npm run knowledge:sync -- --manifest ./knowledge/manifest.json
+```
 
 ---
 

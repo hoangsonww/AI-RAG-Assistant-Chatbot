@@ -1,0 +1,31 @@
+Publications
+
+An AI-Driven, Cloud-Native Architecture for End-to-End Travel Planning: A System Design Study - Research Insights on Micro-Agent Orchestration and Scalable GCP Integration
+- Organization: University of North Carolina at Chapel Hill, Department of Computer Science
+- Date: July 4, 2025
+- Summary: Presents a cloud-native architecture for an AI-driven travel agent with personalized planning and booking. Built on Google Cloud Platform with services like Vertex AI, Dialogflow CX, and Pub/Sub, using stateless microservices for itinerary generation and real-time disruption management.
+- Link: https://www.researchgate.net/publication/392525972_An_AI-Driven_Cloud-Native_Architecture_for_End-to-End_Travel_Planning_A_System_Design_Study_Research_Insights_on_Micro-Agent_Orchestration_and_Scalable_GCP_Integration_Table_of_Content
+
+Optimizing Web Performance and Computational Efficiency: A Deep Dive into WebAssembly's Technical Advancements and Real-World Applications
+- Organization: University of North Carolina at Chapel Hill, Department of Computer Science
+- Date: April 14, 2025
+- Summary: Explores technical breakthroughs in WebAssembly and evaluates its impact on web performance and computational efficiency with technical analysis and case studies.
+- Link: https://www.researchgate.net/publication/389517325_Optimizing_Web_Performance_and_Computational_Efficiency_A_Deep_Dive_into_WebAssembly%27s_Technical_Advancements_and_Real-World_Applications
+
+Enhancing the Robustness of Transformer-Based Code Generation Models Against Adversarial Perturbations: A Comprehensive Study
+- Organization: University of North Carolina at Chapel Hill, Department of Computer Science
+- Date: March 14, 2025
+- Summary: Examines vulnerabilities in transformer-based code generation and evaluates techniques to improve resilience against adversarial perturbations for secure, reliable code.
+- Link: https://www.researchgate.net/publication/389517109_Enhancing_the_Robustness_of_Transformer-Based_Code_Generation_Models_Against_Adversarial_Perturbations_A_Comprehensive_Study
+
+A Comprehensive Analysis of Assisted Suicide: The Technical, Ethical, and Moral Dimensions of Physician-Assisted and Non-Physician-Assisted Suicide
+- Organization: University of North Carolina at Chapel Hill, Department of Computer Science
+- Date: December 12, 2024
+- Summary: Evaluates assisted suicide by comparing physician-assisted and non-physician-assisted approaches, focusing on technical implementation challenges and medical ethics implications.
+- Link: https://www.researchgate.net/publication/390768100_A_Comprehensive_Analysis_of_Assisted_Suicide_The_Technical_Ethical_and_Moral_Dimensions_of_Physician-Assisted_and_Non-Physician-Assisted_Suicide
+
+A Strategic Analysis of Highlands Coffee's Success: Upsell Techniques, Marketing Strategies, Store Design, Staff Training, Sustainability Initiatives, and Pricing Strategies
+- Organization: University of North Carolina at Chapel Hill, Department of Economics
+- Date: May 10, 2024
+- Summary: Analyzes Highlands Coffee's market success through upsell tactics, marketing, store design, staff training, sustainability, and pricing strategies.
+- Link: https://www.researchgate.net/publication/388729071_A_Strategic_Analysis_of_Highlands_Coffee%27s_Success_Upsell_Techniques_Marketing_Strategies_Store_Design_Staff_Training_Sustainability_Initiatives_and_Pricing_Strategies

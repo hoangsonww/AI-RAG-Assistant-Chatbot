@@ -14,6 +14,20 @@ import mongoose, { Schema, Document } from "mongoose";
  *         text:
  *           type: string
  *           description: The content of the message.
+ *         sources:
+ *           type: array
+ *           description: Optional citations for the assistant response.
+ *           items:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: string
+ *               title:
+ *                 type: string
+ *               url:
+ *                 type: string
+ *               snippet:
+ *                 type: string
  *         timestamp:
  *           type: string
  *           format: date-time
@@ -61,9 +75,21 @@ import mongoose, { Schema, Document } from "mongoose";
  *         createdAt: "2023-02-06T00:00:00.000Z"
  *         updatedAt: "2023-02-06T00:00:00.000Z"
  */
+export interface ISourceCitation {
+  id: string;
+  sourceId?: string;
+  title?: string;
+  url?: string;
+  snippet: string;
+  score?: number;
+  sourceType?: string;
+  chunkIndex?: number;
+}
+
 export interface IMessage {
   sender: "user" | "model";
   text: string;
+  sources?: ISourceCitation[];
   timestamp: Date;
 }
 
@@ -75,9 +101,24 @@ export interface IConversation extends Document {
   updatedAt: Date;
 }
 
+const SourceSchema: Schema = new Schema(
+  {
+    id: { type: String, required: true },
+    sourceId: { type: String },
+    title: { type: String },
+    url: { type: String },
+    snippet: { type: String, required: true },
+    score: { type: Number },
+    sourceType: { type: String },
+    chunkIndex: { type: Number },
+  },
+  { _id: false },
+);
+
 const MessageSchema: Schema = new Schema({
   sender: { type: String, enum: ["user", "model"], required: true },
   text: { type: String, required: true },
+  sources: [SourceSchema],
   timestamp: { type: Date, default: Date.now },
 });
 

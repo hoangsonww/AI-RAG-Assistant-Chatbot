@@ -8,14 +8,12 @@ import {
   CircularProgress,
   useTheme,
   Link as MuiLink,
+  Divider,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import SendIcon from "@mui/icons-material/Send";
-import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import {
   getConversationById,
-  sendAuthedChatMessage,
-  sendGuestChatMessage,
   streamAuthedChatMessage,
   streamGuestChatMessage,
   createNewConversation,
@@ -29,7 +27,11 @@ import {
   generateConversationTitle,
   renameConversation,
 } from "../services/api";
-import { IMessage, IConversation } from "../types/conversation";
+import type {
+  IMessage,
+  IConversation,
+  ISourceCitation,
+} from "../types/conversation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -91,6 +93,121 @@ function linkifyText(text: string): string {
   return protectedText;
 }
 
+const CITATION_REGEX = /\[(\d{1,3})\]/g;
+
+const CitationBadge = ({
+  children,
+  onClick,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+}) => (
+  <Box
+    component="button"
+    type="button"
+    onClick={onClick}
+    sx={{
+      display: "inline-block",
+      fontSize: "0.65em",
+      fontWeight: 700,
+      lineHeight: 1,
+      padding: "0.05em 0.45em",
+      borderRadius: "999px",
+      backgroundColor: "rgba(245, 124, 0, 0.12)",
+      color: "#f57c00",
+      border: "1px solid rgba(245, 124, 0, 0.35)",
+      marginLeft: "0.15em",
+      marginRight: "0.15em",
+      verticalAlign: "super",
+      cursor: "pointer",
+      transition: "all 0.2s ease",
+      outline: "none",
+      "&:hover": {
+        backgroundColor: "rgba(245, 124, 0, 0.2)",
+        transform: "translateY(-1px)",
+      },
+      "&:focus-visible": {
+        boxShadow: "0 0 0 2px rgba(245, 124, 0, 0.35)",
+      },
+    }}
+  >
+    {children}
+  </Box>
+);
+
+const renderTextWithCitations = (
+  text: string,
+  onCitationClick?: (citationNumber: number) => void,
+) => {
+  if (!onCitationClick) {
+    return text;
+  }
+  CITATION_REGEX.lastIndex = 0;
+  const nodes: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null = null;
+
+  while ((match = CITATION_REGEX.exec(text)) !== null) {
+    const matchIndex = match.index ?? 0;
+    if (matchIndex > lastIndex) {
+      nodes.push(text.slice(lastIndex, matchIndex));
+    }
+    const citationNumber = Number(match[1]);
+    nodes.push(
+      <CitationBadge
+        key={`${matchIndex}-${match[1]}`}
+        onClick={() => onCitationClick(citationNumber)}
+      >
+        {match[1]}
+      </CitationBadge>,
+    );
+    lastIndex = matchIndex + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex));
+  }
+
+  return nodes.length > 0 ? nodes : text;
+};
+
+const shouldSkipCitationWrap = (element: React.ReactElement) => {
+  const elementType = element.type;
+  if (typeof elementType === "string") {
+    return elementType === "code" || elementType === "pre";
+  }
+  const componentProp = (element.props as any)?.component;
+  return componentProp === "code" || componentProp === "pre";
+};
+
+const renderMarkdownChildren = (
+  children: React.ReactNode,
+  onCitationClick?: (citationNumber: number) => void,
+): React.ReactNode =>
+  React.Children.map(children, (child) => {
+    if (typeof child === "string") {
+      return renderTextWithCitations(child, onCitationClick);
+    }
+
+    if (!React.isValidElement(child)) {
+      return child;
+    }
+
+    if (shouldSkipCitationWrap(child)) {
+      return child;
+    }
+
+    if (child.props?.children) {
+      return React.cloneElement(child, {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        children: renderMarkdownChildren(child.props.children, onCitationClick),
+      });
+    }
+
+    return child;
+  });
+
 // Default avatar URLs (in public folder)
 const BOT_AVATAR = "/bot.jpg";
 const USER_AVATAR = "/OIP5.png";
@@ -115,96 +232,117 @@ const PROMPT_ROWS = [
 /**
  * Props for CitationBubble.
  */
-interface CitationBubbleProps {
-  isAboutMe: boolean;
+interface SourcesListProps {
+  sources?: ISourceCitation[];
+  messageId: string;
+  highlightedId?: string | null;
 }
 
-/**
- * A small component to display the citation bubble.
- *
- * Uses framer-motion for appear/disappear animations.
- */
-const CitationBubble: React.FC<CitationBubbleProps> = ({ isAboutMe }) => {
-  const [hovered, setHovered] = useState(false);
+const SourcesList: React.FC<SourcesListProps> = ({
+  sources,
+  messageId,
+  highlightedId,
+}) => {
+  const theme = useTheme();
+
+  if (!sources || sources.length === 0) {
+    return null;
+  }
 
   return (
-    <Box
-      sx={{ position: "absolute", bottom: "5px", right: "5px", zIndex: 10000 }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      {/* The "?" icon */}
-      <Box
+    <Box sx={{ mt: 1.5 }}>
+      <Divider
         sx={{
-          width: 20,
-          height: 20,
-          borderRadius: "50%",
-          backgroundColor: "#ffd54f",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          "&:hover": { backgroundColor: "#ffca28" },
+          borderColor: alpha(theme.palette.divider, 0.6),
+          mb: 1,
+        }}
+      />
+      <Typography
+        variant="caption"
+        sx={{ fontWeight: 600, letterSpacing: "0.02em" }}
+      >
+        Sources
+      </Typography>
+      <Box
+        component="ol"
+        sx={{
+          margin: 0,
+          marginTop: 0.5,
+          paddingLeft: "1.25rem",
         }}
       >
-        <HelpOutlineIcon sx={{ fontSize: 16, color: "#000" }} />
-      </Box>
-      {/* AnimatePresence for the bubble on hover */}
-      <AnimatePresence>
-        {hovered && (
-          <motion.div
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            transition={{ duration: 0.2 }}
-            style={{
-              position: "absolute",
-              bottom: "100%",
-              right: 0,
-              marginBottom: "8px",
-              backgroundColor: "#ffd54f",
-              color: "#000",
-              borderRadius: "8px",
-              padding: "0.4rem 0.6rem",
-              whiteSpace: "nowrap",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-              zIndex: 10001,
-            }}
-          >
-            {isAboutMe ? (
-              <Typography sx={{ color: "inherit" }}>
-                Source:{" "}
-                <MuiLink
-                  href="https://sonnguyenhoang.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
+        {sources.map((source, index) => {
+          const title =
+            source.title?.trim() ||
+            (source.sourceType
+              ? `${source.sourceType} source`
+              : "Knowledge source");
+          const snippet =
+            source.snippet.length > 200
+              ? `${source.snippet.slice(0, 200)}...`
+              : source.snippet;
+          const meta = source.sourceType ? ` (${source.sourceType})` : "";
+          const sourceElementId = `${messageId}-source-${index + 1}`;
+          const isHighlighted = highlightedId === sourceElementId;
+
+          return (
+            <Box
+              key={`${source.id}-${index}`}
+              component="li"
+              sx={{
+                mb: 0.75,
+                pl: 0.25,
+                borderRadius: "12px",
+                padding: "0.35rem 0.4rem",
+                backgroundColor: isHighlighted
+                  ? alpha(theme.palette.warning.light, 0.18)
+                  : "transparent",
+                border: isHighlighted
+                  ? `1px solid ${alpha(theme.palette.warning.main, 0.4)}`
+                  : "1px solid transparent",
+                transition: "background-color 0.2s ease, border 0.2s ease",
+              }}
+              id={sourceElementId}
+            >
+              <Typography
+                variant="caption"
+                sx={{ color: "text.primary", fontWeight: 600 }}
+              >
+                [{index + 1}]{" "}
+                {source.url ? (
+                  <MuiLink
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{ color: "#f57c00", textDecoration: "underline" }}
+                  >
+                    {title}
+                  </MuiLink>
+                ) : (
+                  <span>{title}</span>
+                )}
+                {meta}
+              </Typography>
+              {snippet && (
+                <Typography
+                  variant="caption"
                   sx={{
-                    color: "inherit",
-                    textDecoration: "underline",
-                    transition: "color 0.3s",
-                    "&:hover": { color: "#1976d2" },
+                    display: "block",
+                    color: "text.secondary",
+                    marginTop: 0.25,
+                    lineHeight: 1.4,
                   }}
                 >
-                  Son (David) Nguyen's Website
-                </MuiLink>
-              </Typography>
-            ) : (
-              <Typography sx={{ color: "inherit" }}>
-                Source: General AI Knowledge
-              </Typography>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+                  {snippet}
+                </Typography>
+              )}
+            </Box>
+          );
+        })}
+      </Box>
     </Box>
   );
 };
-
-function isMessageAboutMe(text: string): boolean {
-  const lower = text.toLowerCase();
-  const pattern = /(?=.*\bnguyen\b)(?=.*\b(?:david|son)\b)/;
-  return pattern.test(lower);
-}
 
 /**
  * The main chat area component that displays messages and handles user input.
@@ -227,6 +365,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   // The messages to render
   const [messages, setMessages] = useState<IMessage[]>(initialMessages);
+  const [highlightedSourceId, setHighlightedSourceId] = useState<string | null>(
+    null,
+  );
 
   // The user's current input
   const [input, setInput] = useState("");
@@ -306,6 +447,22 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       setGuestMessagesInLocalStorage(messages);
     }
   }, [messages]);
+
+  const handleCitationClick = (messageId: string, citationNumber: number) => {
+    if (!messageId || !Number.isFinite(citationNumber)) return;
+    const sourceElementId = `${messageId}-source-${citationNumber}`;
+    setHighlightedSourceId(sourceElementId);
+    window.setTimeout(() => {
+      setHighlightedSourceId((prev) =>
+        prev === sourceElementId ? null : prev,
+      );
+    }, 2000);
+
+    const element = document.getElementById(sourceElementId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
 
   /**
    * Load a conversation by its ID.
@@ -419,6 +576,22 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         });
       };
 
+      const handleSources = (sources: ISourceCitation[]) => {
+        if (!sources || sources.length === 0) {
+          return;
+        }
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          for (let i = newMessages.length - 1; i >= 0; i -= 1) {
+            if (newMessages[i].sender !== "user") {
+              newMessages[i] = { ...newMessages[i], sources };
+              break;
+            }
+          }
+          return newMessages;
+        });
+      };
+
       const handleComplete = (id: string) => {
         setIsStreaming(false);
         setLoadingState("done");
@@ -494,6 +667,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           userMessage.text,
           currentConvId!,
           handleChunk,
+          handleSources,
           handleComplete,
           handleError,
         );
@@ -503,6 +677,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           userMessage.text,
           guestId,
           handleChunk,
+          handleSources,
           (newGuestId: string) => {
             if (!guestId) {
               setGuestIdInLocalStorage(newGuestId);
@@ -934,6 +1109,21 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             {messages.map((msg, idx) => {
               const isUser = msg.sender === "user";
               const isBot = !isUser;
+              const messageId = `message-${idx}`;
+              const onCitationClick = (citationNumber: number) =>
+                handleCitationClick(messageId, citationNumber);
+              const botBubbleBackground =
+                theme.palette.mode === "dark"
+                  ? "linear-gradient(135deg, rgba(31,41,55,0.98) 0%, rgba(17,24,39,0.98) 100%)"
+                  : "linear-gradient(135deg, #ffffff 0%, #f5f7fb 100%)";
+              const botBubbleBorder =
+                theme.palette.mode === "dark"
+                  ? "1px solid rgba(255,255,255,0.08)"
+                  : "1px solid rgba(25,118,210,0.12)";
+              const botTextColor =
+                theme.palette.mode === "dark"
+                  ? "rgba(255,255,255,0.95)"
+                  : "rgba(15,23,42,0.96)";
               return (
                 <Box
                   key={idx}
@@ -944,6 +1134,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                     justifyContent: isUser ? "flex-end" : "flex-start",
                     mb: 1,
                   }}
+                  data-message-id={messageId}
                 >
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -1001,17 +1192,20 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                     <Box
                       borderRadius="8px"
                       p="0.5rem 1rem"
-                      bgcolor={
-                        isUser
-                          ? "#1976d2"
-                          : theme.palette.mode === "dark"
-                            ? theme.palette.grey[800]
-                            : "#e0e0e0"
-                      }
-                      color={isUser ? "white" : theme.palette.text.primary}
+                      bgcolor={isUser ? "#1976d2" : "transparent"}
+                      color={isUser ? "white" : botTextColor}
                       maxWidth="60%"
                       boxShadow={1}
                       sx={{
+                        background: isUser ? undefined : botBubbleBackground,
+                        border: isUser
+                          ? "1px solid transparent"
+                          : botBubbleBorder,
+                        boxShadow: isUser
+                          ? "0 8px 18px rgba(25,118,210,0.25)"
+                          : theme.palette.mode === "dark"
+                            ? "0 8px 18px rgba(0,0,0,0.35)"
+                            : "0 8px 20px rgba(15,23,42,0.08)",
                         transition: "background-color 0.3s",
                         wordBreak: "break-word",
                         maxWidth: "75%",
@@ -1025,6 +1219,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                         },
                         paddingTop: "1.1rem",
                         position: "relative",
+                        "& ul, & ol": {
+                          margin: "0.4rem 0 0.9rem",
+                          paddingLeft: "1.2rem",
+                        },
+                        "& li": {
+                          marginBottom: "0.45rem",
+                          lineHeight: 1.6,
+                        },
                       }}
                     >
                       {/* Copy icon for bot messages */}
@@ -1063,7 +1265,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               }}
                               {...(props as any)}
                             >
-                              {children}
+                              {renderMarkdownChildren(
+                                children,
+                                onCitationClick,
+                              )}
                             </Box>
                           ),
                           h2: ({ node, children, ...props }) => (
@@ -1078,7 +1283,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               }}
                               {...(props as any)}
                             >
-                              {children}
+                              {renderMarkdownChildren(
+                                children,
+                                onCitationClick,
+                              )}
                             </Box>
                           ),
                           h3: ({ node, children, ...props }) => (
@@ -1091,7 +1299,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               }}
                               {...(props as any)}
                             >
-                              {children}
+                              {renderMarkdownChildren(
+                                children,
+                                onCitationClick,
+                              )}
                             </Box>
                           ),
                           h4: ({ node, children, ...props }) => (
@@ -1104,7 +1315,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               }}
                               {...(props as any)}
                             >
-                              {children}
+                              {renderMarkdownChildren(
+                                children,
+                                onCitationClick,
+                              )}
                             </Box>
                           ),
                           h5: ({ node, children, ...props }) => (
@@ -1117,7 +1331,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               }}
                               {...(props as any)}
                             >
-                              {children}
+                              {renderMarkdownChildren(
+                                children,
+                                onCitationClick,
+                              )}
                             </Box>
                           ),
                           h6: ({ node, children, ...props }) => (
@@ -1130,7 +1347,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               }}
                               {...(props as any)}
                             >
-                              {children}
+                              {renderMarkdownChildren(
+                                children,
+                                onCitationClick,
+                              )}
                             </Box>
                           ),
                           p: ({ node, children, ...props }) => (
@@ -1138,47 +1358,70 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               component="p"
                               sx={{
                                 margin: 0,
-                                marginBottom: "0.75rem",
-                                lineHeight: 1.5,
+                                marginBottom: "0.9rem",
+                                lineHeight: 1.65,
+                                fontSize: { xs: "0.92rem", sm: "0.98rem" },
+                                letterSpacing: "0.01em",
                                 font: "inherit",
-                                color: isUser
-                                  ? "white"
-                                  : theme.palette.mode === "dark"
-                                    ? "white"
-                                    : "black",
+                                color: isUser ? "white" : botTextColor,
                               }}
                               {...(props as any)}
                             >
-                              {children}
+                              {renderMarkdownChildren(
+                                children,
+                                onCitationClick,
+                              )}
                             </Box>
                           ),
                           ul: ({ node, children, ...props }) => (
-                            <ul
-                              style={{
-                                color:
-                                  theme.palette.mode === "dark"
-                                    ? "white"
-                                    : "black",
+                            <Box
+                              component="ul"
+                              sx={{
+                                color: isUser ? "white" : botTextColor,
                                 font: "inherit",
+                                margin: "0.4rem 0 0.9rem",
+                                paddingLeft: "1.2rem",
                               }}
                               {...(props as any)}
                             >
-                              {children}
-                            </ul>
+                              {renderMarkdownChildren(
+                                children,
+                                onCitationClick,
+                              )}
+                            </Box>
                           ),
                           ol: ({ node, children, ...props }) => (
-                            <ol
-                              style={{
-                                color:
-                                  theme.palette.mode === "dark"
-                                    ? "white"
-                                    : "black",
+                            <Box
+                              component="ol"
+                              sx={{
+                                color: isUser ? "white" : botTextColor,
+                                font: "inherit",
+                                margin: "0.4rem 0 0.9rem",
+                                paddingLeft: "1.2rem",
+                              }}
+                              {...(props as any)}
+                            >
+                              {renderMarkdownChildren(
+                                children,
+                                onCitationClick,
+                              )}
+                            </Box>
+                          ),
+                          li: ({ node, children, ...props }) => (
+                            <Box
+                              component="li"
+                              sx={{
+                                marginBottom: "0.45rem",
+                                lineHeight: 1.6,
                                 font: "inherit",
                               }}
                               {...(props as any)}
                             >
-                              {children}
-                            </ol>
+                              {renderMarkdownChildren(
+                                children,
+                                onCitationClick,
+                              )}
+                            </Box>
                           ),
                           a: ({ node, ...props }) => (
                             // @ts-ignore
@@ -1208,7 +1451,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               }}
                               {...(props as any)}
                             >
-                              {children}
+                              {renderMarkdownChildren(
+                                children,
+                                onCitationClick,
+                              )}
                             </Box>
                           ),
                           hr: ({ node, ...props }) => (
@@ -1360,8 +1606,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                         {linkifyText(msg.text)}
                       </ReactMarkdown>
                       {isBot && (
-                        <CitationBubble
-                          isAboutMe={isMessageAboutMe(msg.text)}
+                        <SourcesList
+                          sources={msg.sources}
+                          messageId={messageId}
+                          highlightedId={highlightedSourceId}
                         />
                       )}
                     </Box>

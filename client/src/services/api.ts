@@ -1,5 +1,5 @@
 import axios from "axios";
-import { IConversation } from "../types/conversation";
+import type { IConversation, ISourceCitation } from "../types/conversation";
 
 // You can adjust the baseURL if your server is different
 const API = axios.create({
@@ -244,12 +244,16 @@ export const generateConversationTitle = async (
 export const sendAuthedChatMessage = async (
   message: string,
   conversationId: string | null,
-) => {
+): Promise<{
+  answer: string;
+  sources: ISourceCitation[];
+  conversationId: string;
+}> => {
   const resp = await API.post("/chat/auth", {
     message,
     conversationId,
   });
-  return resp.data; // { answer, conversationId }
+  return resp.data; // { answer, sources, conversationId }
 };
 
 /**
@@ -264,12 +268,12 @@ export const sendAuthedChatMessage = async (
 export const sendGuestChatMessage = async (
   message: string,
   guestId: string | null,
-) => {
+): Promise<{ answer: string; sources: ISourceCitation[]; guestId: string }> => {
   const payload: any = { message };
   if (guestId) payload.guestId = guestId;
 
   const resp = await API.post("/chat/guest", payload);
-  return resp.data; // { answer, guestId }
+  return resp.data; // { answer, sources, guestId }
 };
 
 /**
@@ -325,6 +329,7 @@ async function streamWithRetries(
   url: string,
   body: any,
   onChunk: (chunk: string) => void,
+  onSources: (sources: ISourceCitation[]) => void,
   onComplete: (conversationId?: string, guestId?: string) => void,
   onError: (error: Error) => void,
   maxRetries: number = 3,
@@ -378,6 +383,8 @@ async function streamWithRetries(
 
               if (data.type === "chunk") {
                 onChunk(data.text);
+              } else if (data.type === "sources") {
+                onSources(Array.isArray(data.sources) ? data.sources : []);
               } else if (data.type === "conversationId") {
                 conversationId = data.conversationId;
               } else if (data.type === "guestId") {
@@ -402,6 +409,8 @@ async function streamWithRetries(
           const data = JSON.parse(buffer.slice(6));
           if (data.type === "chunk") {
             onChunk(data.text);
+          } else if (data.type === "sources") {
+            onSources(Array.isArray(data.sources) ? data.sources : []);
           } else if (data.type === "error") {
             onError(new Error(data.message || "Streaming error"));
             return;
@@ -443,6 +452,7 @@ export const streamAuthedChatMessage = async (
   message: string,
   conversationId: string | null,
   onChunk: (chunk: string) => void,
+  onSources: (sources: ISourceCitation[]) => void,
   onComplete: (conversationId: string) => void,
   onError: (error: Error) => void,
 ) => {
@@ -450,6 +460,7 @@ export const streamAuthedChatMessage = async (
     "/chat/auth/stream",
     { message, conversationId },
     onChunk,
+    onSources,
     (convId) => onComplete(convId!),
     onError,
   );
@@ -467,6 +478,7 @@ export const streamGuestChatMessage = async (
   message: string,
   guestId: string | null,
   onChunk: (chunk: string) => void,
+  onSources: (sources: ISourceCitation[]) => void,
   onComplete: (guestId: string) => void,
   onError: (error: Error) => void,
 ) => {
@@ -477,6 +489,7 @@ export const streamGuestChatMessage = async (
     "/chat/guest/stream",
     payload,
     onChunk,
+    onSources,
     (_, gId) => onComplete(gId!),
     onError,
   );
