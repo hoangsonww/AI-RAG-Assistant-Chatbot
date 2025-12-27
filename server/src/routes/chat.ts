@@ -105,14 +105,16 @@ router.post("/", async (req: Request, res: Response) => {
     });
     conversation.messages.push({
       sender: "model",
-      text: aiResponse,
+      text: aiResponse.text,
+      sources: aiResponse.sources,
       timestamp: new Date(),
     });
 
     await conversation.save();
 
     return res.json({
-      answer: aiResponse,
+      answer: aiResponse.text,
+      sources: aiResponse.sources,
       conversationId: conversation._id,
     });
   } catch (error: any) {
@@ -216,8 +218,9 @@ router.post("/stream", async (req: Request, res: Response) => {
     );
 
     let fullResponse = "";
+    let sources = [];
     try {
-      fullResponse = await streamChatWithAI(
+      const result = await streamChatWithAI(
         history,
         message,
         (chunk: string) => {
@@ -226,6 +229,8 @@ router.post("/stream", async (req: Request, res: Response) => {
           );
         },
       );
+      fullResponse = result.text;
+      sources = result.sources;
 
       conversation.messages.push({
         sender: "user",
@@ -235,10 +240,12 @@ router.post("/stream", async (req: Request, res: Response) => {
       conversation.messages.push({
         sender: "model",
         text: fullResponse,
+        sources,
         timestamp: new Date(),
       });
 
       await conversation.save();
+      res.write(`data: ${JSON.stringify({ type: "sources", sources })}\n\n`);
       res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
       res.end();
     } catch (error: any) {

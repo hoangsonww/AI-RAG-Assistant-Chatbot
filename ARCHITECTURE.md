@@ -139,7 +139,7 @@ graph LR
         GeminiSvc[Gemini Service]
         PineconeSvc[Pinecone Client]
         QueryKnowledge[Knowledge Query]
-        StoreKnowledge[Knowledge Storage]
+        KnowledgeCLI[Knowledge CLI - REPL/Batch/CLI]
     end
 
     App --> Router
@@ -157,7 +157,8 @@ graph LR
     GeminiSvc --> PineconeSvc
     GeminiSvc --> QueryKnowledge
     QueryKnowledge --> PineconeSvc
-    StoreKnowledge --> PineconeSvc
+    KnowledgeCLI --> PineconeSvc
+    KnowledgeCLI --> Models
 
     style App fill:#61DAFB
     style Server fill:#339933
@@ -199,10 +200,9 @@ graph LR
 
 | Technology | Purpose | Version |
 |------------|---------|---------|
-| **Google Gemini AI** | LLM | 2.0-flash-lite |
+| **Google Gemini AI** | LLM | Auto-rotated (available Gemini models) |
 | **Pinecone** | Vector Database | 4.1.0 |
-| **LangChain** | RAG Framework | Latest |
-| **Text Embeddings** | Vector Embeddings | 004 |
+| **Gemini Embeddings** | Vector Embeddings | text-embedding-004 |
 
 ### DevOps & Deployment
 
@@ -509,7 +509,7 @@ sequenceDiagram
 
 ### RAG Implementation
 
-The RAG (Retrieval-Augmented Generation) system enhances the AI's responses by combining retrieved knowledge with generative AI capabilities.
+The RAG (Retrieval-Augmented Generation) system grounds responses in Pinecone knowledge and always returns inline citations with a sources list. Knowledge is ingested through CLI tools (REPL or one-off commands) and stored in MongoDB + Pinecone for retrieval.
 
 ```mermaid
 graph TB
@@ -561,7 +561,7 @@ sequenceDiagram
     Note over GeminiService,Pinecone: Retrieval Phase
     GeminiService->>EmbeddingModel: Generate query embedding
     EmbeddingModel-->>GeminiService: Vector embedding
-    GeminiService->>Pinecone: Query vector (topK=3)
+    GeminiService->>Pinecone: Query vector (topK=6)
     Pinecone-->>GeminiService: Relevant documents
 
     Note over GeminiService,GeminiAI: Augmentation Phase
@@ -572,8 +572,8 @@ sequenceDiagram
     GeminiAI->>GeminiAI: Generate response
     GeminiAI-->>GeminiService: AI response
 
-    GeminiService-->>ChatService: Response text
-    ChatService->>MongoDB: Save message + response
+    GeminiService-->>ChatService: Response text + citations
+    ChatService->>MongoDB: Save message + sources
     MongoDB-->>ChatService: Saved
     ChatService-->>User: Display response
 ```
@@ -582,18 +582,17 @@ sequenceDiagram
 
 ```mermaid
 graph TD
-    subgraph "Knowledge Ingestion Pipeline"
-        RawDocs[Raw Documents] --> Parse[Parse & Chunk]
+    subgraph "Knowledge Ingestion Pipeline (CLI)"
+        RawDocs[CLI Input or Files] --> Parse[Parse & Chunk]
         Parse --> Clean[Clean & Preprocess]
         Clean --> Embed[Generate Embeddings]
-        Embed --> Metadata[Add Metadata]
+        Embed --> Metadata[Add Metadata + Source IDs]
         Metadata --> Upsert[Upsert to Pinecone]
     end
 
     subgraph "Vector Database"
         Upsert --> PineconeIndex[(Pinecone Index)]
-        PineconeIndex --> Namespace1[Namespace: david-info]
-        PineconeIndex --> Namespace2[Namespace: general-knowledge]
+        PineconeIndex --> Namespace1[Namespace: knowledge]
     end
 
     subgraph "Retrieval"
@@ -607,24 +606,25 @@ graph TD
     style Embed fill:#4285F4
 ```
 
-#### Knowledge Storage Script Flow
+#### Knowledge Ingestion CLI Flow
 
 ```mermaid
 flowchart LR
-    Start([Start Script]) --> LoadEnv[Load Environment Variables]
+    Start([Run CLI]) --> LoadEnv[Load Environment Variables]
     LoadEnv --> InitPinecone[Initialize Pinecone Client]
     InitPinecone --> InitEmbeddings[Initialize Embedding Model]
 
-    InitEmbeddings --> ReadDocs[Read Knowledge Documents]
+    InitEmbeddings --> ReadDocs[Read Content - REPL/File/Inline]
     ReadDocs --> ChunkDocs[Chunk Documents]
 
     ChunkDocs --> Loop{For Each Chunk}
     Loop --> CreateEmbed[Create Embedding Vector]
-    CreateEmbed --> PrepareMetadata[Prepare Metadata]
+    CreateEmbed --> PrepareMetadata[Prepare Metadata + Source IDs]
     PrepareMetadata --> UpsertVector[Upsert to Pinecone]
     UpsertVector --> Loop
 
-    Loop --> Complete([Storage Complete])
+    Loop --> PersistMongo[Save Knowledge Source in MongoDB]
+    PersistMongo --> Complete([Storage Complete])
 
     style InitPinecone fill:#FF6F61
     style CreateEmbed fill:#4285F4
@@ -656,13 +656,13 @@ sequenceDiagram
 
     Chat->>Gemini: chatWithAI(history, message)
     Gemini->>Pinecone: Search relevant knowledge
-    Pinecone-->>Gemini: Top-3 matches
+    Pinecone-->>Gemini: Top-K matches
     Gemini->>Gemini: Build augmented prompt
     Gemini->>Gemini: Call Google Gemini API
-    Gemini-->>Chat: AI response
+    Gemini-->>Chat: AI response + citations
 
     Chat->>Mongo: Save user message
-    Chat->>Mongo: Save AI response
+    Chat->>Mongo: Save AI response + sources
     Mongo-->>Chat: Saved
 
     Chat-->>API: {answer, conversationId}
@@ -780,6 +780,18 @@ flowchart TD
     {
       sender: String ("user" | "model"),
       text: String,
+      sources: [
+        {
+          id: String,
+          sourceId: String,
+          title: String,
+          url: String,
+          snippet: String,
+          score: Number,
+          sourceType: String,
+          chunkIndex: Number
+        }
+      ],
       timestamp: Date,
       _id: ObjectId
     }
@@ -799,12 +811,43 @@ flowchart TD
     {
       sender: String ("user" | "model"),
       text: String,
+      sources: [
+        {
+          id: String,
+          sourceId: String,
+          title: String,
+          url: String,
+          snippet: String,
+          score: Number,
+          sourceType: String,
+          chunkIndex: Number
+        }
+      ],
       timestamp: Date,
       _id: ObjectId
     }
   ],
   createdAt: Date,
   expiresAt: Date (TTL index: 24 hours),
+  __v: Number
+}
+```
+
+#### Knowledge Sources Collection
+
+```javascript
+{
+  _id: ObjectId,
+  user: ObjectId (optional, ref: 'User'),
+  title: String,
+  content: String,
+  sourceType: String ("resume" | "note" | "link" | "project" | "bio" | "other"),
+  sourceUrl: String,
+  tags: [String],
+  externalId: String (unique),
+  chunkCount: Number,
+  createdAt: Date,
+  updatedAt: Date,
   __v: Number
 }
 ```
@@ -817,9 +860,11 @@ flowchart TD
   values: Array<Number> (embedding vector, dimension: 768),
   metadata: {
     text: String,
-    source: String,
-    category: String,
-    timestamp: String
+    sourceId: String,
+    title: String,
+    sourceType: String,
+    sourceUrl: String,
+    chunkIndex: Number
   }
 }
 ```
@@ -834,6 +879,7 @@ graph LR
         ConvCreated[Conversations.createdAt - Descending]
         GuestID[GuestConversations.guestId - Unique]
         GuestExpire[GuestConversations.expiresAt - TTL]
+        KnowledgeExternalId[KnowledgeSources.externalId - Unique]
     end
 
     subgraph "Pinecone Indexes"

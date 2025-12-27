@@ -106,12 +106,14 @@ async function handleGuestConversation(
   });
   guestConv.messages.push({
     sender: "model",
-    text: aiResponse,
+    text: aiResponse.text,
+    sources: aiResponse.sources,
     timestamp: new Date(),
   });
   await guestConv.save();
   return res.json({
-    answer: aiResponse,
+    answer: aiResponse.text,
+    sources: aiResponse.sources,
     guestId: guestConv.guestId,
   });
 }
@@ -210,8 +212,9 @@ async function handleGuestConversationStream(
   );
 
   let fullResponse = "";
+  let sources = [];
   try {
-    fullResponse = await streamChatWithAI(
+    const result = await streamChatWithAI(
       history,
       userMessage,
       (chunk: string) => {
@@ -220,6 +223,8 @@ async function handleGuestConversationStream(
         );
       },
     );
+    fullResponse = result.text;
+    sources = result.sources;
 
     guestConv.messages.push({
       sender: "user",
@@ -229,10 +234,12 @@ async function handleGuestConversationStream(
     guestConv.messages.push({
       sender: "model",
       text: fullResponse,
+      sources,
       timestamp: new Date(),
     });
     await guestConv.save();
 
+    res.write(`data: ${JSON.stringify({ type: "sources", sources })}\n\n`);
     res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
     res.end();
   } catch (error: any) {

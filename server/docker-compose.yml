@@ -21,7 +21,8 @@ services:
       - MONGODB_URI=mongodb://mongo:27017/ai-assistant
       - JWT_SECRET=your_jwt_secret_here
       - GOOGLE_AI_API_KEY=your_google_ai_api_key_here
-      - AI_INSTRUCTIONS=Your system instructions for the AI assistant
+      - PINECONE_API_KEY=your_pinecone_api_key_here
+      - PINECONE_INDEX_NAME=lumina-index
     depends_on:
       - mongo
 

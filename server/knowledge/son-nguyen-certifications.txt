@@ -1,0 +1,91 @@
+Certifications
+
+Vector Databases Professional Certificate
+- Issuer: Weaviate
+- Date: July 2025
+- URL: https://www.linkedin.com/learning/certificates/86bc38ecf0ec549e4c248a8c8057238425d65a23d93b46d022b2859a5cf0f198
+
+Microsoft Azure AI Essentials Professional Certificate
+- Issuer: Microsoft
+- Date: July 2025
+- URL: https://www.linkedin.com/learning/certificates/db3da25fe120929baa8291bb1db8d0197e2a65f4c9e427af82759480cb779c9f
+
+Agile Project Management and Jira Professional Certificate
+- Issuer: Atlassian
+- Date: June 2025
+- URL: https://www.linkedin.com/learning/certificates/9ec0cdb55c6a4d4af072a71d2fc21cfb2ff9571d133af86adca58121edf4d04e
+
+DevOps Professional Certificate
+- Issuer: PagerDuty
+- Date: June 2025
+- URL: https://www.linkedin.com/learning/certificates/88ed92303f3abf05adb9e19808a5d8967469d03ddee3e38be640a6f27476b537
+
+Docker Foundations Professional Certificate
+- Issuer: Docker, Inc.
+- Date: June 2025
+- URL: https://www.linkedin.com/learning/certificates/da93bc447394e09431b9094d9ba39fad27f0865fc227d125b6ee4957f23faf60
+
+Microservices Foundations Professional Certificate
+- Issuer: Kong Inc.
+- Date: June 2025
+- URL: https://www.linkedin.com/learning/certificates/4e86bb82c649396c32a7fa4ef3b86258a17c8548dc2acf6259e8e8749c0582d3
+
+LambdaTest Test Automation Professional Certificate
+- Issuer: LambdaTest
+- Date: June 2025
+- URL: https://www.linkedin.com/learning/certificates/525ae86fc8630aae998ef7ba1af147fdb7fd50ca9abee78a0a6f0277d14e9869
+
+Advanced Snowflake: Cloud Data Warehousing and Analytics
+- Issuer: LinkedIn
+- Date: May 2025
+- URL: https://www.linkedin.com/learning/certificates/3fd558ccd0a8cc12065f49a63b50965c76cda4178e5107c80bb6b2f422411d70
+
+Software Engineer Role Certificate
+- Issuer: HackerRank
+- Date: August 2024
+- URL: https://www.hackerrank.com/certificates/6289898b3f90
+
+Frontend Engineer Role Certificate
+- Issuer: HackerRank
+- Date: August 2024
+- URL: https://www.hackerrank.com/certificates/4c1998b9b6da
+
+REST APIs Certificate
+- Issuer: Codecademy
+- Date: April 2023
+- URL: https://drive.google.com/file/d/1CX5JIPisEZTBlDLix6QjRDCRK8q0juHT/view?usp=sharing
+
+Analyzing Business Metrics with SQL Certificate
+- Issuer: Codecademy
+- Date: April 2023
+- URL: https://drive.google.com/file/d/1YAg2Lfw661wurvCmS8OL15aEkZ6K8imG/view?usp=drive_link
+
+DS102X: Machine Learning for Data Science and Analytics Certificate
+- Issuer: Columbia University
+- Date: August 2022
+- URL: https://drive.google.com/file/d/12fheivRqdW3BXn_fAZvvUzDsKcpGPX3K/view?usp=drive_link
+
+BDE1x: Big Data and Education Certificate
+- Issuer: The University of Pennsylvania
+- Date: July 2022
+- URL: https://drive.google.com/file/d/1X2LTbKEve16P3QlT0ySS-uougq-8JlaE/view?usp=drive_link
+
+PH125.4x: Data Science: Inference and Modeling
+- Issuer: Harvard University
+- Date: July 2022
+- URL: https://drive.google.com/file/d/10MVhLYfhjF8GMuyC6bj4M6A6ReccmIx3/view?usp=drive_link
+
+HCIxI: Human-Computer Interaction Certificate
+- Issuer: Georgia Institute of Technology
+- Date: July 2022
+- URL: https://drive.google.com/file/d/1qM1YAlNScGq1rBjfWgtTlvoakGTJlnLV/view?usp=drive_link
+
+CS198.1x: Bitcoin and Cryptocurrencies
+- Issuer: University of California, Berkeley
+- Date: June 2022
+- URL: https://drive.google.com/file/d/1l8kl4sydQnGlezSMqUUQpHZhybL3LWQm/view?usp=drive_link
+
+CYB003x: Building A Cybersecurity Toolkit
+- Issuer: The University of Washington
+- Date: June 2022
+- URL: https://drive.google.com/file/d/1Oovwt22whlkLqXl6H4XjTa5zRltpe3qy/view?usp=drive_link

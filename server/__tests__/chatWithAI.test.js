@@ -2,14 +2,16 @@
  * ✔️  chatWithAI returns text and stitches Pinecone context
  */
 process.env.GOOGLE_AI_API_KEY = "FAKE";
-process.env.AI_INSTRUCTIONS = "";
-
-/* mock knowledge search helper */
-const pineconeSpy = jest
-  .fn()
-  .mockResolvedValue([{ text: "fact-1", score: 0.9 }]);
-jest.mock("../../scripts/queryKnowledge", () => ({
-  searchKnowledge: pineconeSpy,
+/* mock knowledge retrieval helper */
+const retrieveSpy = jest.fn().mockResolvedValue([
+  {
+    id: "source-1",
+    snippet: "fact-1",
+    title: "Profile",
+  },
+]);
+jest.mock("../src/services/knowledgeBase", () => ({
+  retrieveKnowledgeChunks: retrieveSpy,
 }));
 
 /* mock Google Generative AI SDK  */
@@ -29,11 +31,11 @@ jest.mock("@google/generative-ai", () => ({
   HarmBlockThreshold: { BLOCK_NONE: 0 },
 }));
 
-const { chatWithAI } = require("../../services/chatWithAI");
+const { chatWithAI } = require("../src/services/geminiService");
 
 it("passes through AI response text", async () => {
-  const txt = await chatWithAI([], "Hi there!");
-  expect(txt).toBe("hello-ai");
-  expect(pineconeSpy).toHaveBeenCalledWith("Hi there!", 3);
+  const result = await chatWithAI([], "Hi there!");
+  expect(result.text).toBe("hello-ai");
+  expect(retrieveSpy).toHaveBeenCalled();
   expect(sendSpy).toHaveBeenCalled();
 });
