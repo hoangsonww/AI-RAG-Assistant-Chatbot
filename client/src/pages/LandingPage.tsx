@@ -695,7 +695,7 @@ const LandingPage: React.FC = () => {
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: 600, mt: 1 }}>
                   “Here&rsquo;s a crisp summary of David Nguyen&rsquo;s
-                  background,highlighting key projects...”
+                  background, highlighting key projects...”
                 </Typography>
                 <Typography
                   variant="body2"
