@@ -18,9 +18,16 @@ Son Nguyen is a results-driven software engineer seeking internships to enhance 
 Experience:
 Toshiba TEC - Toshiba Global Commerce Solutions
 Software Engineering Intern | Sep 2025 - Dec 2025 | Durham, NC, USA
-- Built and optimized an internal agentic AI platform with multiple autonomous agents that automates up to 95% of the software development lifecycle from requirements to deployment, leveraging Dockerized microservices, AWS, and Jenkins CI/CD pipelines.
-- Developed 12 core multi-agent workflows with Kafka, Redis, LangChain, LangGraph, Neo4j, Weaviate, and RAG, improving task decomposition accuracy by 35% and cutting feature delivery time by 30%.
-- Delivered a Vue-based UI with real-time monitoring, logging, and knowledge-graph-driven context sharing, increasing developer productivity by 40%.
+- Enhanced an internal agentic AI platform that automates up to 95% of the SDLC for enterprise ELERA workflows.
+- Spearheaded the design and implementation of a RAG-based document ingestion pipeline using LangGraph and Weaviate, improving knowledge retrieval accuracy by 30%.
+- Streamlined stages from requirements to deployment using Dockerized microservices, AWS, and Jenkins CI/CD pipelines.
+- Built a QA Agent for autonomous testing with 6 new task types (feature, release, service pack test plan & test cases generation), plus BRD analysis and gap checks, with deep integration into Jira, GitLab, JUnit, Selenium, Cypress, and TestRail.
+- Developed 4 multi-agent workflows using Kafka, Redis, LangChain, LangGraph, Neo4j, Weaviate, and RAG.
+- Shipped an admin stats dashboard with real-time WebSocket monitoring, system health metrics, and MongoDB aggregations in a responsive Vue UI, enhancing operational visibility.
+- Implemented a comprehensive AI cost analytics system with multi-provider pricing (OpenAI, Anthropic, Gemini), tiered models, per-task attribution, and real-time visualization, boosting cost transparency by 55%.
+- Delivered an API documentation platform with Swagger UI + ReDoc, auto-generated OpenAPI specs, and JSON/YAML export.
+- Resolved 15 critical navigation and UX defects, including an XSS fix, to improve platform stability and security.
+- Collaborated in an Agile environment, participating in daily stand-ups, sprint planning, and code reviews to ensure timely delivery of high-quality features.
 
 FRG | Financial Risk Group
 Software Engineer Intern | Apr 2025 - Aug 2025 | Cary, NC | On-site
@@ -43,8 +50,13 @@ Software Engineer Intern | Mar 2025 - Apr 2025 | Weston, CT | Remote
 - Improved DB architecture for +30% performance; implemented RBAC (Auth0), OAuth 2.0 and JWT; added CSRF/XSS protections.
 
 University of North Carolina at Chapel Hill
-Undergraduate Teaching Assistant, COMP-426: Modern Web Programming (Full-Stack) | Aug 2025 - Present | Chapel Hill, NC | On-site
-- Support modern web stack topics (TypeScript, Next.js/React, REST/GraphQL, auth, testing, CI/CD); lead code reviews, debugging labs, and project scaffolding; mentor teams on accessibility and performance budgets.
+Undergraduate Teaching Assistant, COMP-426: Modern, Full-Stack Web Development | Aug 2025 - Present | Chapel Hill, NC | On-site
+- Served as a Teaching Assistant for COMP-426: Modern, Full-Stack Web Development at The University of North Carolina at Chapel Hill, under the guidance of Professor Ajay Gandecha.
+- Assisted in teaching advanced web development concepts, including TypeScript, React, Node.js, Next.js, Express.js, PostgreSQL, and Supabase to a class of 200 undergraduate students.
+- Conducted weekly 8+ office hours to provide hands-on assistance and clarify complex topics.
+- Graded assignments and projects, ensuring timely and constructive feedback to help students improve their coding skills.
+- Collaborated with the lead instructor to develop course materials and improve the curriculum based on student feedback.
+- Helped students build full-stack web applications, fostering a practical understanding of modern web technologies and best practices.
 
 Teaching Assistant, COMP-126: Web Design and Development | Jan 2025 - May 2025 | Chapel Hill, NC | On-site
 - Supported 80+ students in HTML/CSS/JS/responsive design; ran 8+ office hours/sessions; graded 200+ assessments with 100% on-time return; improved project clarity/engagement; mentored 10 capstone teams; updated slides/labs with Figma and Git workflows.
@@ -87,8 +99,8 @@ Leadership and Community:
 
 Education:
 University of North Carolina at Chapel Hill
-Bachelor of Science in Computer Science and Bachelor of Arts in Economics with Data Science Minor | Expected Dec 2025
-Cumulative GPA: 3.92 / 4.0
+Bachelor of Science in Computer Science and Bachelor of Arts in Economics with Data Science Minor | Graduated
+Cumulative GPA: 3.93 / 4.0
 
 Notable Projects:
 MovieVerse (https://movie-verse.com)

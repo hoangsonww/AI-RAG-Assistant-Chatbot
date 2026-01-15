@@ -3,7 +3,13 @@ import { Box, useMediaQuery, useTheme } from "@mui/material";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import ChatArea from "../components/ChatArea";
-import { getConversations, isAuthenticated } from "../services/api";
+import {
+  getConversations,
+  isAuthenticated,
+  getGuestConversationsFromLocalStorage,
+  getSelectedGuestConversationId,
+  setSelectedGuestConversationId,
+} from "../services/api";
 import { IConversation } from "../types/conversation";
 
 interface HomeProps {
@@ -33,12 +39,26 @@ const Home: React.FC<HomeProps> = ({ onToggleTheme, darkMode }) => {
   const [conversations, setConversations] = useState<IConversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
-  >(null);
+  >(() => {
+    if (isAuthenticated()) {
+      return null;
+    }
+    return getSelectedGuestConversationId();
+  });
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [loading, setLoading] = useState(false);
   const [isStreamingOrProcessing, setIsStreamingOrProcessing] = useState(false);
+  const sortByUpdatedAt = (items: IConversation[]) => {
+    return [...items].sort((a, b) => {
+      const aTime = Date.parse(a.updatedAt || "");
+      const bTime = Date.parse(b.updatedAt || "");
+      return (
+        (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime)
+      );
+    });
+  };
 
   useEffect(() => {
     // Auth users follow responsive defaults; guests restore or default closed.
@@ -77,7 +97,24 @@ const Home: React.FC<HomeProps> = ({ onToggleTheme, darkMode }) => {
         const resp = await getConversations();
         setConversations(resp);
       } else {
-        setConversations([]);
+        const guestConversations = getGuestConversationsFromLocalStorage();
+        setConversations(guestConversations);
+
+        const storedSelectedId = getSelectedGuestConversationId();
+        const selectedStillExists =
+          selectedConversationId &&
+          guestConversations.some(
+            (conv) => conv._id === selectedConversationId,
+          );
+        const nextSelectedId = selectedStillExists
+          ? selectedConversationId
+          : storedSelectedId &&
+              guestConversations.some((conv) => conv._id === storedSelectedId)
+            ? storedSelectedId
+            : guestConversations[0]?._id || null;
+
+        setSelectedConversationId(nextSelectedId);
+        setSelectedGuestConversationId(nextSelectedId);
       }
     } catch (err) {
       console.error(err);
@@ -97,6 +134,9 @@ const Home: React.FC<HomeProps> = ({ onToggleTheme, darkMode }) => {
    */
   const handleSelectConversation = (id: string | null) => {
     setSelectedConversationId(id);
+    if (!isAuthenticated()) {
+      setSelectedGuestConversationId(id);
+    }
   };
 
   /**
@@ -105,7 +145,11 @@ const Home: React.FC<HomeProps> = ({ onToggleTheme, darkMode }) => {
    * @param conv The new conversation
    */
   const handleNewConversation = (conv: IConversation) => {
+    const authed = isAuthenticated();
     setSelectedConversationId(conv._id);
+    if (!authed) {
+      setSelectedGuestConversationId(conv._id);
+    }
 
     // Update the conversation in the list instead of reloading everything
     setConversations((prev) => {
@@ -114,10 +158,11 @@ const Home: React.FC<HomeProps> = ({ onToggleTheme, darkMode }) => {
         // Update existing conversation
         const updated = [...prev];
         updated[existingIndex] = conv;
-        return updated;
+        return authed ? updated : sortByUpdatedAt(updated);
       } else {
         // Add new conversation to the beginning
-        return [conv, ...prev];
+        const next = [conv, ...prev];
+        return authed ? next : sortByUpdatedAt(next);
       }
     });
   };

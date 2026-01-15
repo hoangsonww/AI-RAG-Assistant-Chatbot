@@ -3,7 +3,11 @@ import GuestConversation, {
   IGuestConversation,
   IGuestMessage,
 } from "../models/GuestConversation";
-import { chatWithAI, streamChatWithAI } from "../services/geminiService";
+import {
+  chatWithAI,
+  streamChatWithAI,
+  generateConversationTitle,
+} from "../services/geminiService";
 import { v4 as uuidv4 } from "uuid";
 
 const router = express.Router();
@@ -189,6 +193,96 @@ router.post("/stream", async (req: Request, res: Response) => {
     if (!res.headersSent) {
       return res.status(500).json({ message: error.message });
     }
+  }
+});
+
+/**
+ * @swagger
+ * /api/chat/guest/generate-title:
+ *   post:
+ *     summary: Generate a conversation title for guest messages.
+ *     description: >
+ *       Generates a concise title for a guest conversation. Provide either a
+ *       guestId to load messages from the database or an array of messages in the request body.
+ *     tags:
+ *       - Chat
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               guestId:
+ *                 type: string
+ *                 description: The guestId for a stored guest conversation (optional).
+ *               messages:
+ *                 type: array
+ *                 description: Messages to generate a title from (optional if guestId is provided).
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     sender:
+ *                       type: string
+ *                     text:
+ *                       type: string
+ *     responses:
+ *       200:
+ *         description: A suggested title for the conversation.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 title:
+ *                   type: string
+ *       400:
+ *         description: Invalid request payload.
+ *       404:
+ *         description: Guest conversation not found.
+ *       500:
+ *         description: Server error
+ */
+router.post("/generate-title", async (req: Request, res: Response) => {
+  try {
+    const { guestId, messages } = req.body;
+    let conversationMessages: Array<{ sender: string; text: string }> | null =
+      null;
+
+    if (Array.isArray(messages)) {
+      conversationMessages = messages
+        .filter(
+          (message) =>
+            message &&
+            typeof message.text === "string" &&
+            typeof message.sender === "string",
+        )
+        .map((message) => ({
+          sender: message.sender,
+          text: message.text,
+        }));
+    } else if (guestId && typeof guestId === "string") {
+      const guestConversation = await GuestConversation.findOne({ guestId });
+      if (!guestConversation) {
+        return res
+          .status(404)
+          .json({ message: "Guest conversation not found" });
+      }
+      conversationMessages = guestConversation.messages.map((message) => ({
+        sender: message.sender,
+        text: message.text,
+      }));
+    }
+
+    if (!conversationMessages) {
+      return res.status(400).json({ message: "Missing messages or guestId." });
+    }
+
+    const title = await generateConversationTitle(conversationMessages);
+    return res.json({ title });
+  } catch (error: any) {
+    console.error("Error generating guest title:", error);
+    return res.status(500).json({ message: error.message });
   }
 });
 

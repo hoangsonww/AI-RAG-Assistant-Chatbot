@@ -18,12 +18,11 @@ import {
   streamGuestChatMessage,
   createNewConversation,
   isAuthenticated,
-  getGuestIdFromLocalStorage,
-  setGuestIdInLocalStorage,
-  clearGuestIdFromLocalStorage,
-  getGuestMessagesFromLocalStorage,
-  setGuestMessagesInLocalStorage,
-  clearGuestMessagesFromLocalStorage,
+  createGuestConversationInLocalStorage,
+  getGuestConversationByIdFromLocalStorage,
+  upsertGuestConversationInLocalStorage,
+  deriveGuestConversationTitle,
+  clearGuestConversationIdsFromLocalStorage,
   generateConversationTitle,
   renameConversation,
 } from "../services/api";
@@ -42,11 +41,11 @@ import CopyIcon from "./CopyIcon";
 
 /**
  * Props:
- *  - conversationId (string | null): If authenticated and you have a known conversation _id, pass it in.
+ *  - conversationId (string | null): Conversation ID for authenticated or guest sessions.
  *  - onNewConversation (function): Called if you create a brand new conversation for an authenticated user.
  */
 interface ChatAreaProps {
-  conversationId: string | null; // For authenticated only
+  conversationId: string | null;
   onNewConversation?: (conv: IConversation) => void;
   onStreamingChange?: (isStreaming: boolean) => void;
 }
@@ -98,14 +97,20 @@ const CITATION_REGEX = /\[(\d{1,3}(?:\s*,\s*\d{1,3})*)\]/g;
 const CitationBadge = ({
   children,
   onClick,
+  onMouseEnter,
+  onMouseLeave,
 }: {
   children: React.ReactNode;
   onClick?: () => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }) => (
   <Box
     component="button"
     type="button"
     onClick={onClick}
+    onMouseEnter={onMouseEnter}
+    onMouseLeave={onMouseLeave}
     sx={{
       display: "inline-block",
       fontSize: "0.65em",
@@ -138,6 +143,8 @@ const CitationBadge = ({
 const renderTextWithCitations = (
   text: string,
   onCitationClick?: (citationNumber: number) => void,
+  onCitationEnter?: (citationNumber: number) => void,
+  onCitationLeave?: () => void,
 ) => {
   if (!onCitationClick) {
     return text;
@@ -174,6 +181,10 @@ const renderTextWithCitations = (
           <CitationBadge
             key={`${matchIndex}-${citationNumber}`}
             onClick={() => onCitationClick(citationNumber)}
+            onMouseEnter={() =>
+              onCitationEnter && onCitationEnter(citationNumber)
+            }
+            onMouseLeave={() => onCitationLeave && onCitationLeave()}
           >
             {citationNumber}
           </CitationBadge>
@@ -202,10 +213,17 @@ const shouldSkipCitationWrap = (element: React.ReactElement) => {
 const renderMarkdownChildren = (
   children: React.ReactNode,
   onCitationClick?: (citationNumber: number) => void,
+  onCitationEnter?: (citationNumber: number) => void,
+  onCitationLeave?: () => void,
 ): React.ReactNode =>
   React.Children.map(children, (child) => {
     if (typeof child === "string") {
-      return renderTextWithCitations(child, onCitationClick);
+      return renderTextWithCitations(
+        child,
+        onCitationClick,
+        onCitationEnter,
+        onCitationLeave,
+      );
     }
 
     if (!React.isValidElement(child)) {
@@ -220,7 +238,12 @@ const renderMarkdownChildren = (
       return React.cloneElement(child, {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        children: renderMarkdownChildren(child.props.children, onCitationClick),
+        children: renderMarkdownChildren(
+          child.props.children,
+          onCitationClick,
+          onCitationEnter,
+          onCitationLeave,
+        ),
       });
     }
 
@@ -366,7 +389,7 @@ const SourcesList: React.FC<SourcesListProps> = ({
 /**
  * The main chat area component that displays messages and handles user input.
  *
- * @param conversationId (string | null): If authenticated and you have a known conversation _id, pass it in.
+ * @param conversationId (string | null): Conversation ID for authenticated or guest sessions.
  * @param onNewConversation (function): Called if you create a brand new conversation for an authenticated user.
  * @constructor The main chat area component.
  */
@@ -377,16 +400,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 }) => {
   const theme = useTheme();
 
-  // Load guest messages from localStorage on initial mount (before clearing anything)
-  const initialMessages = !isAuthenticated()
-    ? getGuestMessagesFromLocalStorage() || []
-    : [];
-
   // The messages to render
-  const [messages, setMessages] = useState<IMessage[]>(initialMessages);
+  const [messages, setMessages] = useState<IMessage[]>([]);
   const [highlightedSourceId, setHighlightedSourceId] = useState<string | null>(
     null,
   );
+  const [hoveredSourceId, setHoveredSourceId] = useState<string | null>(null);
 
   // The user's current input
   const [input, setInput] = useState("");
@@ -422,50 +441,94 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Clear guestConversationId on page reload (but keep messages for persistence)
+  // Clear guest conversation IDs on page reload (but keep messages for persistence)
   useEffect(() => {
+    if (isAuthenticated()) return;
+    const clearGuestIds = () => {
+      clearGuestConversationIdsFromLocalStorage();
+    };
     const [navEntry] = performance.getEntriesByType(
       "navigation",
     ) as PerformanceNavigationTiming[];
     if (navEntry && navEntry.type === "reload") {
-      localStorage.removeItem("guestConversationId");
+      clearGuestIds();
     }
     // Fallback for older browsers:
     if (performance.navigation.type === 1) {
-      localStorage.removeItem("guestConversationId");
+      clearGuestIds();
     }
   }, []);
 
   // Track the previous conversationId to avoid reloading when switching to a newly created conversation
   const prevConversationIdRef = useRef<string | null>(null);
+  const activeGuestConversationIdRef = useRef<string | null>(conversationId);
+  const isLoadingGuestConversationRef = useRef(false);
   const isCreatingMessageRef = useRef<boolean>(false);
 
   // If we have an authenticated conversationId, load it from the server
   useEffect(() => {
-    if (conversationId && isAuthenticated()) {
-      // Only load if the conversationId actually changed AND we're not actively creating a message
-      if (
-        prevConversationIdRef.current !== conversationId &&
-        !isCreatingMessageRef.current
-      ) {
-        loadConversation(conversationId);
-        prevConversationIdRef.current = conversationId;
-      } else if (prevConversationIdRef.current !== conversationId) {
-        // Just update the ref without reloading
-        prevConversationIdRef.current = conversationId;
+    if (isAuthenticated()) {
+      if (conversationId) {
+        // Only load if the conversationId actually changed AND we're not actively creating a message
+        if (
+          prevConversationIdRef.current !== conversationId &&
+          !isCreatingMessageRef.current
+        ) {
+          loadConversation(conversationId);
+          prevConversationIdRef.current = conversationId;
+        } else if (prevConversationIdRef.current !== conversationId) {
+          // Just update the ref without reloading
+          prevConversationIdRef.current = conversationId;
+        }
+      } else {
+        setMessages([]);
+        prevConversationIdRef.current = null;
       }
-    } else if (isAuthenticated()) {
+      return;
+    }
+
+    activeGuestConversationIdRef.current = conversationId;
+    if (isCreatingMessageRef.current) {
+      return;
+    }
+    isLoadingGuestConversationRef.current = true;
+    if (conversationId) {
+      const guestConversation =
+        getGuestConversationByIdFromLocalStorage(conversationId);
+      setMessages(guestConversation?.messages || []);
+    } else {
       setMessages([]);
-      prevConversationIdRef.current = null;
     }
   }, [conversationId]);
 
   // Save guest messages to localStorage whenever they change
   useEffect(() => {
-    if (!isAuthenticated() && messages.length > 0) {
-      setGuestMessagesInLocalStorage(messages);
+    if (isAuthenticated()) return;
+    if (isLoadingGuestConversationRef.current) {
+      isLoadingGuestConversationRef.current = false;
+      return;
     }
-  }, [messages]);
+    const activeConversationId =
+      activeGuestConversationIdRef.current || conversationId;
+    if (!activeConversationId || messages.length === 0) return;
+
+    const existing =
+      getGuestConversationByIdFromLocalStorage(activeConversationId);
+    const nextTitle =
+      existing && existing.title !== "New Conversation"
+        ? existing.title
+        : deriveGuestConversationTitle(messages);
+
+    const updated = upsertGuestConversationInLocalStorage({
+      _id: activeConversationId,
+      title: nextTitle,
+      messages,
+    });
+
+    if (onNewConversation && !isStreaming) {
+      onNewConversation(updated);
+    }
+  }, [messages, conversationId, onNewConversation, isStreaming]);
 
   const handleCitationClick = (messageId: string, citationNumber: number) => {
     if (!messageId || !Number.isFinite(citationNumber)) return;
@@ -481,6 +544,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "center" });
     }
+  };
+
+  const handleCitationHover = (messageId: string, citationNumber: number) => {
+    if (!messageId || !Number.isFinite(citationNumber)) return;
+    setHoveredSourceId(`${messageId}-source-${citationNumber}`);
+  };
+
+  const handleCitationHoverEnd = () => {
+    setHoveredSourceId(null);
   };
 
   /**
@@ -518,8 +590,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     if (!input.trim()) return;
     if (loadingState !== "idle" && loadingState !== "done") return;
 
+    const authed = isAuthenticated();
     let currentConvId = conversationId;
     let isNewConversation = false;
+    let guestId: string | null = null;
 
     // Capture whether this is the first message BEFORE adding it
     const isFirstMessage = messages.length === 0;
@@ -528,8 +602,26 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     isCreatingMessageRef.current = true;
 
     try {
+      if (!authed) {
+        const activeGuestId =
+          currentConvId || activeGuestConversationIdRef.current;
+        const existingGuestConversation = activeGuestId
+          ? getGuestConversationByIdFromLocalStorage(activeGuestId)
+          : null;
+        if (existingGuestConversation) {
+          currentConvId = existingGuestConversation._id;
+          guestId = existingGuestConversation.guestId || null;
+        } else {
+          const newGuestConversation = createGuestConversationInLocalStorage();
+          currentConvId = newGuestConversation._id;
+          guestId = newGuestConversation.guestId || null;
+          activeGuestConversationIdRef.current = currentConvId;
+          if (onNewConversation) onNewConversation(newGuestConversation);
+        }
+      }
+
       // Create new conversation if needed for authenticated users.
-      if (isAuthenticated() && !currentConvId) {
+      if (authed && !currentConvId) {
         console.log("[AUTO-TITLE] Creating new conversation...");
         const newConv = await createNewConversation();
         currentConvId = newConv._id;
@@ -620,7 +712,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
         // Automatically generate title for new conversations
         // Use the captured isFirstMessage value from the outer scope
-        if (isAuthenticated() && isFirstMessage && currentConvId) {
+        if (authed && isFirstMessage && currentConvId) {
           console.log(
             "[AUTO-TITLE] Starting auto-title generation for conversation:",
             currentConvId,
@@ -681,7 +773,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
       // Don't add empty bot message - it will be created on first chunk
 
-      if (isAuthenticated()) {
+      if (authed) {
         await streamAuthedChatMessage(
           userMessage.text,
           currentConvId!,
@@ -691,15 +783,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           handleError,
         );
       } else {
-        const guestId = getGuestIdFromLocalStorage();
         await streamGuestChatMessage(
           userMessage.text,
           guestId,
           handleChunk,
           handleSources,
           (newGuestId: string) => {
-            if (!guestId) {
-              setGuestIdInLocalStorage(newGuestId);
+            if (currentConvId) {
+              const updated = upsertGuestConversationInLocalStorage({
+                _id: currentConvId,
+                guestId: newGuestId,
+              });
+              if (onNewConversation) onNewConversation(updated);
             }
             handleComplete(newGuestId);
           },
@@ -803,8 +898,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
    * Handle starting a new conversation for a guest user.
    */
   const handleNewGuestConversation = () => {
-    clearGuestIdFromLocalStorage();
-    clearGuestMessagesFromLocalStorage();
+    if (isAuthenticated()) return;
+    const newConversation = createGuestConversationInLocalStorage();
+    activeGuestConversationIdRef.current = newConversation._id;
+    if (onNewConversation) onNewConversation(newConversation);
     setMessages([]);
     setMessageHistory([]);
     setHistoryIndex(-1);
@@ -1131,6 +1228,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               const messageId = `message-${idx}`;
               const onCitationClick = (citationNumber: number) =>
                 handleCitationClick(messageId, citationNumber);
+              const onCitationEnter = (citationNumber: number) =>
+                handleCitationHover(messageId, citationNumber);
+              const onCitationLeave = () => handleCitationHoverEnd();
               const botBubbleBackground =
                 theme.palette.mode === "dark"
                   ? "linear-gradient(135deg, rgba(31,41,55,0.98) 0%, rgba(17,24,39,0.98) 100%)"
@@ -1287,6 +1387,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               {renderMarkdownChildren(
                                 children,
                                 onCitationClick,
+                                onCitationEnter,
+                                onCitationLeave,
                               )}
                             </Box>
                           ),
@@ -1305,6 +1407,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               {renderMarkdownChildren(
                                 children,
                                 onCitationClick,
+                                onCitationEnter,
+                                onCitationLeave,
                               )}
                             </Box>
                           ),
@@ -1321,6 +1425,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               {renderMarkdownChildren(
                                 children,
                                 onCitationClick,
+                                onCitationEnter,
+                                onCitationLeave,
                               )}
                             </Box>
                           ),
@@ -1337,6 +1443,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               {renderMarkdownChildren(
                                 children,
                                 onCitationClick,
+                                onCitationEnter,
+                                onCitationLeave,
                               )}
                             </Box>
                           ),
@@ -1353,6 +1461,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               {renderMarkdownChildren(
                                 children,
                                 onCitationClick,
+                                onCitationEnter,
+                                onCitationLeave,
                               )}
                             </Box>
                           ),
@@ -1369,6 +1479,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               {renderMarkdownChildren(
                                 children,
                                 onCitationClick,
+                                onCitationEnter,
+                                onCitationLeave,
                               )}
                             </Box>
                           ),
@@ -1389,6 +1501,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               {renderMarkdownChildren(
                                 children,
                                 onCitationClick,
+                                onCitationEnter,
+                                onCitationLeave,
                               )}
                             </Box>
                           ),
@@ -1406,6 +1520,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               {renderMarkdownChildren(
                                 children,
                                 onCitationClick,
+                                onCitationEnter,
+                                onCitationLeave,
                               )}
                             </Box>
                           ),
@@ -1423,6 +1539,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               {renderMarkdownChildren(
                                 children,
                                 onCitationClick,
+                                onCitationEnter,
+                                onCitationLeave,
                               )}
                             </Box>
                           ),
@@ -1439,6 +1557,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               {renderMarkdownChildren(
                                 children,
                                 onCitationClick,
+                                onCitationEnter,
+                                onCitationLeave,
                               )}
                             </Box>
                           ),
@@ -1473,6 +1593,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               {renderMarkdownChildren(
                                 children,
                                 onCitationClick,
+                                onCitationEnter,
+                                onCitationLeave,
                               )}
                             </Box>
                           ),
@@ -1628,7 +1750,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                         <SourcesList
                           sources={msg.sources}
                           messageId={messageId}
-                          highlightedId={highlightedSourceId}
+                          highlightedId={hoveredSourceId || highlightedSourceId}
                         />
                       )}
                     </Box>
@@ -1690,7 +1812,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 variant="caption"
                 ml={1}
                 sx={{
-                  color: theme.palette.mode === "dark" ? "white" : "black",
+                  color: "white",
                 }}
               >
                 Loading Conversation...
