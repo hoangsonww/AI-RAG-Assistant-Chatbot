@@ -694,8 +694,8 @@ const LandingPage: React.FC = () => {
                   Lumina Reply
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: 600, mt: 1 }}>
-                  “Here&rsquo;s a crisp summary and a next‑step checklist for
-                  your launch.”
+                  “Here&rsquo;s a crisp summary of David Nguyen&rsquo;s
+                  background, highlighting key projects...”
                 </Typography>
                 <Typography
                   variant="body2"
