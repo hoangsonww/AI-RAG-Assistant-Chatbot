@@ -28,6 +28,8 @@ import {
   isAuthenticated,
   validateToken,
   clearGuestMessagesFromLocalStorage,
+  createGuestConversationInLocalStorage,
+  getGuestConversationsFromLocalStorage,
 } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import { IConversation } from "../types/conversation";
@@ -135,8 +137,17 @@ const Navbar: React.FC<NavbarProps> = ({
         return;
       }
       try {
-        const results = await searchConversations(value);
-        setConversations(results);
+        if (isAuthenticated()) {
+          const results = await searchConversations(value);
+          setConversations(results);
+        } else {
+          const lowerValue = value.toLowerCase();
+          const results = getGuestConversationsFromLocalStorage().filter(
+            (conversation) =>
+              conversation.title.toLowerCase().includes(lowerValue),
+          );
+          setConversations(results);
+        }
       } catch (error) {
         console.error(error);
       } finally {
@@ -162,6 +173,14 @@ const Navbar: React.FC<NavbarProps> = ({
    */
   const handleCreateNewConversation = async () => {
     setNewConvLoading(true);
+
+    if (!isAuthenticated()) {
+      const newGuestConversation = createGuestConversationInLocalStorage();
+      onRefreshConversations();
+      onSelectConversation(newGuestConversation._id);
+      setNewConvLoading(false);
+      return;
+    }
 
     if (localStorage.getItem("guestConversationId")) {
       localStorage.removeItem("guestConversationId");

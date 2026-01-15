@@ -24,6 +24,9 @@ import {
   renameConversation,
   deleteConversation,
   generateConversationTitle,
+  generateGuestConversationTitle,
+  updateGuestConversationInLocalStorage,
+  deleteGuestConversationFromLocalStorage,
 } from "../services/api";
 
 /**
@@ -63,6 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   isStreamingOrProcessing = false,
 }) => {
   const theme = useTheme();
+  const authed = isAuthenticated();
   const [loadingRenameId, setLoadingRenameId] = useState<string | null>(null);
   const [loadingDeleteId, setLoadingDeleteId] = useState<string | null>(null);
   const [loadingGenerateTitle, setLoadingGenerateTitle] = useState(false);
@@ -101,7 +105,13 @@ const Sidebar: React.FC<SidebarProps> = ({
     if (renameConvId && renameValue.trim() !== "") {
       try {
         setLoadingRenameId(renameConvId);
-        await renameConversation(renameConvId, renameValue);
+        if (authed) {
+          await renameConversation(renameConvId, renameValue);
+        } else {
+          updateGuestConversationInLocalStorage(renameConvId, {
+            title: renameValue.trim(),
+          });
+        }
         onRefresh();
         setRenameDialogOpen(false);
       } catch (error) {
@@ -129,7 +139,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     if (deleteConvId) {
       try {
         setLoadingDeleteId(deleteConvId);
-        await deleteConversation(deleteConvId);
+        if (authed) {
+          await deleteConversation(deleteConvId);
+        } else {
+          deleteGuestConversationFromLocalStorage(deleteConvId);
+        }
         onRefresh();
         setDeleteDialogOpen(false);
       } catch (error) {
@@ -144,16 +158,26 @@ const Sidebar: React.FC<SidebarProps> = ({
    * Generate a conversation title using AI
    */
   const handleGenerateTitle = async () => {
-    if (renameConvId) {
-      try {
-        setLoadingGenerateTitle(true);
+    if (!renameConvId) return;
+    try {
+      setLoadingGenerateTitle(true);
+      if (authed) {
         const response = await generateConversationTitle(renameConvId);
         setRenameValue(response.title);
-      } catch (error) {
-        console.error("Failed to generate conversation title", error);
-      } finally {
-        setLoadingGenerateTitle(false);
+        return;
       }
+
+      const targetConversation = conversations.find(
+        (conv) => conv._id === renameConvId,
+      );
+      const response = await generateGuestConversationTitle(
+        targetConversation?.messages || [],
+      );
+      setRenameValue(response.title);
+    } catch (error) {
+      console.error("Failed to generate conversation title", error);
+    } finally {
+      setLoadingGenerateTitle(false);
     }
   };
 
@@ -180,86 +204,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         </Box>
       )}
 
-      {/* If the user is authenticated */}
-      {isAuthenticated() ? (
-        conversations.length === 0 ? (
-          // Show a centered message if there are no conversations
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "100%",
-              p: 2,
-            }}
-          >
-            <Typography variant="body1" color="textSecondary" align="center">
-              No conversations yet. Start by sending a message to Lumina!
-            </Typography>
-          </Box>
-        ) : (
-          // Otherwise, render the conversation list
-          <List>
-            {conversations.map((conv) => (
-              <ListItemButton
-                key={conv._id}
-                selected={conv._id === selectedConversationId}
-                onClick={() => onSelectConversation(conv._id)}
-                disabled={isStreamingOrProcessing}
-                sx={{ justifyContent: "space-between" }}
-              >
-                <ListItemText
-                  primary={conv.title}
-                  primaryTypographyProps={{
-                    noWrap: true, // clip text and add ellipsis if too long
-                    sx: {
-                      color:
-                        theme.palette.mode === "dark"
-                          ? theme.palette.common.white
-                          : theme.palette.text.primary,
-                    },
-                  }}
-                  sx={{ minWidth: 0 }} // ensures proper shrinking in flex layout
-                />
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <IconButton
-                    edge="end"
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRename(conv._id, conv.title);
-                    }}
-                    disabled={loadingRenameId === conv._id}
-                  >
-                    {loadingRenameId === conv._id ? (
-                      <CircularProgress size={16} color="inherit" />
-                    ) : (
-                      <EditIcon fontSize="small" />
-                    )}
-                  </IconButton>
-                  <IconButton
-                    edge="end"
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(conv._id);
-                    }}
-                    disabled={loadingDeleteId === conv._id}
-                    sx={{ color: theme.palette.error.main }}
-                  >
-                    {loadingDeleteId === conv._id ? (
-                      <CircularProgress size={16} color="inherit" />
-                    ) : (
-                      <DeleteIcon fontSize="small" />
-                    )}
-                  </IconButton>
-                </Box>
-              </ListItemButton>
-            ))}
-          </List>
-        )
-      ) : (
-        // If not authenticated, show a prompt to log in
+      {conversations.length === 0 ? (
+        // Show a centered message if there are no conversations
         <Box
           sx={{
             display: "flex",
@@ -270,9 +216,69 @@ const Sidebar: React.FC<SidebarProps> = ({
           }}
         >
           <Typography variant="body1" color="textSecondary" align="center">
-            Log in to save conversation history
+            No conversations yet. Start by sending a message to Lumina!
           </Typography>
         </Box>
+      ) : (
+        // Otherwise, render the conversation list
+        <List>
+          {conversations.map((conv) => (
+            <ListItemButton
+              key={conv._id}
+              selected={conv._id === selectedConversationId}
+              onClick={() => onSelectConversation(conv._id)}
+              disabled={isStreamingOrProcessing}
+              sx={{ justifyContent: "space-between" }}
+            >
+              <ListItemText
+                primary={conv.title}
+                primaryTypographyProps={{
+                  noWrap: true, // clip text and add ellipsis if too long
+                  sx: {
+                    color:
+                      theme.palette.mode === "dark"
+                        ? theme.palette.common.white
+                        : theme.palette.text.primary,
+                  },
+                }}
+                sx={{ minWidth: 0 }} // ensures proper shrinking in flex layout
+              />
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <IconButton
+                  edge="end"
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRename(conv._id, conv.title);
+                  }}
+                  disabled={loadingRenameId === conv._id}
+                >
+                  {loadingRenameId === conv._id ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <EditIcon fontSize="small" />
+                  )}
+                </IconButton>
+                <IconButton
+                  edge="end"
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(conv._id);
+                  }}
+                  disabled={loadingDeleteId === conv._id}
+                  sx={{ color: theme.palette.error.main }}
+                >
+                  {loadingDeleteId === conv._id ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <DeleteIcon fontSize="small" />
+                  )}
+                </IconButton>
+              </Box>
+            </ListItemButton>
+          ))}
+        </List>
       )}
 
       {/* Rename Dialog */}

@@ -1,5 +1,9 @@
 import axios from "axios";
-import type { IConversation, ISourceCitation } from "../types/conversation";
+import type {
+  IConversation,
+  IMessage,
+  ISourceCitation,
+} from "../types/conversation";
 
 // You can adjust the baseURL if your server is different
 const API = axios.create({
@@ -43,6 +47,8 @@ API.interceptors.request.use((config) => {
 // For guest users, store or retrieve the guestId
 const GUEST_KEY = "guestConversationId";
 const GUEST_MESSAGES_KEY = "guestMessages";
+const GUEST_CONVERSATIONS_KEY = "guestConversations";
+const GUEST_SELECTED_CONVERSATION_KEY = "guestSelectedConversationId";
 
 /**
  * Store the guestId in local storage
@@ -89,6 +95,196 @@ export const getGuestMessagesFromLocalStorage = (): any[] | null => {
  */
 export const clearGuestMessagesFromLocalStorage = (): void => {
   localStorage.removeItem(GUEST_MESSAGES_KEY);
+};
+
+export type GuestConversation = IConversation & { guestId?: string };
+
+const createGuestConversationId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `guest-${crypto.randomUUID()}`;
+  }
+  return `guest-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
+const getNowIso = () => new Date().toISOString();
+
+export const deriveGuestConversationTitle = (messages: IMessage[]): string => {
+  const firstUserMessage = messages.find(
+    (message) => message.sender === "user" && message.text.trim(),
+  );
+  const baseTitle = firstUserMessage?.text.trim() || "New Conversation";
+  if (baseTitle.length <= 48) {
+    return baseTitle;
+  }
+  return `${baseTitle.slice(0, 48).trim()}...`;
+};
+
+const normalizeGuestConversation = (
+  conversation: Partial<GuestConversation> & { _id: string },
+): GuestConversation => {
+  const now = getNowIso();
+  return {
+    _id: conversation._id,
+    user: conversation.user || "guest",
+    title: conversation.title || "New Conversation",
+    messages: Array.isArray(conversation.messages) ? conversation.messages : [],
+    createdAt: conversation.createdAt || now,
+    updatedAt: conversation.updatedAt || now,
+    guestId: conversation.guestId,
+  };
+};
+
+const sortGuestConversations = (conversations: GuestConversation[]) => {
+  return [...conversations].sort((a, b) => {
+    const aTime = Date.parse(a.updatedAt || "");
+    const bTime = Date.parse(b.updatedAt || "");
+    return (
+      (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime)
+    );
+  });
+};
+
+const setGuestConversationsInLocalStorage = (
+  conversations: GuestConversation[],
+) => {
+  const normalized = conversations.map((conversation) =>
+    normalizeGuestConversation(conversation),
+  );
+  localStorage.setItem(
+    GUEST_CONVERSATIONS_KEY,
+    JSON.stringify(sortGuestConversations(normalized)),
+  );
+};
+
+export const getGuestConversationsFromLocalStorage =
+  (): GuestConversation[] => {
+    const raw = localStorage.getItem(GUEST_CONVERSATIONS_KEY);
+    if (!raw) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return sortGuestConversations(
+        parsed.map((conversation) => normalizeGuestConversation(conversation)),
+      );
+    } catch (error) {
+      console.error("Failed to parse guest conversations:", error);
+      return [];
+    }
+  };
+
+export const getGuestConversationByIdFromLocalStorage = (
+  conversationId: string,
+): GuestConversation | null => {
+  const conversations = getGuestConversationsFromLocalStorage();
+  return conversations.find((conv) => conv._id === conversationId) || null;
+};
+
+export const getSelectedGuestConversationId = (): string | null => {
+  return localStorage.getItem(GUEST_SELECTED_CONVERSATION_KEY);
+};
+
+export const setSelectedGuestConversationId = (
+  conversationId: string | null,
+): void => {
+  if (conversationId) {
+    localStorage.setItem(GUEST_SELECTED_CONVERSATION_KEY, conversationId);
+  } else {
+    localStorage.removeItem(GUEST_SELECTED_CONVERSATION_KEY);
+  }
+};
+
+export const createGuestConversationInLocalStorage = (): GuestConversation => {
+  const now = getNowIso();
+  const conversation = normalizeGuestConversation({
+    _id: createGuestConversationId(),
+    title: "New Conversation",
+    messages: [],
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  const conversations = getGuestConversationsFromLocalStorage();
+  setGuestConversationsInLocalStorage([conversation, ...conversations]);
+  setSelectedGuestConversationId(conversation._id);
+  return conversation;
+};
+
+export const upsertGuestConversationInLocalStorage = (
+  conversation: Partial<GuestConversation> & { _id: string },
+): GuestConversation => {
+  const conversations = getGuestConversationsFromLocalStorage();
+  const now = getNowIso();
+  const existingIndex = conversations.findIndex(
+    (conv) => conv._id === conversation._id,
+  );
+
+  if (existingIndex >= 0) {
+    const updated = normalizeGuestConversation({
+      ...conversations[existingIndex],
+      ...conversation,
+      updatedAt: now,
+    });
+    const next = [...conversations];
+    next[existingIndex] = updated;
+    setGuestConversationsInLocalStorage(next);
+    return updated;
+  }
+
+  const created = normalizeGuestConversation({
+    ...conversation,
+    createdAt: now,
+    updatedAt: now,
+  });
+  setGuestConversationsInLocalStorage([created, ...conversations]);
+  return created;
+};
+
+export const updateGuestConversationInLocalStorage = (
+  conversationId: string,
+  updates: Partial<GuestConversation>,
+): GuestConversation | null => {
+  const conversations = getGuestConversationsFromLocalStorage();
+  const existingIndex = conversations.findIndex(
+    (conv) => conv._id === conversationId,
+  );
+  if (existingIndex < 0) {
+    return null;
+  }
+
+  const updated = normalizeGuestConversation({
+    ...conversations[existingIndex],
+    ...updates,
+    updatedAt: getNowIso(),
+  });
+  const next = [...conversations];
+  next[existingIndex] = updated;
+  setGuestConversationsInLocalStorage(next);
+  return updated;
+};
+
+export const deleteGuestConversationFromLocalStorage = (
+  conversationId: string,
+): void => {
+  const conversations = getGuestConversationsFromLocalStorage();
+  const next = conversations.filter((conv) => conv._id !== conversationId);
+  setGuestConversationsInLocalStorage(next);
+
+  if (getSelectedGuestConversationId() === conversationId) {
+    setSelectedGuestConversationId(next[0]?._id || null);
+  }
+};
+
+export const clearGuestConversationIdsFromLocalStorage = (): void => {
+  const conversations = getGuestConversationsFromLocalStorage();
+  if (conversations.length === 0) return;
+  const cleared = conversations.map((conversation) => ({
+    ...conversation,
+    guestId: undefined,
+  }));
+  setGuestConversationsInLocalStorage(cleared);
 };
 
 // --- Auth Endpoints ---
@@ -227,6 +423,36 @@ export const generateConversationTitle = async (
   id: string,
 ): Promise<{ title: string }> => {
   const resp = await API.post(`/conversations/${id}/generate-title`);
+  return resp.data;
+};
+
+/**
+ * Generate a guest conversation title using AI
+ *
+ * @param messages The conversation messages
+ * @param guestId Optional guestId to load stored messages
+ */
+export const generateGuestConversationTitle = async (
+  messages: IMessage[],
+  guestId?: string | null,
+): Promise<{ title: string }> => {
+  const payload: {
+    messages?: Array<{ sender: string; text: string }>;
+    guestId?: string;
+  } = {};
+
+  if (Array.isArray(messages)) {
+    payload.messages = messages.map((message) => ({
+      sender: message.sender,
+      text: message.text,
+    }));
+  }
+
+  if (guestId) {
+    payload.guestId = guestId;
+  }
+
+  const resp = await API.post("/chat/guest/generate-title", payload);
   return resp.data;
 };
 
