@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lumina RAG Knowledge"
+  short_description: "Pinecone ingestion and citation workflow"
+  default_prompt: "Use $lumina-rag-knowledge to update Lumina knowledge ingestion or retrieval behavior."

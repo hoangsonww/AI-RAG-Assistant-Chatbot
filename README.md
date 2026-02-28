@@ -647,12 +647,6 @@ The retry logic uses exponential backoff to avoid overwhelming the server while 
   <img src="img/home.png" alt="Homepage" width="100%">
 </p>
 
-#### Homepage - Dark Mode
-
-<p align="center">
-  <img src="img/home-dark.png" alt="Homepage - Dark Mode" width="100%">
-</p>
-
 ### Homepage - Empty State
 
 <p align="center">

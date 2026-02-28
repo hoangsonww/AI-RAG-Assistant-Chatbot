@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(python -m compileall:*)",
+      "Bash(terraform validate:*)",
+      "Bash(terraform fmt -check:*)",
+      "Bash(docker compose config:*)",
+      "Bash(rg:*)"
+    ],
+    "deny": ["Bash(git reset --hard:*)", "Bash(git checkout --:*)"],
+    "ask": [
+      "Bash(npm run knowledge:repl:*)",
+      "Bash(npm run knowledge:upsert:*)",
+      "Bash(npm run knowledge:delete:*)",
+      "Bash(npm run knowledge:sync:*)",
+      "Bash(python -m agentic_ai server:*)"
+    ]
+  }
+}

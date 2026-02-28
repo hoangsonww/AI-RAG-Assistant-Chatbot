@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lumina Frontend UI"
+  short_description: "React and chat UI workflow for Lumina"
+  default_prompt: "Use $lumina-frontend-ui to update the React/Vite interface for Lumina."

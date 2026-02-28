@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lumina Infra Deploy"
+  short_description: "Terraform and deployment workflow for Lumina"
+  default_prompt: "Use $lumina-infra-deploy to work on Lumina deployment, Docker, or infrastructure code."

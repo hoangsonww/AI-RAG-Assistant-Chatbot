@@ -202,7 +202,7 @@ graph LR
 |------------|---------|---------|
 | **Google Gemini AI** | LLM | Auto-rotated (available Gemini models) |
 | **Pinecone** | Vector Database | 4.1.0 |
-| **Gemini Embeddings** | Vector Embeddings | text-embedding-004 |
+| **Gemini Embeddings** | Vector Embeddings | gemini-embedding-001 |
 
 ### DevOps & Deployment
 

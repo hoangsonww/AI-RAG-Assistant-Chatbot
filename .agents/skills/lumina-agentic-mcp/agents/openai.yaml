@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lumina Agentic MCP"
+  short_description: "Python agentic pipeline and MCP workflow"
+  default_prompt: "Use $lumina-agentic-mcp to work on the Python agentic pipeline or MCP server."

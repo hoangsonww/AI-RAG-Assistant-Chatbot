@@ -1,34 +1,26 @@
-import { index } from "../services/pineconeClient";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, TaskType } from "@google/generative-ai";
 import dotenv from "dotenv";
 import type { Embeddings } from "langchain/embeddings";
 import { PineconeStore } from "langchain/vectorstores/pinecone";
 import { RetrievalQAChain } from "langchain/chains";
 import { PromptTemplate } from "langchain/prompts";
 import type { Document } from "langchain/document";
+import { embedText, getEmbeddingModel } from "../services/geminiEmbeddings";
+import { index } from "../services/pineconeClient";
 
 dotenv.config();
 
 class GoogleEmbeddings implements Embeddings {
-  private genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
-  private modelName = "models/text-embedding-004";
+  private model = getEmbeddingModel(process.env.GOOGLE_AI_API_KEY!);
 
   async embedDocuments(texts: string[]): Promise<number[][]> {
-    const responses = await Promise.all(
-      texts.map((t) =>
-        this.genAI
-          .getGenerativeModel({ model: this.modelName })
-          .embedContent(t),
-      ),
+    return Promise.all(
+      texts.map((t) => embedText(this.model, t, TaskType.RETRIEVAL_DOCUMENT)),
     );
-    return responses.map((r) => r.embedding.values);
   }
 
   async embedQuery(text: string): Promise<number[]> {
-    const r = await this.genAI
-      .getGenerativeModel({ model: this.modelName })
-      .embedContent(text);
-    return r.embedding.values;
+    return embedText(this.model, text, TaskType.RETRIEVAL_QUERY);
   }
 }
 
