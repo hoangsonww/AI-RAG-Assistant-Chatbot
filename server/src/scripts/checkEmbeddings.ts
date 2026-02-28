@@ -1,21 +1,27 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
+import {
+  GEMINI_EMBEDDING_DIMENSION,
+  embedText,
+  getEmbeddingModel,
+} from "../services/geminiEmbeddings";
 
 dotenv.config();
 
-// @ts-ignore
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
+const model = getEmbeddingModel(process.env.GOOGLE_AI_API_KEY!);
 
 /**
  * Check the embedding dimension of the model.
  */
 async function checkEmbeddingDimension() {
-  // @ts-ignore
-  const result = await model.embedContent({
-    content: "Test embedding for dimension check",
-  });
-  console.log(`Embedding Dimension: ${result.embedding.values.length}`);
+  const values = await embedText(model, "Test embedding for dimension check");
+
+  if (values.length !== GEMINI_EMBEDDING_DIMENSION) {
+    throw new Error(
+      `Expected ${GEMINI_EMBEDDING_DIMENSION} dimensions, received ${values.length}.`,
+    );
+  }
+
+  console.log(`Embedding Dimension: ${values.length}`);
 }
 
 checkEmbeddingDimension();

@@ -1,0 +1,55 @@
+# Allow common build validation commands to run outside the sandbox without prompting.
+prefix_rule(
+    pattern = ["npm", "run", "build"],
+    decision = "allow",
+    justification = "Build validation is a standard non-destructive check in this repository.",
+    match = [
+        "npm run build",
+    ],
+    not_match = [
+        "npm run dev",
+    ],
+)
+
+# Allow low-risk Python compile validation.
+prefix_rule(
+    pattern = ["python", "-m", "compileall"],
+    decision = "allow",
+    justification = "Bytecode compilation is a safe validation step for Python changes.",
+    match = [
+        "python -m compileall agentic_ai",
+    ],
+    not_match = [
+        "python -m agentic_ai server",
+    ],
+)
+
+# Prompt before knowledge-base mutation or interactive knowledge commands.
+prefix_rule(
+    pattern = ["npm", "run", ["knowledge:repl", "knowledge:upsert", "knowledge:delete", "knowledge:sync"]],
+    decision = "prompt",
+    justification = "Knowledge commands can mutate indexed content or start an interactive session.",
+    match = [
+        "npm run knowledge:repl",
+        "npm run knowledge:upsert -- --title Resume --file ./knowledge/resume.txt --type resume --external-id resume-2025",
+        "npm run knowledge:delete -- --id abc123",
+        "npm run knowledge:sync -- --manifest ./knowledge/manifest.json",
+    ],
+    not_match = [
+        "npm run knowledge:list",
+    ],
+)
+
+# Prompt before starting long-running Python pipeline or MCP commands.
+prefix_rule(
+    pattern = ["python", "-m", "agentic_ai"],
+    decision = "prompt",
+    justification = "Agentic pipeline commands may start long-running processes or require external services.",
+    match = [
+        "python -m agentic_ai visualize",
+        "python -m agentic_ai server --config agentic_ai/config/production_config.yaml",
+    ],
+    not_match = [
+        "python -m compileall agentic_ai",
+    ],
+)

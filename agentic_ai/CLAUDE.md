@@ -1,0 +1,21 @@
+# Agentic AI Guide
+
+## Scope
+
+- `agentic_ai/core/`: pipeline, orchestrator, state handling.
+- `agentic_ai/agents/`: planner, researcher, analyzer, synthesizer, validator, executor, reviewer.
+- `agentic_ai/mcp_server/`: MCP server setup and handlers.
+- `agentic_ai/config/`: default and production YAML configuration.
+- `agentic_ai/deployments/`: AWS and Azure deployment wrappers.
+
+## Rules
+
+- Keep behavior config-driven rather than hardcoding environment-specific values.
+- Preserve async boundaries and pipeline flow through `core/` and `agents/`.
+- When changing MCP tools, prompts, or resources, keep names and schemas deliberate because downstream clients may depend on them.
+- Do not assume the README's `pytest` examples are runnable in the current tree; verify test files exist first.
+
+## Validation
+
+- Prefer `python -m compileall agentic_ai`.
+- Use runtime checks such as `python -m agentic_ai visualize` or `python -m agentic_ai run --task "..."` only when dependencies are installed and any required secrets are available.

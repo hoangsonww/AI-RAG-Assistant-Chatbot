@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lumina Backend API"
+  short_description: "Express and data-layer workflow for Lumina"
+  default_prompt: "Use $lumina-backend-api to update the Express backend or data layer for Lumina."

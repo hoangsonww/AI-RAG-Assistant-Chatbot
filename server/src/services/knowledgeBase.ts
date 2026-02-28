@@ -1,11 +1,11 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { TaskType } from "@google/generative-ai";
 import dotenv from "dotenv";
+import { embedText, getEmbeddingModel } from "./geminiEmbeddings";
 import { index } from "./pineconeClient";
 
 dotenv.config();
 
 const KNOWLEDGE_NAMESPACE = "knowledge";
-const EMBEDDING_MODEL = "models/text-embedding-004";
 const DEFAULT_TOP_K = 10;
 
 const MAX_CHUNK_CHARS = 900;
@@ -32,14 +32,6 @@ type PineconeMatch = {
   id: string;
   score?: number;
   metadata?: Record<string, any>;
-};
-
-const getEmbeddingModel = () => {
-  if (!process.env.GOOGLE_AI_API_KEY) {
-    throw new Error("Missing GOOGLE_AI_API_KEY in environment variables");
-  }
-  const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
-  return genAI.getGenerativeModel({ model: EMBEDDING_MODEL });
 };
 
 const normalizeText = (text: string) =>
@@ -228,7 +220,7 @@ export const ingestKnowledgeSource = async (options: {
     return { chunkCount: 0 };
   }
 
-  const model = getEmbeddingModel();
+  const model = getEmbeddingModel(process.env.GOOGLE_AI_API_KEY!);
   const vectors: Array<{
     id: string;
     values: number[];
@@ -237,11 +229,11 @@ export const ingestKnowledgeSource = async (options: {
 
   for (let index = 0; index < chunks.length; index += 1) {
     const chunk = chunks[index];
-    const embeddingResponse = await model.embedContent(chunk);
-    const embedding = embeddingResponse.embedding.values;
-    if (!embedding || !Array.isArray(embedding)) {
-      throw new Error("Invalid embedding response format.");
-    }
+    const embedding = await embedText(
+      model,
+      chunk,
+      TaskType.RETRIEVAL_DOCUMENT,
+    );
 
     vectors.push({
       id: buildVectorId(options.sourceId, index),
@@ -289,18 +281,17 @@ export const retrieveKnowledgeChunks = async (
     throw new Error("Missing GOOGLE_AI_API_KEY in environment variables");
   }
 
-  const model = getEmbeddingModel();
+  const model = getEmbeddingModel(process.env.GOOGLE_AI_API_KEY!);
   const queryVariants = buildQueryVariants(query);
   const searchTopK = Math.max(topK * 2, MIN_SEARCH_TOP_K);
   const matchesMap = new Map<string, PineconeMatch>();
 
   for (const variant of queryVariants) {
-    const embeddingResponse = await model.embedContent(variant);
-    const queryEmbedding = embeddingResponse.embedding.values;
-
-    if (!queryEmbedding || !Array.isArray(queryEmbedding)) {
-      continue;
-    }
+    const queryEmbedding = await embedText(
+      model,
+      variant,
+      TaskType.RETRIEVAL_QUERY,
+    );
 
     const response = await index.namespace(KNOWLEDGE_NAMESPACE).query({
       vector: queryEmbedding,

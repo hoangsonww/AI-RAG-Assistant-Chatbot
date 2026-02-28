@@ -1,12 +1,11 @@
-import { index } from "../services/pineconeClient";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { TaskType } from "@google/generative-ai";
 import dotenv from "dotenv";
+import { embedText, getEmbeddingModel } from "../services/geminiEmbeddings";
+import { index } from "../services/pineconeClient";
 
 dotenv.config();
 
-// @ts-ignore
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "models/text-embedding-004" });
+const model = getEmbeddingModel(process.env.GOOGLE_AI_API_KEY!);
 
 /**
  * Searches the knowledge base for relevant information based on the query.
@@ -16,11 +15,11 @@ const model = genAI.getGenerativeModel({ model: "models/text-embedding-004" });
  */
 async function searchKnowledge(query: string, topK = 3) {
   try {
-    const embeddingResponse = await model.embedContent(query);
-    const queryEmbedding = embeddingResponse.embedding.values;
-
-    if (!queryEmbedding || !Array.isArray(queryEmbedding))
-      throw new Error("Invalid query embedding.");
+    const queryEmbedding = await embedText(
+      model,
+      query,
+      TaskType.RETRIEVAL_QUERY,
+    );
 
     const response = await index.namespace("knowledge").query({
       vector: queryEmbedding,
