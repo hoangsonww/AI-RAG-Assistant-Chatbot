@@ -77,7 +77,9 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 ![Netlify](https://img.shields.io/badge/Netlify-00C7B7?style=for-the-badge&logo=netlify&logoColor=white)
 ![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=white)
 ![RAG](https://img.shields.io/badge/Retrieval_Augmented_Generation-FFCA28?style=for-the-badge&logo=chatbot&logoColor=black)
-![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)
+![WebSockets](https://img.shields.io/badge/WebSockets-008000?style=for-the-badge&logo=socketdotio&logoColor=white)
+![Server-Sent Events](https://img.shields.io/badge/Server_Sent_Events-800080?style=for-the-badge&logo=serverless&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=c&logoColor=white)
 ![Google AI](https://img.shields.io/badge/GoogleAI-4285F4?style=for-the-badge&logo=google&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
@@ -102,6 +104,7 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 - **Dynamic Responses:** AI-generated responses with `markdown` formatting for rich text.
 - **Interactive Chat:** Real-time chat interface with smooth animations and transitions.
 - **Reset Password:** Verify email and reset a user's password.
+- **Streaming Responses:** AI responses are streamed in real-time using Server-Sent Events (SSE) for a more natural conversation flow.
 - **Lightning-Fast Development:** Built with Vite for instant HMR and optimized production builds.
 - **Responsive UI:** Built with React and Material‑UI (MUI) with a fully responsive, modern, and animated interface.
 - **Landing Page:** A dynamic landing page with animations, feature cards, and call-to-action buttons.
@@ -126,6 +129,7 @@ The project follows a modern, full-stack architecture with clear separation of c
   - Real-time chat interface with markdown support
   - Theme toggling (dark/light mode)
   - Collapsible sidebar for conversation history
+  - WebSockets & SSE for streaming AI responses
 
 - **Backend Layer:**
   An Express.js server written in TypeScript that handles:
@@ -545,7 +549,7 @@ Lumina features real-time streaming responses that make conversations feel more 
 
 ### How It Works
 
-The streaming implementation uses **Server-Sent Events (SSE)** to deliver AI responses in real-time:
+The streaming implementation uses **Server-Sent Events (SSE)** and **WebSockets (optional)** to deliver AI responses in real-time:
 
 1. **User sends a message** → Frontend displays "Processing Message..."
 2. **Backend processes** → Shows "Thinking & Reasoning..."

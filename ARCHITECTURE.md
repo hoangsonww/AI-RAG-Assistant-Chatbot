@@ -1490,7 +1490,7 @@ graph LR
    - AI response caching for common queries
 
 4. **Real-Time Features**
-   - WebSocket support for live chat
+   - WebSocket & SSE support for live chat
    - Server-sent events for streaming responses
    - Collaborative features
 
