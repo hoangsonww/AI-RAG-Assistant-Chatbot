@@ -1,0 +1,21 @@
+# Lumina MCP Server Dependencies
+
+# MCP SDK
+mcp>=0.1.0
+
+# Configuration
+pyyaml>=6.0.1
+pydantic>=2.5.0
+
+# Logging
+structlog>=24.1.0
+
+# SSE transport (optional)
+starlette>=0.36.0
+uvicorn[standard]>=0.27.0
+
+# Used by web tools
+urllib3>=2.0.0
+
+# Used by data tools (optional, for advanced CSV)
+# pandas>=2.1.0

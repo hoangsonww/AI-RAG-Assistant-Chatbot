@@ -1,0 +1,31 @@
+# Codex project configuration for Lumina
+
+# Subagent limits
+[agents]
+max_threads = 8
+max_depth = 2
+
+# Skill references
+[[skills.config]]
+path = ".agents/skills/lumina-frontend-ui/SKILL.md"
+enabled = true
+
+[[skills.config]]
+path = ".agents/skills/lumina-backend-api/SKILL.md"
+enabled = true
+
+[[skills.config]]
+path = ".agents/skills/lumina-agentic-mcp/SKILL.md"
+enabled = true
+
+[[skills.config]]
+path = ".agents/skills/lumina-rag-knowledge/SKILL.md"
+enabled = true
+
+[[skills.config]]
+path = ".agents/skills/lumina-infra-deploy/SKILL.md"
+enabled = true
+
+[[skills.config]]
+path = ".agents/skills/lumina-mcp-server/SKILL.md"
+enabled = true

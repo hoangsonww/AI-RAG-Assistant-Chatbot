@@ -17,10 +17,14 @@
 - `agentic_ai/agents/executor.py`
 - `agentic_ai/agents/reviewer.py`
 
-## MCP surface
+## MCP client
 
-- `agentic_ai/mcp_server/server.py`: tool, resource, and prompt registration.
-- `agentic_ai/mcp_server/handlers.py`: supporting MCP logic.
+- `agentic_ai/mcp_client/client.py`: MCPClient with direct and stdio modes.
+- `agentic_ai/mcp_client/tool_adapter.py`: MCPToolAdapter and per-agent tool mapping.
+
+## Standalone MCP server
+
+- `mcp_server/`: 32 tools, 7 resources, 6 prompts (separate package at repo root).
 
 ## Config and deployment
 

@@ -3,10 +3,15 @@ Agent Orchestrator using LangGraph
 
 This module implements the agent orchestration using LangGraph's StateGraph,
 creating an assembly line architecture for agent execution.
+
+The orchestrator now integrates with the standalone Lumina MCP Server via
+the MCP client, giving each agent access to a rich set of tools
+(file I/O, code search, web fetch, knowledge queries, git operations, etc.).
 """
 
 from typing import Dict, Any, List, Optional, Callable
 from datetime import datetime
+import asyncio
 import logging
 
 from langgraph.graph import StateGraph, END
@@ -33,15 +38,13 @@ class AgentOrchestrator:
 
     The orchestrator creates an assembly line where each agent processes
     the state and passes it to the next agent based on the workflow.
+
+    Each agent is automatically provisioned with MCP tools appropriate
+    for its role (e.g. researcher gets search/fetch tools, executor
+    gets file-write and git tools).
     """
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
-        """
-        Initialize the orchestrator
-
-        Args:
-            config: Configuration for the orchestrator and agents
-        """
         self.config = config or {}
         self.logger = get_logger("orchestrator")
         self.monitor = PipelineMonitor(self.config.get("monitoring", {}))
@@ -49,7 +52,10 @@ class AgentOrchestrator:
         # Initialize LLM
         self.llm = self._initialize_llm()
 
-        # Initialize agents
+        # Initialize MCP client for tool access
+        self.mcp_client = self._initialize_mcp_client()
+
+        # Initialize agents (with MCP tools)
         self.agents = self._initialize_agents()
 
         # Build the graph
@@ -80,50 +86,78 @@ class AgentOrchestrator:
                 **llm_config.get("params", {})
             )
         else:
-            # Default to OpenAI
             return ChatOpenAI(model=model, temperature=temperature)
 
+    def _initialize_mcp_client(self) -> Any:
+        """Initialize the MCP client for tool access."""
+        try:
+            from ..mcp_client.client import MCPClient
+
+            mcp_config_path = self.config.get("mcp", {}).get("config_path")
+            client = MCPClient(server_config_path=mcp_config_path, mode="direct")
+
+            # Eagerly initialise so tool handlers are ready
+            loop = None
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                pass
+
+            if loop and loop.is_running():
+                # We're inside an async context already — schedule init
+                asyncio.ensure_future(client.initialise())
+            else:
+                asyncio.run(client.initialise())
+
+            self.logger.info(
+                "MCP client initialised — %d tools available", len(client.list_tools())
+            )
+            return client
+        except Exception as exc:
+            self.logger.warning("MCP client init failed (%s) — agents will have no MCP tools", exc)
+            return None
+
+    def _get_mcp_tools_for_agent(self, agent_name: str) -> list:
+        """Build MCP tool adapters for a specific agent."""
+        if self.mcp_client is None:
+            return []
+        try:
+            from ..mcp_client.tool_adapter import create_agent_tools
+
+            return create_agent_tools(self.mcp_client, agent_name)
+        except Exception as exc:
+            self.logger.warning("Failed to create MCP tools for %s: %s", agent_name, exc)
+            return []
+
     def _initialize_agents(self) -> Dict[str, Any]:
-        """Initialize all agents"""
+        """Initialize all agents with MCP-provided tools."""
         agent_config = self.config.get("agents", {})
 
-        return {
-            "planner": PlannerAgent(
+        agents = {}
+        for name, agent_cls in [
+            ("planner", PlannerAgent),
+            ("researcher", ResearcherAgent),
+            ("analyzer", AnalyzerAgent),
+            ("synthesizer", SynthesizerAgent),
+            ("validator", ValidatorAgent),
+            ("executor", ExecutorAgent),
+            ("reviewer", ReviewerAgent),
+        ]:
+            # Merge user-provided tools with MCP tools
+            user_tools = self.config.get("tools", {}).get(name, [])
+            mcp_tools = self._get_mcp_tools_for_agent(name)
+            all_tools = list(user_tools) + mcp_tools
+
+            agents[name] = agent_cls(
                 llm=self.llm,
-                config=agent_config.get("planner", {}),
-                tools=self.config.get("tools", {}).get("planner", [])
-            ),
-            "researcher": ResearcherAgent(
-                llm=self.llm,
-                config=agent_config.get("researcher", {}),
-                tools=self.config.get("tools", {}).get("researcher", [])
-            ),
-            "analyzer": AnalyzerAgent(
-                llm=self.llm,
-                config=agent_config.get("analyzer", {}),
-                tools=self.config.get("tools", {}).get("analyzer", [])
-            ),
-            "synthesizer": SynthesizerAgent(
-                llm=self.llm,
-                config=agent_config.get("synthesizer", {}),
-                tools=self.config.get("tools", {}).get("synthesizer", [])
-            ),
-            "validator": ValidatorAgent(
-                llm=self.llm,
-                config=agent_config.get("validator", {}),
-                tools=self.config.get("tools", {}).get("validator", [])
-            ),
-            "executor": ExecutorAgent(
-                llm=self.llm,
-                config=agent_config.get("executor", {}),
-                tools=self.config.get("tools", {}).get("executor", [])
-            ),
-            "reviewer": ReviewerAgent(
-                llm=self.llm,
-                config=agent_config.get("reviewer", {}),
-                tools=self.config.get("tools", {}).get("reviewer", [])
+                config=agent_config.get(name, {}),
+                tools=all_tools,
             )
-        }
+            self.logger.debug(
+                "Agent %s initialised with %d tools (%d MCP)",
+                name, len(all_tools), len(mcp_tools),
+            )
+        return agents
 
     def _build_graph(self) -> StateGraph:
         """

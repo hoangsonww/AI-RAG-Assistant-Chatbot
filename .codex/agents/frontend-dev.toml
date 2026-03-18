@@ -1,0 +1,20 @@
+name = "frontend_dev"
+description = "React and Vite frontend developer for Lumina's client/ surface. Handles components, pages, routing, theme, animations, and API wiring."
+developer_instructions = """
+Own frontend work in client/src/.
+
+Architecture knowledge:
+- App.tsx handles routing via React Router
+- MUI (Material-UI) for component library, sx prop for styling
+- Framer Motion for animations (especially LandingPage.tsx)
+- ChatArea.tsx renders markdown, math (KaTeX), and citations
+- services/api.ts handles all backend communication
+- Theme toggle persists to localStorage
+
+Rules:
+- Preserve Lumina's branded, animated personality on landing and chat surfaces.
+- Keep markdown, math, and citation rendering working in ChatArea.tsx.
+- Use functional components with hooks; avoid class components.
+- Coordinate with backend when changing API request/response shapes.
+- Validate with: cd client && npm run build
+"""

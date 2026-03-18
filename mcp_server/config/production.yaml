@@ -1,0 +1,59 @@
+# Lumina MCP Server — Production Configuration
+
+server:
+  name: "lumina-mcp-server"
+  version: "1.0.0"
+  description: "Production Lumina MCP server"
+
+tools:
+  pipeline:
+    enabled: true
+  knowledge:
+    enabled: true
+  code:
+    enabled: true
+  file:
+    enabled: true
+    allowed_roots:
+      - "/app"
+      - "/data"
+  web:
+    enabled: true
+    timeout_seconds: 15
+  data:
+    enabled: true
+  git:
+    enabled: true
+  system:
+    enabled: true
+
+resources:
+  pipeline:
+    enabled: true
+  knowledge:
+    enabled: true
+  system:
+    enabled: true
+
+prompts:
+  enabled: true
+
+security:
+  api_key_required: true
+  rate_limit:
+    enabled: true
+    requests_per_minute: 60
+  max_file_size_bytes: 52428800  # 50 MB
+  blocked_extensions:
+    - ".exe"
+    - ".dll"
+    - ".so"
+    - ".dylib"
+    - ".bin"
+    - ".bat"
+    - ".cmd"
+
+logging:
+  level: "WARNING"
+  format: "%(asctime)s [%(name)s] %(levelname)s %(message)s"
+  file: "/var/log/lumina-mcp/server.log"

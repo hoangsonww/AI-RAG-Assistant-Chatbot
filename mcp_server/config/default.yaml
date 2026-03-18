@@ -1,0 +1,55 @@
+# Lumina MCP Server — Default Configuration
+
+server:
+  name: "lumina-mcp-server"
+  version: "1.0.0"
+  description: "Enterprise-grade MCP server for the Lumina AI platform"
+
+tools:
+  pipeline:
+    enabled: true
+  knowledge:
+    enabled: true
+  code:
+    enabled: true
+  file:
+    enabled: true
+    allowed_roots:
+      - "."
+  web:
+    enabled: true
+    timeout_seconds: 30
+  data:
+    enabled: true
+  git:
+    enabled: true
+  system:
+    enabled: true
+
+resources:
+  pipeline:
+    enabled: true
+  knowledge:
+    enabled: true
+  system:
+    enabled: true
+
+prompts:
+  enabled: true
+
+security:
+  api_key_required: false
+  rate_limit:
+    enabled: true
+    requests_per_minute: 120
+  max_file_size_bytes: 10485760  # 10 MB
+  blocked_extensions:
+    - ".exe"
+    - ".dll"
+    - ".so"
+    - ".dylib"
+    - ".bin"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s [%(name)s] %(levelname)s %(message)s"

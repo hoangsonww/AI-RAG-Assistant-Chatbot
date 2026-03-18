@@ -113,24 +113,52 @@ Structure your response clearly with sections and bullet points.
 """
 
     async def _use_research_tools(self, state: PipelineState) -> str:
-        """Use available research tools"""
+        """Use available MCP tools for research."""
         results = []
 
         for tool in self.tools:
             try:
-                if hasattr(tool, "ainvoke"):
-                    result = await tool.ainvoke({"query": state["task"]})
-                elif hasattr(tool, "invoke"):
-                    result = tool.invoke({"query": state["task"]})
-                else:
-                    result = str(tool)
+                tool_name = tool.name if hasattr(tool, 'name') else 'unknown'
 
-                results.append(f"Tool {tool.name if hasattr(tool, 'name') else 'unknown'}: {result}")
+                # Route to appropriate invocation based on tool type
+                if tool_name in ("search_knowledge", "search_code"):
+                    args = {"query": state["task"][:200]}
+                    if tool_name == "search_knowledge":
+                        args["top_k"] = 5
+                    elif tool_name == "search_code":
+                        args["pattern"] = state["task"].split()[-1] if state["task"] else ""
+                        args["max_results"] = 10
+                elif tool_name == "fetch_url":
+                    # Skip web fetch in research unless context has URLs
+                    import re
+                    urls = re.findall(r'https?://\S+', str(state.get("context", {})))
+                    if urls:
+                        args = {"url": urls[0], "max_length": 5000}
+                    else:
+                        continue
+                elif tool_name == "read_file":
+                    continue  # Don't blindly read files during research
+                elif tool_name in ("get_project_structure", "git_log"):
+                    args = {"path": "."}
+                else:
+                    args = {"query": state["task"]}
+
+                if hasattr(tool, "ainvoke"):
+                    result = await tool.ainvoke(args)
+                elif hasattr(tool, "invoke"):
+                    result = tool.invoke(args)
+                else:
+                    continue
+
+                result_str = str(result)[:2000] if result else ""
+                if result_str:
+                    results.append(f"[{tool_name}] {result_str}")
+
             except Exception as e:
-                self.logger.warning(f"Tool execution failed: {str(e)}")
+                self.logger.warning(f"Research tool {getattr(tool, 'name', '?')} failed: {str(e)}")
                 continue
 
-        return "\n".join(results) if results else "No tool results available"
+        return "\n\n".join(results) if results else "No tool results available"
 
     def _structure_findings(self, research_response: str) -> Dict[str, Any]:
         """Structure the research findings"""
