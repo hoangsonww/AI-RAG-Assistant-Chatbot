@@ -1,6 +1,6 @@
 # Agentic AI Pipeline
 
-A sophisticated, production-ready multi-agent AI system built with LangGraph and LangChain, featuring an assembly line architecture for complex task execution.
+A sophisticated, production-ready multi-agent AI system built with LangGraph and LangChain, featuring an assembly line architecture for complex task execution with integrated MCP client connectivity to 30+ real tools.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![LangChain](https://img.shields.io/badge/LangChain-0.0.208-blue.svg)](https://pypi.org/project/langchain/)
@@ -398,11 +398,18 @@ async for update in pipeline.stream(
     print(f"Status: {update['status']}")
 ```
 
-### Using the MCP Server
+### Using the Standalone MCP Server
 
 ```bash
-# Start MCP server
-python -m agentic_ai.mcp_server.server --config config/production_config.yaml
+# The MCP server is now a standalone package at the repository root
+# Start with stdio transport (for Claude Desktop, Cursor, etc.)
+python -m mcp_server
+
+# Start with SSE transport (for remote access)
+python -m mcp_server --transport sse --port 8080
+
+# Start with custom config
+python -m mcp_server --config mcp_server/config/production.yaml
 ```
 
 ## ⚙️ Configuration
@@ -520,43 +527,71 @@ docker run -d \
   agentic-ai:latest
 ```
 
-## 🔌 MCP Server
+## 🔌 MCP Client Integration
 
-The Model Context Protocol (MCP) server exposes the agentic AI pipeline as a service.
+The agentic AI pipeline connects to the **standalone Lumina MCP Server** (`mcp_server/` at the repository root) through a built-in MCP client. This gives every pipeline agent access to 30+ real tools for file operations, code analysis, web retrieval, git operations, and more.
 
-### Available Tools
+### How It Works
 
-1. **run_pipeline**: Execute the agentic AI pipeline
-2. **get_pipeline_status**: Check pipeline execution status
-3. **list_pipelines**: List all active pipelines
-4. **get_graph_visualization**: Get pipeline graph visualization
+```mermaid
+sequenceDiagram
+    participant O as Orchestrator
+    participant C as MCPClient
+    participant A as MCPToolAdapter
+    participant S as MCP Server (in-process)
 
-### Available Resources
+    O->>C: initialize()
+    C->>S: Connect (direct mode)
+    O->>A: create_agent_tools("researcher")
+    A-->>O: [search_knowledge, search_code, fetch_url, git_log]
+    O->>O: Merge MCP tools into agent toolset
+```
 
-1. **agentic://pipeline/config**: Pipeline configuration
-2. **agentic://pipeline/metrics**: Execution metrics
+### Connection Modes
 
-### Available Prompts
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| **direct** (default) | In-process import of MCP server handlers | Maximum performance, no IPC overhead |
+| **stdio** | Subprocess communication via stdin/stdout | Isolation, separate process for MCP server |
 
-1. **analyze_task**: Analyze and plan task execution
-2. **research_topic**: Comprehensive topic research
+### Per-Agent Tool Mapping
 
-### Example Usage
+Each pipeline agent receives a curated subset of MCP tools:
+
+| Agent | MCP Tools |
+|-------|-----------|
+| **Researcher** | `search_knowledge`, `search_code`, `fetch_url`, `extract_content`, `git_log`, `list_directory` |
+| **Executor** | `read_file`, `write_file`, `list_directory`, `search_files`, `git_status`, `git_diff`, `run_pipeline` |
+| **Analyzer** | `search_code`, `analyze_file`, `get_project_structure`, `parse_csv`, `parse_json` |
+| **Planner** | `list_available_tools`, `get_project_structure`, `search_knowledge` |
+| **Reviewer** | `search_code`, `git_diff`, `git_log`, `analyze_file`, `read_file` |
+| **Validator** | `health_check`, `environment_check`, `search_code`, `read_file` |
+| **Synthesizer** | `search_knowledge`, `read_file`, `get_project_structure` |
+
+### Usage
 
 ```python
-from mcp import Client
+from agentic_ai.mcp_client import MCPClient, create_agent_tools
 
-# Connect to MCP server
-client = Client("stdio://agentic-ai-pipeline")
+# Initialize client (connects to standalone MCP server)
+client = MCPClient(config_path="mcp_server/config/default.yaml")
+await client.initialise()
 
-# Run pipeline
-result = await client.call_tool(
-    "run_pipeline",
-    {
-        "task": "Analyze market trends",
-        "context": {"industry": "technology"}
-    }
-)
+# Get LangChain-compatible tools for a specific agent
+researcher_tools = create_agent_tools("researcher", client)
+
+# Tools can be used directly
+result = await client.call_tool("search_knowledge", {"query": "machine learning", "top_k": 5})
+```
+
+### Configuration
+
+MCP client settings in `config/default_config.yaml`:
+
+```yaml
+mcp:
+  config_path: "mcp_server/config/default.yaml"
+  mode: "direct"  # or "stdio"
 ```
 
 ## 📊 Monitoring
@@ -619,33 +654,35 @@ pytest -v
 
 ```
 agentic_ai/
-├── __init__.py
-├── agents/                 # Agent implementations
-│   ├── base.py
-│   ├── planner.py
-│   ├── researcher.py
-│   ├── analyzer.py
-│   ├── synthesizer.py
-│   ├── validator.py
-│   ├── executor.py
-│   └── reviewer.py
-├── core/                   # Core pipeline components
-│   ├── pipeline.py
-│   ├── state.py
-│   └── orchestrator.py
-├── mcp_server/            # MCP server implementation
-│   ├── server.py
-│   └── handlers.py
-├── config/                # Configuration files
-│   ├── default_config.yaml
+├── __init__.py              # Package init (v1.1.0)
+├── __main__.py              # CLI: run, visualize
+├── agents/                  # Agent implementations
+│   ├── base.py              # BaseAgent abstract class
+│   ├── planner.py           # Task planning and decomposition
+│   ├── researcher.py        # Research with MCP tool access
+│   ├── analyzer.py          # Data analysis and insights
+│   ├── synthesizer.py       # Information synthesis
+│   ├── validator.py         # Quality validation
+│   ├── executor.py          # Action execution with MCP tool routing
+│   └── reviewer.py          # Final quality review
+├── core/                    # Core pipeline components
+│   ├── pipeline.py          # AgenticPipeline entry point
+│   ├── state.py             # PipelineState and AgentState
+│   └── orchestrator.py      # LangGraph orchestrator with MCP integration
+├── mcp_client/              # MCP client (connects to standalone mcp_server/)
+│   ├── __init__.py
+│   ├── client.py            # MCPClient with direct and stdio modes
+│   └── tool_adapter.py      # MCPToolAdapter (LangChain-compatible wrappers)
+├── config/                  # Configuration files
+│   ├── default_config.yaml  # Default settings (includes mcp: section)
 │   └── production_config.yaml
-├── deployments/           # Deployment configurations
+├── deployments/             # Cloud deployment configurations
 │   ├── aws/
 │   └── azure/
-├── utils/                 # Utility modules
+├── utils/                   # Utility modules
 │   ├── logger.py
 │   └── monitoring.py
-└── tests/                # Test suite
+└── examples/                # Usage examples
 ```
 
 ### Code Style

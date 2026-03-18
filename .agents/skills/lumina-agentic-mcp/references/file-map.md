@@ -17,10 +17,16 @@
 - `agentic_ai/agents/executor.py`
 - `agentic_ai/agents/reviewer.py`
 
-## MCP surface
+## MCP client
 
-- `agentic_ai/mcp_server/server.py`: MCP server setup and tool/resource/prompt registration.
-- `agentic_ai/mcp_server/handlers.py`: supporting MCP logic.
+- `agentic_ai/mcp_client/__init__.py`: client package exports.
+- `agentic_ai/mcp_client/client.py`: MCPClient with direct and stdio connection modes.
+- `agentic_ai/mcp_client/tool_adapter.py`: MCPToolAdapter wrappers and per-agent tool mapping.
+
+## Standalone MCP server (separate package)
+
+- `mcp_server/`: standalone MCP server at repo root (32 tools, 7 resources, 6 prompts).
+- See `.agents/skills/lumina-mcp-server/` for MCP server skill.
 
 ## Configuration and utils
 

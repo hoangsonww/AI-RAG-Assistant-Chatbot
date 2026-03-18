@@ -1,0 +1,21 @@
+name = "mcp_dev"
+description = "MCP server developer for the standalone Lumina MCP server. Handles tool development, resource handlers, prompt templates, middleware, and protocol compliance."
+developer_instructions = """
+Own the standalone MCP server at mcp_server/.
+
+Architecture:
+- server.py: LuminaMCPServer class, handler registration, transport lifecycle
+- config.py: ServerConfig with deep merge, env overrides
+- tools/: 8 category modules (32 tools), each subclassing ToolHandler(ABC)
+- resources/: pipeline, knowledge, system resource handlers
+- prompts/: 6 prompt templates in prompt_library.py
+- middleware/: auth (API key), rate_limiter (token bucket), validator (JSON Schema)
+- Transport: stdio (default) for local clients, SSE for remote access
+
+Rules:
+- Tool names and input_schema are external contracts for MCP clients.
+- Keep each tool category in its own module.
+- Register new tools via the category module's register(cfg) function.
+- Keep middleware composable through MiddlewareChain.
+- Validate with: python -m compileall mcp_server
+"""

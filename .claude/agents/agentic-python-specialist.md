@@ -1,6 +1,6 @@
 ---
 name: agentic-python-specialist
-description: Use for isolated work in agentic_ai/, including multi-agent orchestration, MCP server changes, configuration flow, and Python deployment wrappers.
+description: Use for isolated work in agentic_ai/, including multi-agent orchestration, MCP client changes, configuration flow, and Python deployment wrappers.
 tools:
   - Read
   - Grep

@@ -1,6 +1,6 @@
 ---
 name: lumina-agentic-mcp
-description: Work on the Python multi-agent pipeline and MCP server in agentic_ai. Use when editing files under agentic_ai/, changing agent orchestration, configuration loading, MCP tools/resources/prompts, async execution flow, pipeline startup commands, or cloud deployment wrappers for the Python service.
+description: Work on the Python multi-agent pipeline and MCP client in agentic_ai. Use when editing files under agentic_ai/, changing agent orchestration, configuration loading, MCP client connectivity, async execution flow, pipeline startup commands, or cloud deployment wrappers for the Python service.
 ---
 
 # Lumina Agentic Mcp
@@ -16,7 +16,7 @@ Use this skill for the Python subsystem under `agentic_ai/`. Keep changes consis
 
 ## Preserve The Existing Architecture
 
-- Keep pipeline behavior flowing through `core/`, `agents/`, and `mcp_server/` rather than duplicating logic.
+- Keep pipeline behavior flowing through `core/`, `agents/`, and `mcp_client/` rather than duplicating logic.
 - Respect async boundaries and existing command entry points in `agentic_ai/__main__.py`.
 - Keep the MCP server contract explicit when changing tool names, prompt names, or resource URIs.
 - Preserve configuration-driven behavior through files in `agentic_ai/config/`.

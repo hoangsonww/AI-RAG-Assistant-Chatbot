@@ -53,3 +53,130 @@ prefix_rule(
         "python -m compileall agentic_ai",
     ],
 )
+
+# Allow read-only knowledge listing without prompting.
+prefix_rule(
+    pattern = ["npm", "run", "knowledge:list"],
+    decision = "allow",
+    justification = "Listing knowledge sources is a read-only operation.",
+    match = [
+        "npm run knowledge:list",
+    ],
+    not_match = [
+        "npm run knowledge:upsert",
+    ],
+)
+
+# Allow git status and diff commands for investigation.
+prefix_rule(
+    pattern = ["git", ["status", "diff", "log", "blame"]],
+    decision = "allow",
+    justification = "Read-only Git commands are safe for codebase investigation.",
+    match = [
+        "git status",
+        "git diff HEAD",
+        "git log --oneline -10",
+        "git blame server/src/server.ts",
+    ],
+    not_match = [
+        "git push origin main",
+        "git commit -m test",
+    ],
+)
+
+# Allow Terraform validation commands.
+prefix_rule(
+    pattern = ["terraform", ["validate", "fmt"]],
+    decision = "allow",
+    justification = "Terraform validation and formatting checks are non-destructive.",
+    match = [
+        "terraform validate",
+        "terraform fmt -check",
+    ],
+    not_match = [
+        "terraform apply",
+        "terraform destroy",
+    ],
+)
+
+# Prompt before Terraform apply or destroy.
+prefix_rule(
+    pattern = ["terraform", ["apply", "destroy", "import"]],
+    decision = "prompt",
+    justification = "Terraform state-changing commands require explicit approval.",
+    match = [
+        "terraform apply",
+        "terraform destroy",
+    ],
+    not_match = [
+        "terraform validate",
+    ],
+)
+
+# Allow Docker Compose config validation.
+prefix_rule(
+    pattern = ["docker", "compose", "config"],
+    decision = "allow",
+    justification = "Docker Compose config validation is read-only.",
+    match = [
+        "docker compose config",
+    ],
+    not_match = [
+        "docker compose up",
+    ],
+)
+
+# Prompt before Docker Compose up/down/build.
+prefix_rule(
+    pattern = ["docker", "compose", ["up", "down", "build", "restart"]],
+    decision = "prompt",
+    justification = "Docker Compose lifecycle commands affect running containers.",
+    match = [
+        "docker compose up --build",
+        "docker compose down",
+    ],
+    not_match = [
+        "docker compose config",
+    ],
+)
+
+# Allow standalone MCP server compile check.
+prefix_rule(
+    pattern = ["python", "-m", "compileall", "mcp_server"],
+    decision = "allow",
+    justification = "Bytecode compilation of the MCP server is a safe validation step.",
+    match = [
+        "python -m compileall mcp_server",
+    ],
+    not_match = [
+        "python -m mcp_server",
+    ],
+)
+
+# Prompt before starting the MCP server.
+prefix_rule(
+    pattern = ["python", "-m", "mcp_server"],
+    decision = "prompt",
+    justification = "Starting the MCP server may bind ports or start long-running processes.",
+    match = [
+        "python -m mcp_server",
+        "python -m mcp_server --transport sse --port 8080",
+    ],
+    not_match = [
+        "python -m compileall mcp_server",
+    ],
+)
+
+# Forbid direct environment file modification.
+prefix_rule(
+    pattern = ["cat", [".env", "server/.env", "client/.env"]],
+    decision = "forbidden",
+    justification = "Environment files may contain secrets. Use environment variables directly instead.",
+    match = [
+        "cat .env",
+        "cat server/.env",
+    ],
+    not_match = [
+        "cat .env.example",
+    ],
+)

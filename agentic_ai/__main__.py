@@ -19,8 +19,8 @@ def parse_args():
 
     parser.add_argument(
         "command",
-        choices=["run", "server", "visualize"],
-        help="Command to execute"
+        choices=["run", "visualize"],
+        help="Command to execute (MCP server moved to standalone mcp_server/ package)"
     )
 
     parser.add_argument(
@@ -93,17 +93,6 @@ async def run_command(args):
         print("=" * 60)
 
 
-async def server_command(args):
-    """Start MCP server"""
-    from .mcp_server.server import AgenticMCPServer
-
-    setup_logging(level=args.log_level)
-
-    print("Starting MCP server...")
-    server = AgenticMCPServer(config_path=args.config)
-    await server.run()
-
-
 async def visualize_command(args):
     """Visualize pipeline graph"""
     setup_logging(level=args.log_level)
@@ -122,8 +111,6 @@ async def main():
 
     if args.command == "run":
         await run_command(args)
-    elif args.command == "server":
-        await server_command(args)
     elif args.command == "visualize":
         await visualize_command(args)
 

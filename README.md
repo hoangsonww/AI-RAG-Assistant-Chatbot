@@ -41,6 +41,7 @@
   - [Chat](#chat)
   - [Swagger API Documentation](#swagger-api-documentation)
 - [Project Structure](#project-structure)
+- [MCP Server (Model Context Protocol)](#mcp-server-model-context-protocol)
 - [Agentic AI Pipeline](#agentic-ai-pipeline)
 - [Dockerization](#dockerization)
 - [OpenAPI Specification](#openapi-specification)
@@ -93,6 +94,7 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 ![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)
 ![Jest](https://img.shields.io/badge/Jest-C21325?style=for-the-badge&logo=jest&logoColor=white)
+![MCP](https://img.shields.io/badge/MCP-Model_Context_Protocol-6366F1?style=for-the-badge&logo=protocol&logoColor=white)
 
 ## Features
 
@@ -116,6 +118,8 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 - **Enterprise-Grade Deployment:** Deployed with blue/green & canary deployment strategies on AWS & Terraform for zero-downtime updates.
 - **Comprehensive Testing:** Unit and integration tests for both frontend and backend using Jest and React Testing Library.
 - **CI/CD Pipeline:** Automated testing and deployment using GitHub Actions.
+- **Standalone MCP Server:** 30+ tools via Model Context Protocol for AI client integration.
+- **Agentic AI Pipeline:** Multi-agent LangGraph pipeline with MCP-powered tool access.
 
 ## Architecture
 
@@ -874,7 +878,8 @@ AI-Assistant-Chatbot/
 ├── terraform/                      # Infrastructure as Code (Terraform)
 ├── aws/                            # AWS deployment configurations
 ├── img/                            # Images and screenshots
-├── agentic_ai/                     # Agentic AI pipeline in Python
+├── agentic_ai/                     # Multi-agent AI pipeline with MCP client integration
+├── mcp_server/                     # Standalone MCP server (30+ tools, resources, prompts)
 ├── client/                         # Frontend React application
 │   ├── package.json
 │   ├── tsconfig.json
@@ -942,9 +947,64 @@ AI-Assistant-Chatbot/
             └── favicon.ico
 ```
 
+## MCP Server (Model Context Protocol)
+
+Lumina includes a **standalone MCP server** (`mcp_server/`) that exposes 30+ tools, 7 resources, and 6 prompts through the standardized [Model Context Protocol](https://modelcontextprotocol.io). Any MCP-compatible client — Claude Desktop, ChatGPT, Cursor, VS Code Copilot — can connect and use Lumina's capabilities.
+
+### Tool Categories
+
+| Category | Tools | Description |
+|----------|-------|-------------|
+| **Pipeline** | 5 | Run, monitor, cancel agentic AI pipelines |
+| **Knowledge** | 4 | Search and retrieve RAG knowledge base documents |
+| **Code** | 3 | Search code, analyze files, explore project structure |
+| **File** | 5 | Read, write, list, search files |
+| **Web** | 2 | Fetch URLs, extract structured content |
+| **Data** | 3 | Parse CSV/JSON, transform data |
+| **Git** | 4 | Status, log, diff, blame operations |
+| **System** | 6 | Health checks, metrics, environment diagnostics |
+
+### Quick Start
+
+```bash
+# Install MCP server dependencies
+pip install -r mcp_server/requirements.txt
+
+# Run with stdio transport (for Claude Desktop, Cursor, VS Code)
+python -m mcp_server
+
+# Run with SSE transport (for remote/network access)
+python -m mcp_server --transport sse --port 8080
+```
+
+### Claude Desktop Integration
+
+Add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "lumina": {
+      "command": "python",
+      "args": ["-m", "mcp_server"],
+      "cwd": "/path/to/AI-RAG-Assistant-Chatbot"
+    }
+  }
+}
+```
+
+> 📖 See [`mcp_server/README.md`](mcp_server/README.md) for the complete tool reference, configuration guide, and integration examples.
+
 ## Agentic AI Pipeline
 
-There is also a separate Agentic AI pipeline implemented in Python. This pipeline demonstrates how to create an autonomous agent that can perform tasks using tools and interact with the AI model.
+Lumina includes a **multi-agent AI pipeline** implemented in Python (`agentic_ai/`). The pipeline uses LangGraph for agent orchestration and connects to the standalone MCP server as an MCP client, giving every agent access to 30+ real tools through the Model Context Protocol.
+
+Key capabilities:
+
+- **MCP Client Integration** — Agents connect to the standalone MCP server for tool access, enabling pipeline operations, knowledge retrieval, code search, file management, and more.
+- **Intelligent Tool Routing** — The enhanced executor agent routes tool calls to the appropriate MCP tool category based on task context.
+- **Tool-Aware Research** — The enhanced researcher agent leverages MCP tools for grounded, evidence-based research across code, knowledge, and web sources.
+- **Multi-Agent Orchestration** — Coordinator, researcher, executor, and verifier agents collaborate through a LangGraph state machine.
 
 The pipeline is located in the `agentic_ai/` directory and is optional for the main assistant.
 

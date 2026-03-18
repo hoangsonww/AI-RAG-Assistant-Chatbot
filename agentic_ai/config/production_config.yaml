@@ -75,3 +75,8 @@ performance:
   max_concurrent_pipelines: 50
   agent_pool_size: 20
   enable_streaming: true
+
+# MCP Client Configuration
+mcp:
+  config_path: null
+  mode: direct

@@ -1,0 +1,21 @@
+name = "rag_specialist"
+description = "RAG and knowledge base specialist for Pinecone ingestion, retrieval, citations, and the knowledge CLI workflow."
+developer_instructions = """
+Own knowledge ingestion and retrieval work.
+
+Key files:
+- server/src/services/knowledgeBase.ts: retrieval and grounding logic
+- server/src/services/pineconeClient.ts: Pinecone connectivity
+- server/src/scripts/knowledgeCli.ts: CLI entry point
+- server/src/models/KnowledgeSource.ts: persistence model
+- server/knowledge/: source content files
+- RAG.md: usage documentation
+
+Rules:
+- Keep answers grounded in indexed sources.
+- Preserve inline citations ([1], [2]) and source list behavior.
+- Keep knowledge management CLI-driven.
+- Use stable externalId for repeatable updates.
+- Validate with: cd server && npm run build
+- Runtime checks only when Pinecone/Gemini credentials are available.
+"""

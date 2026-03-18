@@ -20,6 +20,15 @@
   - [RAG Implementation](#rag-implementation)
   - [Vector Search Pipeline](#vector-search-pipeline)
   - [Knowledge Storage](#knowledge-storage)
+- [MCP Server Architecture](#mcp-server-architecture)
+  - [MCP Protocol Overview](#mcp-protocol-overview)
+  - [Server Components](#server-components)
+  - [Tool Architecture](#tool-architecture)
+  - [MCP Client Integration](#mcp-client-integration)
+- [Agentic AI Pipeline](#agentic-ai-pipeline-architecture)
+  - [Pipeline Architecture](#pipeline-architecture)
+  - [Agent System](#agent-system)
+  - [MCP Tool Routing](#mcp-tool-routing)
 - [Data Flow](#data-flow)
   - [Chat Message Flow](#chat-message-flow)
   - [Conversation Management Flow](#conversation-management-flow)
@@ -203,6 +212,9 @@ graph LR
 | **Google Gemini AI** | LLM | Auto-rotated (available Gemini models) |
 | **Pinecone** | Vector Database | 4.1.0 |
 | **Gemini Embeddings** | Vector Embeddings | gemini-embedding-001 |
+| **MCP SDK** | Model Context Protocol | 1.0.0 |
+| **LangChain** | Agent Framework | Latest |
+| **LangGraph** | Pipeline Orchestration | Latest |
 
 ### DevOps & Deployment
 
@@ -629,6 +641,168 @@ flowchart LR
     style InitPinecone fill:#FF6F61
     style CreateEmbed fill:#4285F4
 ```
+
+---
+
+## MCP Server Architecture
+
+The Lumina MCP Server is a standalone package (`mcp_server/`) that implements the [Model Context Protocol](https://modelcontextprotocol.io) — an open standard for connecting AI applications to external tools and data sources.
+
+### MCP Protocol Overview
+
+```mermaid
+graph TB
+    subgraph "MCP Clients"
+        Claude[Claude Desktop]
+        Cursor[Cursor IDE]
+        VSCode[VS Code Copilot]
+        ChatGPT[ChatGPT]
+        Pipeline[Agentic AI Pipeline]
+    end
+
+    subgraph "MCP Server"
+        Server[LuminaMCPServer]
+        MW[Middleware Chain]
+        Auth[Authentication]
+        RL[Rate Limiter]
+        Val[Validator]
+    end
+
+    subgraph "Tool Categories"
+        PT[Pipeline Tools - 5]
+        KT[Knowledge Tools - 4]
+        CT[Code Tools - 3]
+        FT[File Tools - 5]
+        WT[Web Tools - 2]
+        DT[Data Tools - 3]
+        GT[Git Tools - 4]
+        ST[System Tools - 6]
+    end
+
+    subgraph "Resources"
+        PR[Pipeline Resources]
+        KR[Knowledge Resources]
+        SR[System Resources]
+    end
+
+    Claude --> Server
+    Cursor --> Server
+    VSCode --> Server
+    ChatGPT --> Server
+    Pipeline --> Server
+
+    Server --> MW
+    MW --> Auth
+    MW --> RL
+    MW --> Val
+
+    Server --> PT
+    Server --> KT
+    Server --> CT
+    Server --> FT
+    Server --> WT
+    Server --> DT
+    Server --> GT
+    Server --> ST
+    Server --> PR
+    Server --> KR
+    Server --> SR
+```
+
+### Server Components
+
+```mermaid
+graph LR
+    subgraph "Entry Points"
+        CLI[__main__.py<br/>CLI Arguments]
+        Import[Direct Import<br/>LuminaMCPServer]
+    end
+
+    subgraph "Core"
+        Config[ServerConfig<br/>YAML + Env Merge]
+        Server[LuminaMCPServer<br/>Handler Registration]
+    end
+
+    subgraph "Registries"
+        TR[ToolRegistry<br/>32 Tools]
+        RR[ResourceRegistry<br/>7 Resources]
+        PR[PromptRegistry<br/>6 Prompts]
+    end
+
+    subgraph "Middleware"
+        Chain[MiddlewareChain]
+        Auth[API Key Auth]
+        Rate[Token Bucket<br/>Rate Limiter]
+        Valid[JSON Schema<br/>Validator]
+    end
+
+    subgraph "Transport"
+        STDIO[stdio Transport<br/>Local Clients]
+        SSE[SSE Transport<br/>Remote Access]
+    end
+
+    CLI --> Config
+    Import --> Config
+    Config --> Server
+    Server --> TR
+    Server --> RR
+    Server --> PR
+    Server --> Chain
+    Chain --> Auth
+    Chain --> Rate
+    Chain --> Valid
+    Server --> STDIO
+    Server --> SSE
+```
+
+### Tool Architecture
+
+Each tool category is implemented as a separate module with handlers inheriting from `ToolHandler(ABC)`:
+
+| Category | Module | Tools | Description |
+|----------|--------|-------|-------------|
+| Pipeline | `pipeline_tools.py` | 5 | Run, monitor, cancel AI pipelines, get graph visualization |
+| Knowledge | `knowledge_tools.py` | 4 | Search RAG knowledge base, similarity search, list sources |
+| Code | `code_tools.py` | 3 | Regex code search, file analysis, project structure |
+| File | `file_tools.py` | 5 | Read, write, list, search files with encoding support |
+| Web | `web_tools.py` | 2 | HTTP fetch, HTML content extraction |
+| Data | `data_tools.py` | 3 | CSV/JSON parsing, data transformation pipelines |
+| Git | `git_tools.py` | 4 | Repository status, history, diffs, blame |
+| System | `system_tools.py` | 6 | Health checks, metrics, diagnostics, tool discovery |
+
+### MCP Client Integration
+
+The `agentic_ai/mcp_client/` package provides a client that connects to the standalone MCP server:
+
+```mermaid
+sequenceDiagram
+    participant O as Orchestrator
+    participant C as MCPClient
+    participant A as MCPToolAdapter
+    participant T as ToolRegistry
+    participant H as ToolHandler
+
+    O->>C: initialise(config_path)
+    C->>T: Import tool handlers (direct mode)
+    
+    O->>A: create_agent_tools("researcher")
+    A->>A: Look up _AGENT_TOOL_MAP["researcher"]
+    A->>C: Get tool handlers
+    A-->>O: List[MCPToolAdapter] (LangChain-compatible)
+
+    Note over O: Agent executes with tools
+    O->>A: ainvoke({"query": "..."})
+    A->>H: handle(arguments)
+    H-->>A: Result
+    A-->>O: Tool output
+```
+
+**Connection Modes:**
+- **Direct** (default): In-process import — zero IPC overhead, maximum performance
+- **Stdio**: Subprocess communication via stdin/stdout — process isolation
+
+**Per-Agent Tool Assignment:**
+The `tool_adapter.py` module maps each pipeline agent to a curated subset of MCP tools, ensuring agents only access relevant capabilities.
 
 ---
 
@@ -1511,6 +1685,13 @@ graph LR
    - Response quality feedback loop
    - A/B testing for AI parameters
 
+8. **MCP Ecosystem Expansion**
+   - Additional tool categories (database, cloud, messaging)
+   - MCP server marketplace integration
+   - Custom tool plugin system
+   - Remote MCP server clustering
+   - Tool usage analytics and optimization
+
 ---
 
 ## Conclusion
@@ -1524,6 +1705,7 @@ This architecture document provides a comprehensive overview of the Lumina AI As
 - **Secure by Design**: Multiple layers of security from network to data
 - **Observable**: Comprehensive monitoring and logging capabilities
 - **Flexible Deployment**: Support for multiple deployment strategies (Vercel, Docker, AWS)
+- **MCP Integration**: Standardized tool access through Model Context Protocol for broad AI client compatibility
 
 ### Next Steps
 
@@ -1532,10 +1714,11 @@ This architecture document provides a comprehensive overview of the Lumina AI As
 3. Establish automated backup and disaster recovery procedures
 4. Conduct load testing and performance optimization
 5. Implement advanced features (real-time chat, enhanced AI capabilities)
+6. Expand MCP server tool catalog and add remote clustering support
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: 2025-01-08
+**Document Version**: 2.0
+**Last Updated**: 2025-07-06
 **Maintained By**: David Nguyen
 **Contact**: hoangson091104@gmail.com
