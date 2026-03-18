@@ -1,4 +1,4 @@
-# RAG — Retrieval-Augmented Generation
+# RAG - Retrieval-Augmented Generation in Lumina
 
 Lumina uses a strict RAG pipeline: every answer is grounded in vector-indexed knowledge sources, and every sentence carries an inline citation that maps to a numbered sources list shown in the UI. If no sources match the user's question, the assistant says so rather than hallucinating.
 
@@ -70,7 +70,7 @@ sequenceDiagram
   U->>C: POST /api/chat/auth { message, conversationId? }
   C->>C: Load conversation history from MongoDB
 
-  rect rgb(230, 245, 255)
+  rect rgb(0, 0, 0)
     note over C,P: RAG Retrieval Phase
     C->>K: retrieveKnowledgeChunks(message, topK=10)
     K->>K: Build query variants (up to 3)
@@ -91,7 +91,7 @@ sequenceDiagram
   alt No sources found
     C-->>U: "I do not have enough information…"
   else Sources available
-    rect rgb(255, 245, 230)
+    rect rgb(0, 0, 0)
       note over C,G: Grounded Generation Phase
       C->>G: System: "You are Lumina…" + RAG instructions
       C->>G: Context: Numbered source snippets [1]…[N]
