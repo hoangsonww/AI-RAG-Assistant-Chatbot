@@ -12,6 +12,8 @@ import {
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import SendIcon from "@mui/icons-material/Send";
+import EditIcon from "@mui/icons-material/Edit";
+import CloseIcon from "@mui/icons-material/Close";
 import {
   getConversationById,
   streamAuthedChatMessage,
@@ -419,6 +421,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   // Store the user's in-progress text when they jump into history mode
   const [tempInput, setTempInput] = useState("");
 
+  // Message editing state
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
+
   // Loading states
   const [loadingState, setLoadingState] = useState<
     "idle" | "processing" | "thinking" | "streaming" | "error" | "done"
@@ -467,6 +473,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   // If we have an authenticated conversationId, load it from the server
   useEffect(() => {
+    // Clear any in-progress edit when switching conversations
+    setEditingIndex(null);
+    setEditText("");
+
     if (isAuthenticated()) {
       if (conversationId) {
         // Only load if the conversationId actually changed AND we're not actively creating a message
@@ -805,6 +815,175 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       console.error("Error sending message:", err);
       setIsStreaming(false);
       isCreatingMessageRef.current = false; // Clear flag on catch error too
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "assistant",
+          text: "Sorry, I encountered an error. Please try again.",
+          timestamp: new Date(),
+        },
+      ]);
+      setLoadingState("done");
+    }
+  };
+
+  /**
+   * Handle editing a previously sent user message.
+   * Truncates the conversation at the edited message index and re-sends.
+   */
+  const handleEditMessage = async (index: number): Promise<void> => {
+    const trimmed = editText.trim();
+    if (!trimmed) return;
+    if (loadingState !== "idle" && loadingState !== "done") return;
+
+    const authed = isAuthenticated();
+    let currentConvId = conversationId;
+    let guestId: string | null = null;
+
+    // Resolve conversation IDs BEFORE modifying any state,
+    // so we can bail out cleanly if the conversation doesn't exist.
+    if (authed) {
+      if (!currentConvId) return;
+    } else {
+      const activeGuestId =
+        currentConvId || activeGuestConversationIdRef.current;
+      const existingGuestConversation = activeGuestId
+        ? getGuestConversationByIdFromLocalStorage(activeGuestId)
+        : null;
+      if (!existingGuestConversation) return;
+      currentConvId = existingGuestConversation._id;
+      guestId = existingGuestConversation.guestId || null;
+    }
+
+    // Cancel edit mode
+    setEditingIndex(null);
+    setEditText("");
+
+    // Set flag to prevent conversation reload during message creation
+    isCreatingMessageRef.current = true;
+
+    try {
+      // Truncate local messages to everything before the edited message,
+      // then add the new user message
+      const truncatedMessages = messages.slice(0, index);
+      const userMessage: IMessage = {
+        sender: "user",
+        text: trimmed,
+        timestamp: new Date(),
+      };
+      setMessages([...truncatedMessages, userMessage]);
+
+      // Update state: processing immediately.
+      setLoadingState("processing");
+      setIsStreaming(false);
+
+      setTimeout(() => {
+        setLoadingState("thinking");
+      }, 300);
+
+      setTimeout(() => {
+        setLoadingState("streaming");
+        setIsStreaming(true);
+      }, 600);
+
+      // Streaming callbacks (same as handleSendMessage)
+      const handleChunk = (chunk: string) => {
+        setLoadingState("done");
+        setIsStreaming(true);
+
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          const lastMsg = newMessages[newMessages.length - 1];
+          if (lastMsg && lastMsg.sender === "assistant") {
+            lastMsg.text += chunk;
+          } else {
+            newMessages.push({
+              sender: "assistant",
+              text: chunk,
+              timestamp: new Date(),
+            });
+          }
+          return newMessages;
+        });
+      };
+
+      const handleSources = (sources: ISourceCitation[]) => {
+        if (!sources || sources.length === 0) return;
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          for (let i = newMessages.length - 1; i >= 0; i -= 1) {
+            if (newMessages[i].sender !== "user") {
+              newMessages[i] = { ...newMessages[i], sources };
+              break;
+            }
+          }
+          return newMessages;
+        });
+      };
+
+      const handleComplete = (_id: string) => {
+        setIsStreaming(false);
+        setLoadingState("done");
+        isCreatingMessageRef.current = false;
+      };
+
+      const handleError = (error: Error) => {
+        console.error("Streaming error on edit:", error);
+        setIsStreaming(false);
+        setLoadingState("error");
+        isCreatingMessageRef.current = false;
+
+        const errorMessage =
+          error.message && error.message.trim().length > 0
+            ? error.message
+            : "An unexpected error occurred while streaming the response.";
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "assistant",
+            text: `Streaming error: ${errorMessage}`,
+            timestamp: new Date(),
+          },
+        ]);
+
+        setTimeout(() => setLoadingState("done"), 2000);
+      };
+
+      if (authed) {
+        await streamAuthedChatMessage(
+          trimmed,
+          currentConvId!,
+          handleChunk,
+          handleSources,
+          handleComplete,
+          handleError,
+          index,
+        );
+      } else {
+        await streamGuestChatMessage(
+          trimmed,
+          guestId,
+          handleChunk,
+          handleSources,
+          (newGuestId: string) => {
+            if (currentConvId) {
+              const updated = upsertGuestConversationInLocalStorage({
+                _id: currentConvId,
+                guestId: newGuestId,
+              });
+              if (onNewConversation) onNewConversation(updated);
+            }
+            handleComplete(newGuestId);
+          },
+          handleError,
+          index,
+        );
+      }
+    } catch (err) {
+      console.error("Error editing message:", err);
+      setIsStreaming(false);
+      isCreatingMessageRef.current = false;
       setMessages((prev) => [
         ...prev,
         {
@@ -1336,6 +1515,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                               ? theme.palette.grey[700]
                               : "#d5d5d5",
                         },
+                        "&:hover .edit-icon-container": {
+                          opacity: 1,
+                        },
                         paddingTop: "1.1rem",
                         position: "relative",
                         "& ul, & ol": {
@@ -1368,6 +1550,145 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                           </motion.div>
                         </Box>
                       )}
+                      {/* Edit icon for user messages */}
+                      {isUser && editingIndex !== idx && (
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            top: 5,
+                            left: 5,
+                            zIndex: 2,
+                            opacity: 0,
+                            transition: "opacity 0.2s ease",
+                            ".MuiBox-root:hover > &, &:focus-within": {
+                              opacity: 1,
+                            },
+                          }}
+                          className="edit-icon-container"
+                        >
+                          <motion.div
+                            whileHover={{ scale: 1.2 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                setEditingIndex(idx);
+                                setEditText(msg.text);
+                              }}
+                              disabled={
+                                loadingState !== "idle" &&
+                                loadingState !== "done"
+                              }
+                              sx={{
+                                color: "rgba(255,255,255,0.8)",
+                                padding: "2px",
+                                "&:hover": {
+                                  color: "white",
+                                  backgroundColor:
+                                    "rgba(255,255,255,0.15)",
+                                },
+                              }}
+                            >
+                              <EditIcon sx={{ fontSize: "1rem" }} />
+                            </IconButton>
+                          </motion.div>
+                        </Box>
+                      )}
+                      {/* Inline edit mode for user messages */}
+                      {isUser && editingIndex === idx ? (
+                        <Box sx={{ width: "100%" }}>
+                          <TextField
+                            multiline
+                            fullWidth
+                            autoFocus
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                handleEditMessage(idx);
+                              }
+                              if (e.key === "Escape") {
+                                setEditingIndex(null);
+                                setEditText("");
+                              }
+                            }}
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              "& .MuiOutlinedInput-root": {
+                                color: "white",
+                                fontSize: {
+                                  xs: "0.92rem",
+                                  sm: "0.98rem",
+                                },
+                                "& fieldset": {
+                                  borderColor:
+                                    "rgba(255,255,255,0.3)",
+                                },
+                                "&:hover fieldset": {
+                                  borderColor:
+                                    "rgba(255,255,255,0.5)",
+                                },
+                                "&.Mui-focused fieldset": {
+                                  borderColor:
+                                    "rgba(255,255,255,0.7)",
+                                },
+                              },
+                              "& .MuiInputBase-input": {
+                                color: "white",
+                              },
+                            }}
+                          />
+                          <Box
+                            display="flex"
+                            justifyContent="flex-end"
+                            gap={0.5}
+                            mt={0.75}
+                          >
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                setEditingIndex(null);
+                                setEditText("");
+                              }}
+                              sx={{
+                                color: "rgba(255,255,255,0.7)",
+                                padding: "4px",
+                                "&:hover": {
+                                  color: "white",
+                                  backgroundColor:
+                                    "rgba(255,255,255,0.1)",
+                                },
+                              }}
+                            >
+                              <CloseIcon sx={{ fontSize: "1.1rem" }} />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleEditMessage(idx)}
+                              disabled={!editText.trim()}
+                              sx={{
+                                color: "rgba(255,255,255,0.9)",
+                                padding: "4px",
+                                backgroundColor:
+                                  "rgba(255,255,255,0.15)",
+                                "&:hover": {
+                                  color: "white",
+                                  backgroundColor:
+                                    "rgba(255,255,255,0.25)",
+                                },
+                                "&.Mui-disabled": {
+                                  color: "rgba(255,255,255,0.3)",
+                                },
+                              }}
+                            >
+                              <SendIcon sx={{ fontSize: "1.1rem" }} />
+                            </IconButton>
+                          </Box>
+                        </Box>
+                      ) : (
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm, remarkMath]}
                         rehypePlugins={[rehypeKatex]}
@@ -1746,6 +2067,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                       >
                         {linkifyText(msg.text)}
                       </ReactMarkdown>
+                      )}
                       {isBot && (
                         <SourcesList
                           sources={msg.sources}

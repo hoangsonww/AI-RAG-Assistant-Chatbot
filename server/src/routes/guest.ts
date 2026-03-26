@@ -55,7 +55,7 @@ const router = express.Router();
  */
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const { message, guestId } = req.body;
+    const { message, guestId, editIndex } = req.body;
     if (!message || typeof message !== "string") {
       return res.status(400).json({ message: "Invalid or empty message." });
     }
@@ -83,7 +83,18 @@ router.post("/", async (req: Request, res: Response) => {
       await newGuestConv.save();
       return handleGuestConversation(res, newGuestConv, message);
     } else {
-      // We have an existing guest conversation
+      // We have an existing guest conversation — apply editIndex truncation if provided
+      if (
+        guestConversation &&
+        typeof editIndex === "number" &&
+        Number.isInteger(editIndex) &&
+        editIndex >= 0
+      ) {
+        if (editIndex >= guestConversation.messages.length) {
+          return res.status(400).json({ message: "editIndex out of range." });
+        }
+        guestConversation.messages = guestConversation.messages.slice(0, editIndex) as typeof guestConversation.messages;
+      }
       // @ts-ignore
       return handleGuestConversation(res, guestConversation, message);
     }
@@ -159,7 +170,7 @@ async function handleGuestConversation(
  */
 router.post("/stream", async (req: Request, res: Response) => {
   try {
-    const { message, guestId } = req.body;
+    const { message, guestId, editIndex } = req.body;
     if (!message || typeof message !== "string") {
       return res.status(400).json({ message: "Invalid or empty message." });
     }
@@ -185,6 +196,18 @@ router.post("/stream", async (req: Request, res: Response) => {
       await newGuestConv.save();
       return handleGuestConversationStream(res, newGuestConv, message);
     } else {
+      // Apply editIndex truncation if provided
+      if (
+        guestConversation &&
+        typeof editIndex === "number" &&
+        Number.isInteger(editIndex) &&
+        editIndex >= 0
+      ) {
+        if (editIndex >= guestConversation.messages.length) {
+          return res.status(400).json({ message: "editIndex out of range." });
+        }
+        guestConversation.messages = guestConversation.messages.slice(0, editIndex) as typeof guestConversation.messages;
+      }
       // @ts-ignore
       return handleGuestConversationStream(res, guestConversation, message);
     }
