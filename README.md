@@ -111,6 +111,7 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 - **Responsive UI:** Built with React and Material‑UI (MUI) with a fully responsive, modern, and animated interface.
 - **Landing Page:** A dynamic landing page with animations, feature cards, and call-to-action buttons.
 - **Guest Mode:** Users may interact with the AI assistant as a guest, though conversations will not be saved.
+- **Message Editing with Conversation Branching:** Edit any previously sent message to branch the conversation — the history is truncated at the edit point and a fresh AI response is generated from the revised message.
 - **Conversation Search:** Search through conversation titles and messages to find relevant discussions.
 - **Collapsible Sidebar:** A sidebar that displays conversation history, allowing users to switch between conversations easily.
 - **Reinforced Learning from Human Feedback (RLHF):** Implement a feedback loop to continuously improve the AI's responses based on user interactions.
@@ -131,6 +132,7 @@ The project follows a modern, full-stack architecture with clear separation of c
   - Client-side routing with React Router
   - JWT-based authentication and authorization
   - Real-time chat interface with markdown support
+  - Inline message editing with conversation branching
   - Theme toggling (dark/light mode)
   - Collapsible sidebar for conversation history
   - WebSockets & SSE for streaming AI responses
@@ -593,7 +595,7 @@ sequenceDiagram
 - **Live Text Rendering:** See responses appear in real-time with markdown formatting
 - **Visual Feedback:** Multiple loading states (Processing → Thinking → Connecting → Streaming)
 - **Blinking Cursor:** Animated cursor indicates active streaming
-- **Automatic Retries:** Up to 3 retry attempts with exponential backoff (1s, 2s, 4s)
+- **Automatic Retries:** Up to 3 retry attempts with exponential backoff (1s, 2s, 4s); retries are disabled for edit requests to prevent corrupted message state
 - **Error Handling:** Graceful degradation with user-friendly error messages
 - **Works Everywhere:** Available for both authenticated and guest users
 
@@ -607,7 +609,8 @@ Authorization: Bearer <token>
 
 {
   "message": "Your question here",
-  "conversationId": "optional-conversation-id"
+  "conversationId": "optional-conversation-id",
+  "editIndex": "optional-int — truncates conversation history at this index before sending"
 }
 ```
 
@@ -618,7 +621,8 @@ Content-Type: application/json
 
 {
   "message": "Your question here",
-  "guestId": "optional-guest-id"
+  "guestId": "optional-guest-id",
+  "editIndex": "optional-int — truncates conversation history at this index before sending"
 }
 ```
 
@@ -850,10 +854,10 @@ flowchart LR
 
 ### Chat
 
-- **POST /api/chat/auth:** Process a chat query for authenticated users and return an AI-generated response.
-- **POST /api/chat/auth/stream:** Stream AI responses in real-time for authenticated users using Server-Sent Events (SSE).
-- **POST /api/chat/guest:** Process a chat query for guest users and return an AI-generated response.
-- **POST /api/chat/guest/stream:** Stream AI responses in real-time for guest users using Server-Sent Events (SSE).
+- **POST /api/chat/auth:** Process a chat query for authenticated users and return an AI-generated response. Accepts an optional `editIndex` to truncate conversation history for message-edit branching.
+- **POST /api/chat/auth/stream:** Stream AI responses in real-time for authenticated users using Server-Sent Events (SSE). Supports `editIndex` for conversation branching.
+- **POST /api/chat/guest:** Process a chat query for guest users and return an AI-generated response. Accepts an optional `editIndex` for message-edit branching.
+- **POST /api/chat/guest/stream:** Stream AI responses in real-time for guest users using Server-Sent Events (SSE). Supports `editIndex` for conversation branching.
 
 ### Swagger API Documentation
 
