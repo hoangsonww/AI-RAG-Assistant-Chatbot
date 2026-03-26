@@ -52,7 +52,7 @@ const router = express.Router();
  */
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const { message, conversationId } = req.body;
+    const { message, conversationId, editIndex } = req.body;
     if (!message || typeof message !== "string") {
       return res.status(400).json({ message: "Invalid or empty message." });
     }
@@ -86,6 +86,21 @@ router.post("/", async (req: Request, res: Response) => {
 
       if (!conversation) {
         return res.status(404).json({ message: "Conversation not found" });
+      }
+
+      // If editIndex is provided, truncate messages up to (not including) that index
+      if (
+        typeof editIndex === "number" &&
+        Number.isInteger(editIndex) &&
+        editIndex >= 0
+      ) {
+        if (editIndex >= conversation.messages.length) {
+          return res.status(400).json({ message: "editIndex out of range." });
+        }
+        conversation.messages = conversation.messages.slice(
+          0,
+          editIndex,
+        ) as typeof conversation.messages;
       }
 
       history = conversation.messages.map((msg: IMessage) => ({
@@ -163,7 +178,7 @@ router.post("/", async (req: Request, res: Response) => {
  */
 router.post("/stream", async (req: Request, res: Response) => {
   try {
-    const { message, conversationId } = req.body;
+    const { message, conversationId, editIndex } = req.body;
     if (!message || typeof message !== "string") {
       return res.status(400).json({ message: "Invalid or empty message." });
     }
@@ -197,6 +212,21 @@ router.post("/stream", async (req: Request, res: Response) => {
 
       if (!conversation) {
         return res.status(404).json({ message: "Conversation not found" });
+      }
+
+      // If editIndex is provided, truncate messages up to (not including) that index
+      if (
+        typeof editIndex === "number" &&
+        Number.isInteger(editIndex) &&
+        editIndex >= 0
+      ) {
+        if (editIndex >= conversation.messages.length) {
+          return res.status(400).json({ message: "editIndex out of range." });
+        }
+        conversation.messages = conversation.messages.slice(
+          0,
+          editIndex,
+        ) as typeof conversation.messages;
       }
 
       history = conversation.messages.map((msg: IMessage) => ({

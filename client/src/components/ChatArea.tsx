@@ -12,6 +12,8 @@ import {
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import SendIcon from "@mui/icons-material/Send";
+import EditIcon from "@mui/icons-material/Edit";
+import CloseIcon from "@mui/icons-material/Close";
 import {
   getConversationById,
   streamAuthedChatMessage,
@@ -419,6 +421,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   // Store the user's in-progress text when they jump into history mode
   const [tempInput, setTempInput] = useState("");
 
+  // Message editing state
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
+
   // Loading states
   const [loadingState, setLoadingState] = useState<
     "idle" | "processing" | "thinking" | "streaming" | "error" | "done"
@@ -467,6 +473,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   // If we have an authenticated conversationId, load it from the server
   useEffect(() => {
+    // Clear any in-progress edit when switching conversations
+    setEditingIndex(null);
+    setEditText("");
+
     if (isAuthenticated()) {
       if (conversationId) {
         // Only load if the conversationId actually changed AND we're not actively creating a message
@@ -805,6 +815,175 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       console.error("Error sending message:", err);
       setIsStreaming(false);
       isCreatingMessageRef.current = false; // Clear flag on catch error too
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "assistant",
+          text: "Sorry, I encountered an error. Please try again.",
+          timestamp: new Date(),
+        },
+      ]);
+      setLoadingState("done");
+    }
+  };
+
+  /**
+   * Handle editing a previously sent user message.
+   * Truncates the conversation at the edited message index and re-sends.
+   */
+  const handleEditMessage = async (index: number): Promise<void> => {
+    const trimmed = editText.trim();
+    if (!trimmed) return;
+    if (loadingState !== "idle" && loadingState !== "done") return;
+
+    const authed = isAuthenticated();
+    let currentConvId = conversationId;
+    let guestId: string | null = null;
+
+    // Resolve conversation IDs BEFORE modifying any state,
+    // so we can bail out cleanly if the conversation doesn't exist.
+    if (authed) {
+      if (!currentConvId) return;
+    } else {
+      const activeGuestId =
+        currentConvId || activeGuestConversationIdRef.current;
+      const existingGuestConversation = activeGuestId
+        ? getGuestConversationByIdFromLocalStorage(activeGuestId)
+        : null;
+      if (!existingGuestConversation) return;
+      currentConvId = existingGuestConversation._id;
+      guestId = existingGuestConversation.guestId || null;
+    }
+
+    // Cancel edit mode
+    setEditingIndex(null);
+    setEditText("");
+
+    // Set flag to prevent conversation reload during message creation
+    isCreatingMessageRef.current = true;
+
+    try {
+      // Truncate local messages to everything before the edited message,
+      // then add the new user message
+      const truncatedMessages = messages.slice(0, index);
+      const userMessage: IMessage = {
+        sender: "user",
+        text: trimmed,
+        timestamp: new Date(),
+      };
+      setMessages([...truncatedMessages, userMessage]);
+
+      // Update state: processing immediately.
+      setLoadingState("processing");
+      setIsStreaming(false);
+
+      setTimeout(() => {
+        setLoadingState("thinking");
+      }, 300);
+
+      setTimeout(() => {
+        setLoadingState("streaming");
+        setIsStreaming(true);
+      }, 600);
+
+      // Streaming callbacks (same as handleSendMessage)
+      const handleChunk = (chunk: string) => {
+        setLoadingState("done");
+        setIsStreaming(true);
+
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          const lastMsg = newMessages[newMessages.length - 1];
+          if (lastMsg && lastMsg.sender === "assistant") {
+            lastMsg.text += chunk;
+          } else {
+            newMessages.push({
+              sender: "assistant",
+              text: chunk,
+              timestamp: new Date(),
+            });
+          }
+          return newMessages;
+        });
+      };
+
+      const handleSources = (sources: ISourceCitation[]) => {
+        if (!sources || sources.length === 0) return;
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          for (let i = newMessages.length - 1; i >= 0; i -= 1) {
+            if (newMessages[i].sender !== "user") {
+              newMessages[i] = { ...newMessages[i], sources };
+              break;
+            }
+          }
+          return newMessages;
+        });
+      };
+
+      const handleComplete = (_id: string) => {
+        setIsStreaming(false);
+        setLoadingState("done");
+        isCreatingMessageRef.current = false;
+      };
+
+      const handleError = (error: Error) => {
+        console.error("Streaming error on edit:", error);
+        setIsStreaming(false);
+        setLoadingState("error");
+        isCreatingMessageRef.current = false;
+
+        const errorMessage =
+          error.message && error.message.trim().length > 0
+            ? error.message
+            : "An unexpected error occurred while streaming the response.";
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "assistant",
+            text: `Streaming error: ${errorMessage}`,
+            timestamp: new Date(),
+          },
+        ]);
+
+        setTimeout(() => setLoadingState("done"), 2000);
+      };
+
+      if (authed) {
+        await streamAuthedChatMessage(
+          trimmed,
+          currentConvId!,
+          handleChunk,
+          handleSources,
+          handleComplete,
+          handleError,
+          index,
+        );
+      } else {
+        await streamGuestChatMessage(
+          trimmed,
+          guestId,
+          handleChunk,
+          handleSources,
+          (newGuestId: string) => {
+            if (currentConvId) {
+              const updated = upsertGuestConversationInLocalStorage({
+                _id: currentConvId,
+                guestId: newGuestId,
+              });
+              if (onNewConversation) onNewConversation(updated);
+            }
+            handleComplete(newGuestId);
+          },
+          handleError,
+          index,
+        );
+      }
+    } catch (err) {
+      console.error("Error editing message:", err);
+      setIsStreaming(false);
+      isCreatingMessageRef.current = false;
       setMessages((prev) => [
         ...prev,
         {
@@ -1368,384 +1547,473 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                           </motion.div>
                         </Box>
                       )}
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm, remarkMath]}
-                        rehypePlugins={[rehypeKatex]}
-                        components={{
-                          h1: ({ node, children, ...props }) => (
-                            <Box
-                              component="h1"
-                              sx={{
-                                fontSize: "2rem",
-                                margin: "1rem 0",
-                                fontWeight: "bold",
-                                borderBottom: "2px solid #eee",
-                                paddingBottom: "0.5rem",
+                      {/* Inline edit mode for user messages */}
+                      {isUser && editingIndex === idx ? (
+                        <Box sx={{ width: "100%" }}>
+                          <TextField
+                            multiline
+                            fullWidth
+                            autoFocus
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                handleEditMessage(idx);
+                              }
+                              if (e.key === "Escape") {
+                                setEditingIndex(null);
+                                setEditText("");
+                              }
+                            }}
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              "& .MuiOutlinedInput-root": {
+                                color: "white",
+                                fontSize: {
+                                  xs: "0.92rem",
+                                  sm: "0.98rem",
+                                },
+                                "& fieldset": {
+                                  borderColor: "rgba(255,255,255,0.3)",
+                                },
+                                "&:hover fieldset": {
+                                  borderColor: "rgba(255,255,255,0.5)",
+                                },
+                                "&.Mui-focused fieldset": {
+                                  borderColor: "rgba(255,255,255,0.7)",
+                                },
+                              },
+                              "& .MuiInputBase-input": {
+                                color: "white",
+                              },
+                            }}
+                          />
+                          <Box
+                            display="flex"
+                            justifyContent="flex-end"
+                            gap={0.5}
+                            mt={0.75}
+                          >
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                setEditingIndex(null);
+                                setEditText("");
                               }}
-                              {...(props as any)}
-                            >
-                              {renderMarkdownChildren(
-                                children,
-                                onCitationClick,
-                                onCitationEnter,
-                                onCitationLeave,
-                              )}
-                            </Box>
-                          ),
-                          h2: ({ node, children, ...props }) => (
-                            <Box
-                              component="h2"
                               sx={{
-                                fontSize: "1.75rem",
-                                margin: "1rem 0",
-                                fontWeight: "bold",
-                                borderBottom: "1px solid #eee",
-                                paddingBottom: "0.5rem",
-                              }}
-                              {...(props as any)}
-                            >
-                              {renderMarkdownChildren(
-                                children,
-                                onCitationClick,
-                                onCitationEnter,
-                                onCitationLeave,
-                              )}
-                            </Box>
-                          ),
-                          h3: ({ node, children, ...props }) => (
-                            <Box
-                              component="h3"
-                              sx={{
-                                fontSize: "1.5rem",
-                                margin: "1rem 0",
-                                fontWeight: "bold",
-                              }}
-                              {...(props as any)}
-                            >
-                              {renderMarkdownChildren(
-                                children,
-                                onCitationClick,
-                                onCitationEnter,
-                                onCitationLeave,
-                              )}
-                            </Box>
-                          ),
-                          h4: ({ node, children, ...props }) => (
-                            <Box
-                              component="h4"
-                              sx={{
-                                fontSize: "1.25rem",
-                                margin: "1rem 0",
-                                fontWeight: "bold",
-                              }}
-                              {...(props as any)}
-                            >
-                              {renderMarkdownChildren(
-                                children,
-                                onCitationClick,
-                                onCitationEnter,
-                                onCitationLeave,
-                              )}
-                            </Box>
-                          ),
-                          h5: ({ node, children, ...props }) => (
-                            <Box
-                              component="h5"
-                              sx={{
-                                fontSize: "1rem",
-                                margin: "1rem 0",
-                                fontWeight: "bold",
-                              }}
-                              {...(props as any)}
-                            >
-                              {renderMarkdownChildren(
-                                children,
-                                onCitationClick,
-                                onCitationEnter,
-                                onCitationLeave,
-                              )}
-                            </Box>
-                          ),
-                          h6: ({ node, children, ...props }) => (
-                            <Box
-                              component="h6"
-                              sx={{
-                                fontSize: "0.875rem",
-                                margin: "1rem 0",
-                                fontWeight: "bold",
-                              }}
-                              {...(props as any)}
-                            >
-                              {renderMarkdownChildren(
-                                children,
-                                onCitationClick,
-                                onCitationEnter,
-                                onCitationLeave,
-                              )}
-                            </Box>
-                          ),
-                          p: ({ node, children, ...props }) => (
-                            <Box
-                              component="p"
-                              sx={{
-                                margin: 0,
-                                marginBottom: "0.9rem",
-                                lineHeight: 1.65,
-                                fontSize: { xs: "0.92rem", sm: "0.98rem" },
-                                letterSpacing: "0.01em",
-                                font: "inherit",
-                                color: isUser ? "white" : botTextColor,
-                              }}
-                              {...(props as any)}
-                            >
-                              {renderMarkdownChildren(
-                                children,
-                                onCitationClick,
-                                onCitationEnter,
-                                onCitationLeave,
-                              )}
-                            </Box>
-                          ),
-                          ul: ({ node, children, ...props }) => (
-                            <Box
-                              component="ul"
-                              sx={{
-                                color: isUser ? "white" : botTextColor,
-                                font: "inherit",
-                                margin: "0.4rem 0 0.9rem",
-                                paddingLeft: "1.2rem",
-                              }}
-                              {...(props as any)}
-                            >
-                              {renderMarkdownChildren(
-                                children,
-                                onCitationClick,
-                                onCitationEnter,
-                                onCitationLeave,
-                              )}
-                            </Box>
-                          ),
-                          ol: ({ node, children, ...props }) => (
-                            <Box
-                              component="ol"
-                              sx={{
-                                color: isUser ? "white" : botTextColor,
-                                font: "inherit",
-                                margin: "0.4rem 0 0.9rem",
-                                paddingLeft: "1.2rem",
-                              }}
-                              {...(props as any)}
-                            >
-                              {renderMarkdownChildren(
-                                children,
-                                onCitationClick,
-                                onCitationEnter,
-                                onCitationLeave,
-                              )}
-                            </Box>
-                          ),
-                          li: ({ node, children, ...props }) => (
-                            <Box
-                              component="li"
-                              sx={{
-                                marginBottom: "0.45rem",
-                                lineHeight: 1.6,
-                                font: "inherit",
-                              }}
-                              {...(props as any)}
-                            >
-                              {renderMarkdownChildren(
-                                children,
-                                onCitationClick,
-                                onCitationEnter,
-                                onCitationLeave,
-                              )}
-                            </Box>
-                          ),
-                          a: ({ node, ...props }) => (
-                            // @ts-ignore
-                            <MuiLink
-                              {...props}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              sx={{
-                                color: "#f57c00",
-                                textDecoration: "underline",
+                                color: "rgba(255,255,255,0.7)",
+                                padding: "4px",
                                 "&:hover": {
-                                  color: isUser ? "white" : "#188bfb",
-                                  cursor: "pointer",
+                                  color: "white",
+                                  backgroundColor: "rgba(255,255,255,0.1)",
                                 },
                               }}
-                            />
-                          ),
-                          blockquote: ({ node, children, ...props }) => (
-                            <Box
-                              component="blockquote"
-                              sx={{
-                                borderLeft: "4px solid #ddd",
-                                margin: "1rem 0",
-                                paddingLeft: "1rem",
-                                fontStyle: "italic",
-                                color: "#555",
-                              }}
-                              {...(props as any)}
                             >
-                              {renderMarkdownChildren(
-                                children,
-                                onCitationClick,
-                                onCitationEnter,
-                                onCitationLeave,
-                              )}
-                            </Box>
-                          ),
-                          hr: ({ node, ...props }) => (
-                            <Box
-                              component="hr"
+                              <CloseIcon sx={{ fontSize: "1.1rem" }} />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleEditMessage(idx)}
+                              disabled={!editText.trim()}
                               sx={{
-                                border: "none",
-                                borderTop: "1px solid #eee",
-                                margin: "1rem 0",
+                                color: "rgba(255,255,255,0.9)",
+                                padding: "4px",
+                                backgroundColor: "rgba(255,255,255,0.15)",
+                                "&:hover": {
+                                  color: "white",
+                                  backgroundColor: "rgba(255,255,255,0.25)",
+                                },
+                                "&.Mui-disabled": {
+                                  color: "rgba(255,255,255,0.3)",
+                                },
                               }}
-                              {...(props as any)}
-                            />
-                          ),
-                          // @ts-ignore
-                          code: ({ inline, children, ...props }) => {
-                            if (inline) {
-                              return (
-                                // @ts-ignore
+                            >
+                              <SendIcon sx={{ fontSize: "1.1rem" }} />
+                            </IconButton>
+                          </Box>
+                        </Box>
+                      ) : (
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm, remarkMath]}
+                          rehypePlugins={[rehypeKatex]}
+                          components={{
+                            h1: ({ node, children, ...props }) => (
+                              <Box
+                                component="h1"
+                                sx={{
+                                  fontSize: "2rem",
+                                  margin: "1rem 0",
+                                  fontWeight: "bold",
+                                  borderBottom: "2px solid #eee",
+                                  paddingBottom: "0.5rem",
+                                }}
+                                {...(props as any)}
+                              >
+                                {renderMarkdownChildren(
+                                  children,
+                                  onCitationClick,
+                                  onCitationEnter,
+                                  onCitationLeave,
+                                )}
+                              </Box>
+                            ),
+                            h2: ({ node, children, ...props }) => (
+                              <Box
+                                component="h2"
+                                sx={{
+                                  fontSize: "1.75rem",
+                                  margin: "1rem 0",
+                                  fontWeight: "bold",
+                                  borderBottom: "1px solid #eee",
+                                  paddingBottom: "0.5rem",
+                                }}
+                                {...(props as any)}
+                              >
+                                {renderMarkdownChildren(
+                                  children,
+                                  onCitationClick,
+                                  onCitationEnter,
+                                  onCitationLeave,
+                                )}
+                              </Box>
+                            ),
+                            h3: ({ node, children, ...props }) => (
+                              <Box
+                                component="h3"
+                                sx={{
+                                  fontSize: "1.5rem",
+                                  margin: "1rem 0",
+                                  fontWeight: "bold",
+                                }}
+                                {...(props as any)}
+                              >
+                                {renderMarkdownChildren(
+                                  children,
+                                  onCitationClick,
+                                  onCitationEnter,
+                                  onCitationLeave,
+                                )}
+                              </Box>
+                            ),
+                            h4: ({ node, children, ...props }) => (
+                              <Box
+                                component="h4"
+                                sx={{
+                                  fontSize: "1.25rem",
+                                  margin: "1rem 0",
+                                  fontWeight: "bold",
+                                }}
+                                {...(props as any)}
+                              >
+                                {renderMarkdownChildren(
+                                  children,
+                                  onCitationClick,
+                                  onCitationEnter,
+                                  onCitationLeave,
+                                )}
+                              </Box>
+                            ),
+                            h5: ({ node, children, ...props }) => (
+                              <Box
+                                component="h5"
+                                sx={{
+                                  fontSize: "1rem",
+                                  margin: "1rem 0",
+                                  fontWeight: "bold",
+                                }}
+                                {...(props as any)}
+                              >
+                                {renderMarkdownChildren(
+                                  children,
+                                  onCitationClick,
+                                  onCitationEnter,
+                                  onCitationLeave,
+                                )}
+                              </Box>
+                            ),
+                            h6: ({ node, children, ...props }) => (
+                              <Box
+                                component="h6"
+                                sx={{
+                                  fontSize: "0.875rem",
+                                  margin: "1rem 0",
+                                  fontWeight: "bold",
+                                }}
+                                {...(props as any)}
+                              >
+                                {renderMarkdownChildren(
+                                  children,
+                                  onCitationClick,
+                                  onCitationEnter,
+                                  onCitationLeave,
+                                )}
+                              </Box>
+                            ),
+                            p: ({ node, children, ...props }) => (
+                              <Box
+                                component="p"
+                                sx={{
+                                  margin: 0,
+                                  marginBottom: "0.9rem",
+                                  lineHeight: 1.65,
+                                  fontSize: { xs: "0.92rem", sm: "0.98rem" },
+                                  letterSpacing: "0.01em",
+                                  font: "inherit",
+                                  color: isUser ? "white" : botTextColor,
+                                }}
+                                {...(props as any)}
+                              >
+                                {renderMarkdownChildren(
+                                  children,
+                                  onCitationClick,
+                                  onCitationEnter,
+                                  onCitationLeave,
+                                )}
+                              </Box>
+                            ),
+                            ul: ({ node, children, ...props }) => (
+                              <Box
+                                component="ul"
+                                sx={{
+                                  color: isUser ? "white" : botTextColor,
+                                  font: "inherit",
+                                  margin: "0.4rem 0 0.9rem",
+                                  paddingLeft: "1.2rem",
+                                }}
+                                {...(props as any)}
+                              >
+                                {renderMarkdownChildren(
+                                  children,
+                                  onCitationClick,
+                                  onCitationEnter,
+                                  onCitationLeave,
+                                )}
+                              </Box>
+                            ),
+                            ol: ({ node, children, ...props }) => (
+                              <Box
+                                component="ol"
+                                sx={{
+                                  color: isUser ? "white" : botTextColor,
+                                  font: "inherit",
+                                  margin: "0.4rem 0 0.9rem",
+                                  paddingLeft: "1.2rem",
+                                }}
+                                {...(props as any)}
+                              >
+                                {renderMarkdownChildren(
+                                  children,
+                                  onCitationClick,
+                                  onCitationEnter,
+                                  onCitationLeave,
+                                )}
+                              </Box>
+                            ),
+                            li: ({ node, children, ...props }) => (
+                              <Box
+                                component="li"
+                                sx={{
+                                  marginBottom: "0.45rem",
+                                  lineHeight: 1.6,
+                                  font: "inherit",
+                                }}
+                                {...(props as any)}
+                              >
+                                {renderMarkdownChildren(
+                                  children,
+                                  onCitationClick,
+                                  onCitationEnter,
+                                  onCitationLeave,
+                                )}
+                              </Box>
+                            ),
+                            a: ({ node, ...props }) => (
+                              // @ts-ignore
+                              <MuiLink
+                                {...props}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                sx={{
+                                  color: "#f57c00",
+                                  textDecoration: "underline",
+                                  "&:hover": {
+                                    color: isUser ? "white" : "#188bfb",
+                                    cursor: "pointer",
+                                  },
+                                }}
+                              />
+                            ),
+                            blockquote: ({ node, children, ...props }) => (
+                              <Box
+                                component="blockquote"
+                                sx={{
+                                  borderLeft: "4px solid #ddd",
+                                  margin: "1rem 0",
+                                  paddingLeft: "1rem",
+                                  fontStyle: "italic",
+                                  color: "#555",
+                                }}
+                                {...(props as any)}
+                              >
+                                {renderMarkdownChildren(
+                                  children,
+                                  onCitationClick,
+                                  onCitationEnter,
+                                  onCitationLeave,
+                                )}
+                              </Box>
+                            ),
+                            hr: ({ node, ...props }) => (
+                              <Box
+                                component="hr"
+                                sx={{
+                                  border: "none",
+                                  borderTop: "1px solid #eee",
+                                  margin: "1rem 0",
+                                }}
+                                {...(props as any)}
+                              />
+                            ),
+                            // @ts-ignore
+                            code: ({ inline, children, ...props }) => {
+                              if (inline) {
+                                return (
+                                  // @ts-ignore
+                                  <Box
+                                    component="code"
+                                    sx={{
+                                      background: "#f5f5f5",
+                                      color: "#333",
+                                      padding: "0.2rem 0.4rem",
+                                      borderRadius: "4px",
+                                      fontFamily: "monospace",
+                                      whiteSpace: "nowrap",
+                                      overflowX: "auto",
+                                    }}
+                                    {...props}
+                                  >
+                                    {children}
+                                  </Box>
+                                );
+                              }
+                              // For block code, let the <pre> renderer take care of it.
+                              return <code {...props}>{children}</code>;
+                            },
+
+                            // Override pre for block code blocks
+                            pre: ({ node, children, ...props }) => (
+                              // @ts-ignore
+                              <Box
+                                component="pre"
+                                sx={{
+                                  background: "#f5f5f5",
+                                  color: "#333",
+                                  padding: "1rem",
+                                  borderRadius: "4px",
+                                  overflowX: "auto",
+                                  margin: "1rem 0",
+                                  maxWidth: "100%",
+                                  width: "100%",
+                                  boxSizing: "border-box",
+                                  whiteSpace: "pre-wrap", // wrap long lines if you prefer; use "pre" to preserve spacing without wrapping
+                                }}
+                                {...props}
+                              >
+                                {children}
+                              </Box>
+                            ),
+                            table: ({ node, children, ...props }) => (
+                              <Box
+                                sx={{
+                                  overflowX: "auto",
+                                  mb: "1rem",
+                                }}
+                                {...(props as any)}
+                              >
                                 <Box
-                                  component="code"
+                                  component="table"
                                   sx={{
-                                    background: "#f5f5f5",
-                                    color: "#333",
-                                    padding: "0.2rem 0.4rem",
-                                    borderRadius: "4px",
-                                    fontFamily: "monospace",
-                                    whiteSpace: "nowrap",
-                                    overflowX: "auto",
+                                    width: "auto",
+                                    minWidth: "100%",
+                                    borderCollapse: "collapse",
+                                    border:
+                                      "1px solid " +
+                                      (theme.palette.mode === "dark"
+                                        ? "white"
+                                        : "black"),
                                   }}
-                                  {...props}
                                 >
                                   {children}
                                 </Box>
-                              );
-                            }
-                            // For block code, let the <pre> renderer take care of it.
-                            return <code {...props}>{children}</code>;
-                          },
-
-                          // Override pre for block code blocks
-                          pre: ({ node, children, ...props }) => (
-                            // @ts-ignore
-                            <Box
-                              component="pre"
-                              sx={{
-                                background: "#f5f5f5",
-                                color: "#333",
-                                padding: "1rem",
-                                borderRadius: "4px",
-                                overflowX: "auto",
-                                margin: "1rem 0",
-                                maxWidth: "100%",
-                                width: "100%",
-                                boxSizing: "border-box",
-                                whiteSpace: "pre-wrap", // wrap long lines if you prefer; use "pre" to preserve spacing without wrapping
-                              }}
-                              {...props}
-                            >
-                              {children}
-                            </Box>
-                          ),
-                          table: ({ node, children, ...props }) => (
-                            <Box
-                              sx={{
-                                overflowX: "auto",
-                                mb: "1rem",
-                              }}
-                              {...(props as any)}
-                            >
+                              </Box>
+                            ),
+                            thead: ({ node, children, ...props }) => (
+                              <Box component="thead" {...(props as any)}>
+                                {children}
+                              </Box>
+                            ),
+                            tbody: ({ node, children, ...props }) => (
+                              <Box component="tbody" {...(props as any)}>
+                                {children}
+                              </Box>
+                            ),
+                            tr: ({ node, children, ...props }) => (
+                              <tr {...(props as any)}>{children}</tr>
+                            ),
+                            th: ({ node, children, ...props }) => (
                               <Box
-                                component="table"
+                                component="th"
                                 sx={{
-                                  width: "auto",
-                                  minWidth: "100%",
-                                  borderCollapse: "collapse",
                                   border:
                                     "1px solid " +
                                     (theme.palette.mode === "dark"
                                       ? "white"
                                       : "black"),
+                                  padding: "0.5rem",
+                                  backgroundColor:
+                                    theme.palette.mode === "dark"
+                                      ? "#333"
+                                      : "#f5f5f5",
+                                  textAlign: "left",
+                                  fontWeight: "bold",
+                                  color:
+                                    theme.palette.mode === "dark"
+                                      ? "white"
+                                      : "black",
                                 }}
+                                {...(props as any)}
                               >
                                 {children}
                               </Box>
-                            </Box>
-                          ),
-                          thead: ({ node, children, ...props }) => (
-                            <Box component="thead" {...(props as any)}>
-                              {children}
-                            </Box>
-                          ),
-                          tbody: ({ node, children, ...props }) => (
-                            <Box component="tbody" {...(props as any)}>
-                              {children}
-                            </Box>
-                          ),
-                          tr: ({ node, children, ...props }) => (
-                            <tr {...(props as any)}>{children}</tr>
-                          ),
-                          th: ({ node, children, ...props }) => (
-                            <Box
-                              component="th"
-                              sx={{
-                                border:
-                                  "1px solid " +
-                                  (theme.palette.mode === "dark"
-                                    ? "white"
-                                    : "black"),
-                                padding: "0.5rem",
-                                backgroundColor:
-                                  theme.palette.mode === "dark"
-                                    ? "#333"
-                                    : "#f5f5f5",
-                                textAlign: "left",
-                                fontWeight: "bold",
-                                color:
-                                  theme.palette.mode === "dark"
-                                    ? "white"
-                                    : "black",
-                              }}
-                              {...(props as any)}
-                            >
-                              {children}
-                            </Box>
-                          ),
-                          td: ({ node, children, ...props }) => (
-                            <Box
-                              component="td"
-                              sx={{
-                                border:
-                                  "1px solid " +
-                                  (theme.palette.mode === "dark"
-                                    ? "white"
-                                    : "black"),
-                                padding: "0.5rem",
-                                textAlign: "left",
-                                color:
-                                  theme.palette.mode === "dark"
-                                    ? "white"
-                                    : "black",
-                              }}
-                              {...(props as any)}
-                            >
-                              {children}
-                            </Box>
-                          ),
-                        }}
-                      >
-                        {linkifyText(msg.text)}
-                      </ReactMarkdown>
+                            ),
+                            td: ({ node, children, ...props }) => (
+                              <Box
+                                component="td"
+                                sx={{
+                                  border:
+                                    "1px solid " +
+                                    (theme.palette.mode === "dark"
+                                      ? "white"
+                                      : "black"),
+                                  padding: "0.5rem",
+                                  textAlign: "left",
+                                  color:
+                                    theme.palette.mode === "dark"
+                                      ? "white"
+                                      : "black",
+                                }}
+                                {...(props as any)}
+                              >
+                                {children}
+                              </Box>
+                            ),
+                          }}
+                        >
+                          {linkifyText(msg.text)}
+                        </ReactMarkdown>
+                      )}
                       {isBot && (
                         <SourcesList
                           sources={msg.sources}
@@ -1754,6 +2022,51 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                         />
                       )}
                     </Box>
+                    {/* Edit icon for user messages — outside bubble, to the left */}
+                    {isUser && editingIndex !== idx && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          mr: 0.5,
+                        }}
+                      >
+                        <motion.div
+                          whileHover={{ scale: 1.2 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              setEditingIndex(idx);
+                              setEditText(msg.text);
+                            }}
+                            disabled={
+                              loadingState !== "idle" && loadingState !== "done"
+                            }
+                            sx={{
+                              color:
+                                theme.palette.mode === "dark"
+                                  ? "rgba(255,255,255,0.5)"
+                                  : "rgba(0,0,0,0.35)",
+                              padding: "4px",
+                              "&:hover": {
+                                color:
+                                  theme.palette.mode === "dark"
+                                    ? "rgba(255,255,255,0.9)"
+                                    : "rgba(0,0,0,0.7)",
+                                backgroundColor:
+                                  theme.palette.mode === "dark"
+                                    ? "rgba(255,255,255,0.1)"
+                                    : "rgba(0,0,0,0.06)",
+                              },
+                            }}
+                          >
+                            <EditIcon sx={{ fontSize: "1rem" }} />
+                          </IconButton>
+                        </motion.div>
+                      </Box>
+                    )}
                   </motion.div>
                 </Box>
               );

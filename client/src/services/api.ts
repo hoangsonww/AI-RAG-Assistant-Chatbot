@@ -681,14 +681,23 @@ export const streamAuthedChatMessage = async (
   onSources: (sources: ISourceCitation[]) => void,
   onComplete: (conversationId: string) => void,
   onError: (error: Error) => void,
+  editIndex?: number,
 ) => {
+  const body: Record<string, unknown> = { message, conversationId };
+  if (typeof editIndex === "number") {
+    body.editIndex = editIndex;
+  }
+  // Disable retries for edit requests to prevent corrupted message state
+  // from partial stream data on first attempt mixing with retry data
+  const maxRetries = typeof editIndex === "number" ? 1 : 3;
   return streamWithRetries(
     "/chat/auth/stream",
-    { message, conversationId },
+    body,
     onChunk,
     onSources,
     (convId) => onComplete(convId!),
     onError,
+    maxRetries,
   );
 };
 
@@ -707,10 +716,16 @@ export const streamGuestChatMessage = async (
   onSources: (sources: ISourceCitation[]) => void,
   onComplete: (guestId: string) => void,
   onError: (error: Error) => void,
+  editIndex?: number,
 ) => {
-  const payload: any = { message };
+  const payload: Record<string, unknown> = { message };
   if (guestId) payload.guestId = guestId;
+  if (typeof editIndex === "number") {
+    payload.editIndex = editIndex;
+  }
 
+  // Disable retries for edit requests to prevent corrupted message state
+  const maxRetries = typeof editIndex === "number" ? 1 : 3;
   return streamWithRetries(
     "/chat/guest/stream",
     payload,
@@ -718,5 +733,6 @@ export const streamGuestChatMessage = async (
     onSources,
     (_, gId) => onComplete(gId!),
     onError,
+    maxRetries,
   );
 };
