@@ -89,11 +89,18 @@ router.post("/", async (req: Request, res: Response) => {
       }
 
       // If editIndex is provided, truncate messages up to (not including) that index
-      if (typeof editIndex === "number" && Number.isInteger(editIndex) && editIndex >= 0) {
+      if (
+        typeof editIndex === "number" &&
+        Number.isInteger(editIndex) &&
+        editIndex >= 0
+      ) {
         if (editIndex >= conversation.messages.length) {
           return res.status(400).json({ message: "editIndex out of range." });
         }
-        conversation.messages = conversation.messages.slice(0, editIndex) as typeof conversation.messages;
+        conversation.messages = conversation.messages.slice(
+          0,
+          editIndex,
+        ) as typeof conversation.messages;
       }
 
       history = conversation.messages.map((msg: IMessage) => ({
@@ -208,11 +215,18 @@ router.post("/stream", async (req: Request, res: Response) => {
       }
 
       // If editIndex is provided, truncate messages up to (not including) that index
-      if (typeof editIndex === "number" && Number.isInteger(editIndex) && editIndex >= 0) {
+      if (
+        typeof editIndex === "number" &&
+        Number.isInteger(editIndex) &&
+        editIndex >= 0
+      ) {
         if (editIndex >= conversation.messages.length) {
           return res.status(400).json({ message: "editIndex out of range." });
         }
-        conversation.messages = conversation.messages.slice(0, editIndex) as typeof conversation.messages;
+        conversation.messages = conversation.messages.slice(
+          0,
+          editIndex,
+        ) as typeof conversation.messages;
       }
 
       history = conversation.messages.map((msg: IMessage) => ({

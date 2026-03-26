@@ -93,7 +93,10 @@ router.post("/", async (req: Request, res: Response) => {
         if (editIndex >= guestConversation.messages.length) {
           return res.status(400).json({ message: "editIndex out of range." });
         }
-        guestConversation.messages = guestConversation.messages.slice(0, editIndex) as typeof guestConversation.messages;
+        guestConversation.messages = guestConversation.messages.slice(
+          0,
+          editIndex,
+        ) as typeof guestConversation.messages;
       }
       // @ts-ignore
       return handleGuestConversation(res, guestConversation, message);
@@ -206,7 +209,10 @@ router.post("/stream", async (req: Request, res: Response) => {
         if (editIndex >= guestConversation.messages.length) {
           return res.status(400).json({ message: "editIndex out of range." });
         }
-        guestConversation.messages = guestConversation.messages.slice(0, editIndex) as typeof guestConversation.messages;
+        guestConversation.messages = guestConversation.messages.slice(
+          0,
+          editIndex,
+        ) as typeof guestConversation.messages;
       }
       // @ts-ignore
       return handleGuestConversationStream(res, guestConversation, message);
