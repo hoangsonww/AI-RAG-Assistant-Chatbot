@@ -33,6 +33,7 @@
   - [Chat Message Flow](#chat-message-flow)
   - [Conversation Management Flow](#conversation-management-flow)
   - [Guest vs Authenticated User Flow](#guest-vs-authenticated-user-flow)
+  - [Message Editing & Conversation Branching](#message-editing--conversation-branching)
 - [Database Schema](#database-schema)
 - [Security Architecture](#security-architecture)
 - [Deployment Architecture](#deployment-architecture)
@@ -254,6 +255,7 @@ graph TD
     Sidebar --> Search[Search Bar]
 
     ChatArea --> MessageList[Message List]
+    ChatArea --> MessageEdit[Message Edit Controls]
     ChatArea --> InputBox[Input Box]
     ChatArea --> MarkdownRender[Markdown Renderer]
 
@@ -285,6 +287,10 @@ stateDiagram-v2
     NewMessage --> AIProcessing: Call AI API
     AIProcessing --> ResponseReceived: Receive Response
     ResponseReceived --> ActiveConversation: Update UI
+
+    ActiveConversation --> EditMessage: Edit Sent Message
+    EditMessage --> TruncateHistory: Truncate at Edit Index
+    TruncateHistory --> AIProcessing
 
     GuestChatting --> GuestMessage: Send Message
     GuestMessage --> AIProcessing
@@ -820,13 +826,17 @@ sequenceDiagram
     participant Pinecone as Pinecone DB
     participant Mongo as MongoDB
 
-    UI->>API: POST /api/chat/auth {message, conversationId}
+    UI->>API: POST /api/chat/auth {message, conversationId, editIndex?}
     API->>Auth: Verify JWT token
     Auth-->>API: User ID
 
     API->>Chat: Handle chat request
     Chat->>Mongo: Fetch conversation history
     Mongo-->>Chat: Previous messages
+
+    opt editIndex provided (message edit / conversation branching)
+        Chat->>Chat: Truncate messages at editIndex
+    end
 
     Chat->>Gemini: chatWithAI(history, message)
     Gemini->>Pinecone: Search relevant knowledge
@@ -925,6 +935,42 @@ flowchart TD
     style PersistMongo fill:#47A248
 ```
 
+### Message Editing & Conversation Branching
+
+Users can edit any previously sent message to branch the conversation from that point. The edit replaces the original message and discards all subsequent messages, then generates a fresh AI response.
+
+```mermaid
+sequenceDiagram
+    participant UI as React UI
+    participant API as Chat API
+    participant Mongo as MongoDB
+
+    UI->>UI: User clicks edit icon on sent message
+    UI->>UI: Show inline edit TextField
+    UI->>UI: User submits edited text
+
+    Note over UI: Local state: truncate messages[0..editIndex-1], append edited message
+
+    UI->>API: POST /api/chat/auth/stream {message, conversationId, editIndex}
+    API->>Mongo: Fetch conversation
+    API->>API: Truncate messages at editIndex
+    API->>API: Build history from truncated messages
+    API->>API: Generate AI response (streamed)
+    API-->>UI: SSE chunks
+    API->>Mongo: Save truncated history + new user message + AI response
+    UI->>UI: Render new branch of conversation
+```
+
+**Key implementation details:**
+
+| Aspect | Detail |
+|--------|--------|
+| **Frontend state** | `editingIndex` / `editText` in `ChatArea.tsx`; cleared on conversation switch |
+| **Backend parameter** | `editIndex` (optional integer) on all four chat endpoints (`/auth`, `/auth/stream`, `/guest`, `/guest/stream`) |
+| **Truncation** | `conversation.messages.slice(0, editIndex)` — everything from editIndex onward is discarded before the new exchange |
+| **Retry policy** | Retries are disabled (`maxRetries = 1`) for edit requests to prevent corrupted message state from partial streams |
+| **UX** | Pencil icon appears beside each user message; inline `TextField` with Enter to submit, Escape to cancel |
+
 ---
 
 ## Database Schema
@@ -945,7 +991,7 @@ flowchart TD
 
 #### Conversations Collection
 
-```javascript
+```typescript
 {
   _id: ObjectId,
   user: ObjectId (ref: 'User', indexed),
@@ -978,7 +1024,7 @@ flowchart TD
 
 #### Guest Conversations Collection
 
-```javascript
+```typescript
 {
   guestId: String (unique, indexed),
   messages: [
