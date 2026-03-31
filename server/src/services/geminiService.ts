@@ -6,7 +6,13 @@ import {
 } from "@google/generative-ai";
 import dotenv from "dotenv";
 import https from "https";
-import { retrieveKnowledgeChunks, SourceCitation } from "./knowledgeBase";
+import {
+  retrieveKnowledgeChunks,
+  retrieveAllChunksBySourceId,
+  SourceCitation,
+} from "./knowledgeBase";
+import { isNeo4jConfigured } from "./neo4jClient";
+import { retrieveGraphChunks } from "./graphKnowledge";
 
 dotenv.config();
 
@@ -24,7 +30,111 @@ const STATIC_GEMINI_MODELS = [
   "gemini-2.0-flash-lite-001",
 ];
 const RAG_TOP_K = 10;
+const RAG_LIST_TOP_K = 20;
 const MAX_CONTEXT_SNIPPET_CHARS = 1200;
+const DUAL_SOURCE_BONUS = 0.1;
+
+const LIST_QUERY_PATTERN =
+  /\b(list|all|every|everything|comprehensive|complete|full list|enumerate|name all|show all|what are all)\b/i;
+
+const isListQuery = (message: string): boolean =>
+  LIST_QUERY_PATTERN.test(message);
+
+const getEffectiveTopK = (message: string): number =>
+  isListQuery(message) ? RAG_LIST_TOP_K : RAG_TOP_K;
+
+const mergeRetrievalResults = (
+  vectorResults: SourceCitation[],
+  graphResults: SourceCitation[],
+  topK: number,
+): SourceCitation[] => {
+  const merged = new Map<string, SourceCitation & { finalScore: number }>();
+
+  for (const source of vectorResults) {
+    merged.set(source.id, { ...source, finalScore: source.score ?? 0 });
+  }
+
+  for (const source of graphResults) {
+    const existing = merged.get(source.id);
+    if (existing) {
+      existing.finalScore =
+        Math.max(existing.finalScore, source.score ?? 0) + DUAL_SOURCE_BONUS;
+    } else {
+      merged.set(source.id, { ...source, finalScore: source.score ?? 0 });
+    }
+  }
+
+  return Array.from(merged.values())
+    .sort((a, b) => b.finalScore - a.finalScore)
+    .slice(0, topK)
+    .map(({ finalScore, ...rest }) => ({ ...rest, score: finalScore }));
+};
+
+const expandListResults = async (
+  initial: SourceCitation[],
+): Promise<SourceCitation[]> => {
+  if (initial.length === 0) return initial;
+
+  // Find the dominant source (most frequent sourceId in top results)
+  const sourceCounts = new Map<string, number>();
+  for (const s of initial) {
+    if (s.sourceId) {
+      sourceCounts.set(s.sourceId, (sourceCounts.get(s.sourceId) || 0) + 1);
+    }
+  }
+
+  let dominantSourceId = "";
+  let maxCount = 0;
+  for (const [id, count] of sourceCounts) {
+    if (count > maxCount) {
+      dominantSourceId = id;
+      maxCount = count;
+    }
+  }
+
+  // If 50%+ of top results come from one source, fetch ALL chunks from it
+  if (maxCount >= initial.length * 0.5 && dominantSourceId) {
+    try {
+      const allChunks = await retrieveAllChunksBySourceId(dominantSourceId);
+      // Merge: keep all chunks from dominant source + any non-dominant results
+      const seen = new Set(allChunks.map((c) => c.id));
+      const extras = initial.filter((s) => !seen.has(s.id));
+      return [...allChunks, ...extras];
+    } catch {
+      return initial;
+    }
+  }
+
+  return initial;
+};
+
+const retrieveHybridSources = async (
+  message: string,
+  topK: number,
+): Promise<SourceCitation[]> => {
+  let results: SourceCitation[];
+
+  if (isNeo4jConfigured()) {
+    const [vectorResult, graphResult] = await Promise.allSettled([
+      retrieveKnowledgeChunks(message, topK + 5),
+      retrieveGraphChunks(message, topK + 5),
+    ]);
+    const vectorSources =
+      vectorResult.status === "fulfilled" ? vectorResult.value : [];
+    const graphSources =
+      graphResult.status === "fulfilled" ? graphResult.value : [];
+    results = mergeRetrievalResults(vectorSources, graphSources, topK);
+  } else {
+    results = await retrieveKnowledgeChunks(message, topK);
+  }
+
+  // For list queries, expand to fetch all chunks from the dominant source
+  if (isListQuery(message)) {
+    results = await expandListResults(results);
+  }
+
+  return results;
+};
 
 const IDENTITY_SYSTEM_INSTRUCTION =
   "You are Lumina, David Nguyen's AI assistant.";
@@ -330,7 +440,10 @@ export const chatWithAI = async (
     throw new Error("Missing GOOGLE_AI_API_KEY in environment variables");
   }
 
-  const sources = await retrieveKnowledgeChunks(message, RAG_TOP_K);
+  const sources = await retrieveHybridSources(
+    message,
+    getEffectiveTopK(message),
+  );
   if (sources.length === 0) {
     return getNoSourcesResponse();
   }
@@ -382,7 +495,10 @@ export const streamChatWithAI = async (
     throw new Error("Missing GOOGLE_AI_API_KEY in environment variables");
   }
 
-  const sources = await retrieveKnowledgeChunks(message, RAG_TOP_K);
+  const sources = await retrieveHybridSources(
+    message,
+    getEffectiveTopK(message),
+  );
   if (sources.length === 0) {
     const fallback = getNoSourcesResponse();
     onChunk(fallback.text);

@@ -1,0 +1,196 @@
+Technical Skills - Son Nguyen (David Nguyen)
+
+=== Frontend Development ===
+
+HTML5 - Expert. Used across all web projects, semantic markup and accessibility.
+CSS3 - Expert. Advanced layouts, animations, responsive design across all frontend work.
+SASS - Proficient. CSS preprocessing for large-scale projects with variables, mixins, and nesting.
+React - Expert. Primary frontend framework. Used in DocuThinker, EstateWise, MovieVerse, Lumina AI Chatbot, and many more projects. Deep experience with hooks, context, state management.
+Angular - Proficient. Used for enterprise-scale SPAs with TypeScript-first architecture.
+Vue.js - Proficient. Component-based development with Composition API and Vuex/Pinia state management.
+Nuxt - Proficient. Vue-based SSR and static site generation framework.
+Next.js - Expert. Server-side rendering, static generation, API routes, and App Router. Used in multiple production projects.
+WebAssembly - Research-level. Published paper on WebAssembly performance optimization and real-world applications (April 2025).
+Bootstrap - Proficient. Rapid prototyping and responsive grid layouts.
+jQuery - Familiar. Legacy project maintenance and DOM manipulation.
+TailwindCSS - Expert. Utility-first CSS framework used in modern projects for rapid, consistent styling.
+PostCSS - Proficient. CSS transformation and optimization pipeline tooling.
+Streamlit - Proficient. Python-based rapid prototyping for data science and ML dashboards.
+MUI/JoyUI - Expert. Material UI component library for React. Used in Lumina AI Chatbot and other polished frontend projects.
+Shadcn UI - Proficient. Headless, accessible component primitives for React with Tailwind integration.
+Electron - Proficient. Cross-platform desktop application development with web technologies.
+Webpack - Proficient. Module bundling, code splitting, and build optimization.
+Turborepo - Proficient. Monorepo build orchestration and caching for multi-package workspaces.
+Vite - Expert. Modern build tooling for fast development and production builds. Used in Lumina AI Chatbot and other recent projects.
+Playwright - Proficient. End-to-end browser testing and automation with cross-browser support.
+Cypress - Proficient. Component and end-to-end testing for frontend applications.
+Selenium - Proficient. Browser automation and cross-browser testing.
+Jest - Expert. Unit and integration testing for JavaScript and TypeScript applications.
+React Testing Library - Proficient. Component testing with user-centric queries.
+Vitest - Proficient. Fast Vite-native unit testing framework.
+Micro-Frontends Architecture - Proficient. Decomposing large frontends into independently deployable modules.
+
+=== Backend Development ===
+
+Node.js - Expert. Primary backend runtime. Used in Lumina AI Chatbot, DocuThinker, and many production services.
+Express.js - Expert. HTTP framework for RESTful APIs and middleware-based architectures. Core of Lumina server.
+NestJS - Proficient. Enterprise Node.js framework with decorators, dependency injection, and modular architecture.
+Spring Framework - Proficient. Java enterprise framework for dependency injection and aspect-oriented programming.
+Spring Boot - Proficient. Rapid Java backend development with auto-configuration and embedded servers.
+Django - Proficient. Python web framework with ORM, admin, and batteries-included approach.
+Django REST Framework - Proficient. Building robust RESTful APIs in Python with serializers and viewsets.
+Flask - Proficient. Lightweight Python web framework for microservices and APIs.
+FastAPI - Expert. Modern async Python framework with automatic OpenAPI docs. Used in agentic AI pipelines.
+Pytest - Proficient. Python testing with fixtures, parametrize, and plugin ecosystem.
+Mocha - Proficient. JavaScript test framework for Node.js and browser.
+Chai - Proficient. Assertion library for BDD/TDD style testing in JavaScript.
+Go/Beego - Familiar. Go web framework for building high-performance backend services.
+RESTful APIs - Expert. Design and implementation of resource-oriented HTTP APIs across all backend projects.
+GraphQL - Proficient. Schema-first API design with resolvers, subscriptions, and client-driven queries.
+tRPC - Proficient. End-to-end type-safe APIs for TypeScript monorepos.
+gRPC - Proficient. High-performance RPC framework with Protocol Buffers for microservice communication.
+Protocol Buffers - Proficient. Binary serialization format for efficient inter-service communication.
+WebSockets - Expert. Real-time bidirectional communication. Used in chat applications and live collaboration features.
+SSE (Server-Sent Events) - Proficient. Streaming server-to-client updates for real-time UIs.
+RabbitMQ - Proficient. Message broker for asynchronous task queues and event-driven architectures.
+Nginx - Proficient. Reverse proxy, load balancing, and static file serving.
+Hibernate - Proficient. Java ORM for database persistence with JPA integration.
+TypeORM - Proficient. TypeScript ORM for SQL databases with decorator-based entity definitions.
+Prisma - Proficient. Type-safe Node.js ORM with migrations and Prisma Studio.
+Red5 Media Server - Familiar. Real-time media streaming server for audio/video applications.
+Apache Kafka - Proficient. Distributed event streaming for high-throughput data pipelines.
+OAuth - Expert. Authorization framework implementation for secure API access and third-party integrations.
+JWT - Expert. JSON Web Token authentication and session management across multiple projects.
+Auth0 - Proficient. Identity platform integration for authentication and authorization.
+Elasticsearch - Proficient. Full-text search engine for large-scale data indexing and querying.
+ELK Stack - Proficient. Elasticsearch, Logstash, Kibana for centralized logging and observability.
+OpenAPI - Proficient. API specification and documentation standard. Used in Lumina AI Chatbot.
+Microservices Architecture - Expert. Designing and deploying distributed systems with independent, scalable services.
+
+=== AI & Machine Learning ===
+
+TensorFlow - Proficient. Deep learning framework for model training and deployment.
+Keras - Proficient. High-level neural network API on TensorFlow for rapid prototyping.
+Agentic AI - Expert. Core focus area at LexisNexis. Building multi-agent autonomous systems with planning, tool use, and memory. Published research on intent engineering for agentic systems (March 2026).
+Model Context Protocol (MCP) - Expert. Protocol for LLM tool integration. Built a standalone MCP server with 32 tools, 7 resources, and 6 prompts in the Lumina project.
+Agent to Agent Protocol (A2A) - Proficient. Protocol for inter-agent communication in multi-agent systems.
+PyTorch - Proficient. Deep learning framework for research and production models.
+Scikit-Learn - Expert. Classical ML library for classification, regression, clustering, and preprocessing.
+OpenCV - Proficient. Computer vision library for image and video processing.
+YOLO - Proficient. Real-time object detection models for computer vision applications.
+Tesseract OCR - Proficient. Optical character recognition for text extraction from images.
+Transformers (Hugging Face) - Expert. Pre-trained transformer models for NLP tasks. Published research on adversarial robustness of code generation models.
+LangChain - Expert. Framework for building LLM-powered applications with chains, agents, and retrieval.
+LangGraph - Expert. Graph-based agent orchestration for stateful multi-step AI workflows. Core tool at LexisNexis.
+LangSmith - Proficient. Observability and evaluation platform for LLM applications.
+CrewAI - Proficient. Multi-agent orchestration framework for collaborative AI task execution.
+Fireworks AI - Proficient. Fast inference platform for LLM serving and fine-tuning.
+FAISS - Proficient. Facebook AI Similarity Search for efficient vector similarity retrieval.
+Pinecone - Expert. Managed vector database for production RAG and semantic search. Used in Lumina AI Chatbot.
+Optuna - Proficient. Hyperparameter optimization framework for machine learning experiments.
+Jupyter Notebook - Expert. Interactive computing environment for data science and ML experimentation.
+MLflow - Proficient. ML lifecycle management for experiment tracking, model registry, and deployment.
+Weights & Biases - Proficient. Experiment tracking, model versioning, and collaborative ML development.
+Prefect - Proficient. Workflow orchestration for data and ML pipelines.
+JAX - Familiar. High-performance numerical computing and ML research with automatic differentiation.
+ONNX - Proficient. Open Neural Network Exchange format for model interoperability across frameworks.
+XGBoost - Proficient. Gradient boosting library for high-performance classification and regression.
+Google Colab - Proficient. Cloud-based Jupyter environment with free GPU access for ML experiments.
+
+=== Databases ===
+
+MySQL - Expert. Relational database for web applications with complex query optimization.
+MongoDB - Expert. Document-oriented NoSQL database. Primary database for Lumina AI Chatbot and many projects.
+PostgreSQL - Expert. Advanced relational database with JSON support, CTEs, and full-text search.
+Microsoft SQL Server - Proficient. Enterprise relational database for business applications.
+Neo4j - Proficient. Graph database for relationship-heavy data and knowledge graphs.
+Weaviate - Proficient. Vector database with built-in ML models for semantic search.
+Pinecone - Expert. Managed vector database for production-grade similarity search and RAG.
+Firebase - Proficient. Google's BaaS with real-time database, authentication, and hosting.
+Supabase - Proficient. Open-source Firebase alternative with PostgreSQL backend and real-time subscriptions.
+SQLite - Proficient. Embedded relational database for lightweight and mobile applications.
+Redis - Proficient. In-memory data store for caching, session management, and pub/sub messaging.
+Oracle Database - Familiar. Enterprise relational database for large-scale data management.
+Amazon DynamoDB - Proficient. Serverless NoSQL database for high-throughput, low-latency workloads.
+
+=== Programming Languages ===
+
+Java - Expert. Enterprise development, Spring ecosystem, Android applications.
+C++ - Proficient. Systems programming, performance-critical applications, and competitive programming.
+C - Proficient. Low-level systems programming and embedded development.
+C# - Proficient. .NET ecosystem development, enterprise applications, and game development.
+.NET - Proficient. Microsoft development platform for web, desktop, and cloud applications.
+Assembly - Familiar. Low-level processor instruction programming for systems understanding.
+WebAssembly - Research-level. Published research on WASM performance. Binary instruction format for web execution.
+Python - Expert. Primary language for AI/ML, data science, scripting, and backend development.
+JavaScript - Expert. Full-stack web development, frontend and Node.js backend.
+TypeScript - Expert. Type-safe JavaScript for large-scale applications. Used across Lumina and LexisNexis projects.
+Rust - Familiar. Systems programming language for memory safety and performance.
+PHP - Proficient. Server-side web development and legacy application maintenance.
+Go - Familiar. Concurrent backend services and cloud-native tooling.
+Kotlin - Proficient. Modern JVM language for Android and server-side development.
+Swift - Proficient. iOS and macOS application development.
+Shell - Proficient. Bash scripting for automation, CI/CD pipelines, and DevOps workflows.
+Makefile - Proficient. Build automation and task orchestration for multi-language projects.
+
+=== Data Analytics ===
+
+PowerBI - Proficient. Business intelligence dashboards and interactive data visualization.
+Tableau - Proficient. Data visualization and exploratory data analysis platform.
+Stata - Proficient. Statistical analysis for economics and social science research.
+R - Proficient. Statistical computing and data analysis for academic research.
+RStudio - Proficient. IDE for R with integrated plotting, debugging, and package management.
+Pandas - Expert. Python data manipulation and analysis library for tabular data.
+Microsoft Excel - Proficient. Advanced formulas, pivot tables, and data analysis.
+MATLAB - Proficient. Numerical computing for engineering and scientific applications.
+Apache Spark - Proficient. Distributed data processing for large-scale analytics.
+Hadoop - Familiar. Distributed storage and processing framework for big data workloads.
+
+=== Mobile Development ===
+
+React Native - Proficient. Cross-platform mobile app development with JavaScript and React.
+Android (Kotlin & Java) - Proficient. Native Android application development with Android SDK.
+iOS (Swift) - Proficient. Native iOS application development with UIKit and SwiftUI.
+Objective-C - Familiar. Legacy iOS development and maintaining existing codebases.
+Android Studio - Proficient. Official IDE for Android development with emulator and debugging tools.
+Xcode - Proficient. Apple's IDE for iOS, macOS, and watchOS development.
+Apache Cordova - Familiar. Hybrid mobile app development using web technologies.
+
+=== DevOps & Tools ===
+
+Git - Expert. Version control across all projects. Advanced branching, rebasing, and workflow management.
+GitHub Actions - Expert. CI/CD pipeline automation for testing, building, and deploying.
+GitLab CI - Proficient. CI/CD pipelines with YAML configuration and container-based runners.
+Travis CI - Proficient. Continuous integration for open-source and private repositories.
+Jenkins - Proficient. Extensible automation server for CI/CD with plugin ecosystem.
+Ansible - Proficient. Configuration management and infrastructure automation with YAML playbooks.
+Docker - Expert. Containerization for development, testing, and production deployments across all projects.
+Podman - Proficient. Daemonless container engine as Docker alternative for rootless containers.
+Kubernetes - Proficient. Container orchestration for scaling and managing microservices in production.
+Helm - Proficient. Kubernetes package manager for templated deployments.
+Flux CD - Proficient. GitOps continuous delivery for Kubernetes.
+Argo CD - Proficient. Declarative GitOps continuous delivery for Kubernetes.
+Argo Rollouts - Proficient. Progressive delivery with canary and blue-green deployments on Kubernetes.
+Canary & Blue-Green Deployments - Proficient. Zero-downtime deployment strategies for production services.
+Vercel - Proficient. Frontend deployment platform with automatic previews and edge functions.
+Heroku - Proficient. PaaS for rapid application deployment and scaling.
+Netlify - Proficient. Static site and serverless function hosting with CI/CD integration.
+AWS - Expert. Amazon Web Services for compute, storage, networking, and managed services.
+GCP - Proficient. Google Cloud Platform for AI/ML workloads, Vertex AI, and cloud infrastructure.
+Microsoft Azure - Proficient. Cloud platform for enterprise workloads. Used at LexisNexis for AzureBoard CLI and infrastructure.
+Oracle Cloud Infrastructure - Familiar. Enterprise cloud services and compute instances.
+Terraform - Proficient. Infrastructure as code for multi-cloud provisioning and management.
+HashiCorp (Vault, Consul, Nomad) - Proficient. Secrets management, service discovery, and workload orchestration.
+Prometheus - Proficient. Metrics collection and alerting for monitoring distributed systems.
+Grafana - Proficient. Observability dashboards for metrics visualization and alerting.
+Linux - Expert. Daily development environment, server administration, and scripting.
+WSL - Proficient. Windows Subsystem for Linux for cross-platform development workflows.
+Jira - Proficient. Agile project management, sprint planning, and issue tracking. Used at LexisNexis.
+Confluence - Proficient. Team documentation, knowledge sharing, and technical wikis. Used at LexisNexis.
+
+=== Graphics & Design ===
+
+Adobe Illustrator - Proficient. Vector graphics design for logos, icons, and illustrations.
+Adobe Photoshop - Proficient. Image editing, compositing, and digital asset creation.
+Figma - Proficient. Collaborative UI/UX design, prototyping, and design systems.
+Blender - Familiar. 3D modeling, animation, and rendering for creative projects.

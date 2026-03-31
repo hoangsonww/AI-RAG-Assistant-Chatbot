@@ -1,5 +1,33 @@
 Honors and Awards
 
+Graduated with Highest Distinction from UNC-Chapel Hill
+- Issuer: University of North Carolina at Chapel Hill
+- Date: Dec 2025
+- Details: Graduated with Highest Distinction (summa cum laude equivalent) with a cumulative GPA of 3.93/4.0. Triple major in Computer Science, Economics, and Data Science.
+
+Outstanding Undergraduate Researcher
+- Issuer: University of North Carolina at Chapel Hill
+- Date: Mar 2025
+- Details: Recognized for exceptional undergraduate research contributions in the Department of Computer Science. Awarded for published research on WebAssembly optimization, adversarial robustness of transformer-based code generation models, and AI-driven system architectures.
+
+Phi Beta Kappa Member
+- Issuer: Phi Beta Kappa Society
+- Date: 2025
+- Details: Inducted into the nation's oldest and most prestigious academic honor society, recognizing excellence in the liberal arts and sciences.
+
+ORCID Researcher ID
+- ORCID: 0009-0002-7806-068X
+- Details: Registered researcher identifier for published academic work. Six publications across computer science and economics at UNC-Chapel Hill.
+
+Microsoft Learn Student Ambassador
+- Issuer: Microsoft
+- Details: Selected as a Microsoft Learn Student Ambassador, representing Microsoft technologies on campus and promoting cloud computing, AI, and developer tools among peers.
+
+Best Intern Award
+- Issuer: VNG Corporation
+- Date: Summer 2023
+- Details: Awarded Best Intern out of the intern cohort at VNG Corporation, one of Vietnam's largest technology companies. Recognized for outstanding contributions during the summer internship program.
+
 Fall 2025 Dean's List
 - Issuer: University of North Carolina at Chapel Hill
 - Date: Dec 2025

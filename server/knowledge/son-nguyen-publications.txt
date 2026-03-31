@@ -1,31 +1,37 @@
 Publications
 
-An AI-Driven, Cloud-Native Architecture for End-to-End Travel Planning: A System Design Study - Research Insights on Micro-Agent Orchestration and Scalable GCP Integration
+From Prompt Engineering to Intent Engineering: A Three-Layer Framework for Context Management in Production Agentic AI Systems
 - Organization: University of North Carolina at Chapel Hill, Department of Computer Science
-- Date: July 4, 2025
-- Summary: Presents a cloud-native architecture for an AI-driven travel agent with personalized planning and booking. Built on Google Cloud Platform with services like Vertex AI, Dialogflow CX, and Pub/Sub, using stateless microservices for itinerary generation and real-time disruption management.
-- Link: https://www.researchgate.net/publication/392525972_An_AI-Driven_Cloud-Native_Architecture_for_End-to-End_Travel_Planning_A_System_Design_Study_Research_Insights_on_Micro-Agent_Orchestration_and_Scalable_GCP_Integration_Table_of_Content
+- Date: March 2026
+- Summary: Introduces the Context-Compound-Intent (CCI) Stack, a three-layer framework for managing context in production agentic AI systems. The framework decomposes prompt engineering into context engineering, compound orchestration, and intent alignment. Validated across five open-source systems, the study demonstrates progressive dependencies between the three layers and shows that ungated compounding degrades system performance. This work bridges the gap between ad-hoc prompt design and systematic, production-grade context management for autonomous AI agents.
+- Link: https://www.researchgate.net/publication/402999775
 
 Optimizing Web Performance and Computational Efficiency: A Deep Dive into WebAssembly's Technical Advancements and Real-World Applications
 - Organization: University of North Carolina at Chapel Hill, Department of Computer Science
-- Date: April 14, 2025
-- Summary: Explores technical breakthroughs in WebAssembly and evaluates its impact on web performance and computational efficiency with technical analysis and case studies.
-- Link: https://www.researchgate.net/publication/389517325_Optimizing_Web_Performance_and_Computational_Efficiency_A_Deep_Dive_into_WebAssembly%27s_Technical_Advancements_and_Real-World_Applications
+- Date: April 2025
+- Summary: An evaluation of recent WebAssembly advances that combines technical analysis with practical case studies. The paper examines how modern WASM capabilities — including improved compilation pipelines, SIMD support, and emerging component model proposals — improve runtime performance and computational efficiency in production web applications. Benchmarks and real-world case studies demonstrate measurable performance gains across compute-intensive workloads.
+- Link: https://www.researchgate.net/publication/389517325
 
-Enhancing the Robustness of Transformer-Based Code Generation Models Against Adversarial Perturbations: A Comprehensive Study
+An AI-Driven, Cloud-Native Architecture for End-to-End Travel Planning: A System Design Study
 - Organization: University of North Carolina at Chapel Hill, Department of Computer Science
-- Date: March 14, 2025
-- Summary: Examines vulnerabilities in transformer-based code generation and evaluates techniques to improve resilience against adversarial perturbations for secure, reliable code.
-- Link: https://www.researchgate.net/publication/389517109_Enhancing_the_Robustness_of_Transformer-Based_Code_Generation_Models_Against_Adversarial_Perturbations_A_Comprehensive_Study
+- Date: July 2025
+- Summary: A cloud-native architecture study for an AI-powered travel agent built on Google Cloud Platform. The system leverages Vertex AI for intelligent planning, Dialogflow CX for natural language interaction, and Pub/Sub for event-driven communication. Stateless microservices handle itinerary generation, booking orchestration, and real-time disruption management. The paper explores micro-agent orchestration patterns and scalable GCP integration strategies for production travel planning systems.
+- Link: https://www.researchgate.net/publication/392525972
 
-A Comprehensive Analysis of Assisted Suicide: The Technical, Ethical, and Moral Dimensions of Physician-Assisted and Non-Physician-Assisted Suicide
+Enhancing the Robustness of Transformer-Based Code Generation Models Against Adversarial Perturbations
 - Organization: University of North Carolina at Chapel Hill, Department of Computer Science
-- Date: December 12, 2024
-- Summary: Evaluates assisted suicide by comparing physician-assisted and non-physician-assisted approaches, focusing on technical implementation challenges and medical ethics implications.
-- Link: https://www.researchgate.net/publication/390768100_A_Comprehensive_Analysis_of_Assisted_Suicide_The_Technical_Ethical_and_Moral_Dimensions_of_Physician-Assisted_and_Non-Physician-Assisted_Suicide
+- Date: March 2025
+- Summary: A comprehensive study of adversarial vulnerabilities in transformer-based code generation models. The paper provides a comparative review of hardening techniques — including adversarial training, input sanitization, and robust fine-tuning — aimed at improving the resilience, reliability, and security of AI-generated code. The findings highlight critical attack surfaces and propose defense strategies for production deployment of code generation systems.
+- Link: https://www.researchgate.net/publication/389517109
 
-A Strategic Analysis of Highlands Coffee's Success: Upsell Techniques, Marketing Strategies, Store Design, Staff Training, Sustainability Initiatives, and Pricing Strategies
+A Comprehensive Analysis of Assisted Suicide: The Technical, Ethical, and Moral Dimensions
+- Organization: University of North Carolina at Chapel Hill, Department of Computer Science
+- Date: December 2024
+- Summary: A cross-disciplinary analysis of assisted suicide that compares physician-assisted and non-physician-assisted implementation methods. The paper examines technical implementation challenges alongside ethical tensions, moral frameworks, and policy implications across different legal jurisdictions. The study synthesizes medical, philosophical, and legal perspectives to provide a balanced evaluation of this complex issue.
+- Link: https://www.researchgate.net/publication/390768100
+
+A Strategic Analysis of Highlands Coffee's Success: Upsell Techniques, Marketing, and Pricing Strategies
 - Organization: University of North Carolina at Chapel Hill, Department of Economics
-- Date: May 10, 2024
-- Summary: Analyzes Highlands Coffee's market success through upsell tactics, marketing, store design, staff training, sustainability, and pricing strategies.
-- Link: https://www.researchgate.net/publication/388729071_A_Strategic_Analysis_of_Highlands_Coffee%27s_Success_Upsell_Techniques_Marketing_Strategies_Store_Design_Staff_Training_Sustainability_Initiatives_and_Pricing_Strategies
+- Date: May 2024
+- Summary: A strategy-focused analysis of the operating levers behind Highlands Coffee's market growth. The paper examines upsell techniques, marketing campaigns, store design philosophy, staff training programs, sustainability initiatives, and pricing strategies that have driven the company's competitive positioning and expansion in the Vietnamese coffee market.
+- Link: https://www.researchgate.net/publication/388729071

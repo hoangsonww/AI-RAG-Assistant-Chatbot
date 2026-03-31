@@ -4,7 +4,7 @@
 
 - `docker-compose.yml`: local multi-service orchestration.
 - `DEPLOYMENT.md`: deployment guidance.
-- `docs/ADVANCED_DEPLOYMENTS.md`: advanced rollout patterns and deployment notes.
+- `ADVANCED_DEPLOYMENTS.md`: advanced rollout patterns and deployment notes.
 
 ## Terraform
 

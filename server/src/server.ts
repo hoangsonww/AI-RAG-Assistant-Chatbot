@@ -5,6 +5,11 @@ import mongoose from "mongoose";
 import swaggerJsdoc from "swagger-jsdoc";
 import path from "path";
 import favicon from "serve-favicon";
+import {
+  isNeo4jConfigured,
+  initGraphSchema,
+  closeNeo4j,
+} from "./services/neo4jClient";
 
 dotenv.config();
 
@@ -38,6 +43,15 @@ mongoose
   .catch((err) => {
     console.error("MongoDB connection error: ", err);
   });
+
+// Initialize Neo4j graph schema
+if (isNeo4jConfigured()) {
+  initGraphSchema()
+    .then(() => console.log("Neo4j connected and schema ready"))
+    .catch((err: Error) =>
+      console.warn("Neo4j initialization warning:", err.message),
+    );
+}
 
 // Swagger Options and Specification with Bearer Authentication
 const swaggerOptions = {
@@ -150,6 +164,17 @@ if (process.env.NODE_ENV !== "production") {
     console.log(`Server listening on port ${port}`);
   });
 }
+
+// Graceful shutdown
+const shutdown = async (): Promise<void> => {
+  console.log("Shutting down...");
+  await closeNeo4j();
+  await mongoose.disconnect();
+  process.exit(0);
+};
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
 
 // Export the Express app as the default export for Vercel's serverless function.
 export default app;

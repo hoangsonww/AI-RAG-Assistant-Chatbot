@@ -1,6 +1,6 @@
 ---
 name: lumina-infra-deploy
-description: Work on Lumina deployment and infrastructure assets. Use when editing terraform/, aws/, docker-compose.yml, DEPLOYMENT.md, docs/ADVANCED_DEPLOYMENTS.md, agentic_ai/deployments/, or other files related to Docker, Terraform, AWS or Azure rollout behavior, environment wiring, and release automation.
+description: Work on Lumina deployment and infrastructure assets. Use when editing terraform/, aws/, docker-compose.yml, DEPLOYMENT.md, ADVANCED_DEPLOYMENTS.md, agentic_ai/deployments/, or other files related to Docker, Terraform, AWS or Azure rollout behavior, environment wiring, and release automation.
 ---
 
 # Lumina Infra Deploy

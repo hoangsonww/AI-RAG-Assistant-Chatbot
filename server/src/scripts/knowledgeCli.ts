@@ -8,9 +8,20 @@ import KnowledgeSource, {
   KnowledgeSourceType,
 } from "../models/KnowledgeSource";
 import {
+  chunkText,
   deleteKnowledgeSourceVectors,
   ingestKnowledgeSource,
 } from "../services/knowledgeBase";
+import {
+  isNeo4jConfigured,
+  initGraphSchema,
+  closeNeo4j,
+} from "../services/neo4jClient";
+import {
+  getGraphStats,
+  ingestChunksToGraph,
+  resetGraph,
+} from "../services/graphKnowledge";
 
 dotenv.config();
 
@@ -293,6 +304,12 @@ const repl = async (_options: CliOptions) => {
       console.log("  new                      Create a new source");
       console.log("  edit <id>                Edit an existing source");
       console.log("  delete <id>              Delete a source");
+      console.log("  graph:status             Show graph database stats");
+      console.log("  graph:rebuild            Rebuild graph from all sources");
+      console.log(
+        "  graph:rebuild --clean    Wipe graph then rebuild from scratch",
+      );
+      console.log("  graph:reset              Wipe graph completely");
       console.log("  exit                     Quit");
       continue;
     }
@@ -440,6 +457,38 @@ const repl = async (_options: CliOptions) => {
       continue;
     }
 
+    if (command === "graph:status") {
+      await graphStatus();
+      continue;
+    }
+
+    if (command === "graph:rebuild") {
+      const clean = args[0] === "--clean";
+      const msg = clean
+        ? "Wipe graph and rebuild from scratch? (yes/no): "
+        : "Rebuild entire graph? (yes/no): ";
+      const confirmation = await promptInput(rl, msg);
+      if (confirmation.toLowerCase() !== "yes") {
+        console.log("Cancelled.");
+        continue;
+      }
+      await graphRebuild(clean);
+      continue;
+    }
+
+    if (command === "graph:reset") {
+      const confirmation = await promptInput(
+        rl,
+        "WARNING: This will delete ALL graph data. Are you sure? (yes/no): ",
+      );
+      if (confirmation.toLowerCase() !== "yes") {
+        console.log("Cancelled.");
+        continue;
+      }
+      await graphReset();
+      continue;
+    }
+
     console.log("Unknown command. Type help for commands.");
   }
 };
@@ -520,6 +569,89 @@ const syncManifest = async (options: CliOptions) => {
   }
 };
 
+const graphStatus = async (): Promise<void> => {
+  if (!isNeo4jConfigured()) {
+    console.log(
+      "Neo4j is not configured. Set NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD.",
+    );
+    return;
+  }
+
+  await initGraphSchema();
+  const stats = await getGraphStats();
+  console.log("Neo4j Graph Status:");
+  console.log(`  Documents: ${stats.documentCount}`);
+  console.log(`  Chunks:    ${stats.chunkCount}`);
+  console.log(`  Entities:  ${stats.entityCount}`);
+  console.log(`  Relations: ${stats.relationshipCount}`);
+};
+
+const graphReset = async (): Promise<void> => {
+  if (!isNeo4jConfigured()) {
+    console.log(
+      "Neo4j is not configured. Set NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD.",
+    );
+    return;
+  }
+
+  console.log(
+    "Resetting Neo4j graph (deleting all nodes and relationships)...",
+  );
+  await resetGraph();
+  await initGraphSchema();
+  console.log("Graph reset complete. Schema re-initialized.");
+};
+
+const graphRebuild = async (clean: boolean = false): Promise<void> => {
+  if (!isNeo4jConfigured()) {
+    console.log(
+      "Neo4j is not configured. Set NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD.",
+    );
+    return;
+  }
+
+  if (clean) {
+    console.log("Performing clean rebuild (reset + rebuild)...");
+    await resetGraph();
+  }
+
+  await initGraphSchema();
+  const sources = await KnowledgeSource.find().sort({ updatedAt: -1 });
+
+  if (sources.length === 0) {
+    console.log("No knowledge sources found to rebuild.");
+    return;
+  }
+
+  console.log(`Rebuilding graph for ${sources.length} source(s)...`);
+
+  for (const source of sources) {
+    const chunks = chunkText(source.content);
+    if (chunks.length === 0) {
+      console.log(`  Skipping "${source.title}" (no chunks).`);
+      continue;
+    }
+
+    try {
+      await ingestChunksToGraph(
+        source._id.toString(),
+        source.title,
+        source.sourceType,
+        source.sourceUrl,
+        chunks,
+      );
+      console.log(`  Rebuilt "${source.title}" (${chunks.length} chunks).`);
+    } catch (err) {
+      console.error(`  Failed "${source.title}":`, (err as Error).message);
+    }
+  }
+
+  const stats = await getGraphStats();
+  console.log(
+    `\nRebuild complete: ${stats.documentCount} docs, ${stats.chunkCount} chunks, ${stats.entityCount} entities, ${stats.relationshipCount} relations.`,
+  );
+};
+
 const printHelp = () => {
   console.log(`
 Knowledge Base CLI
@@ -567,14 +699,25 @@ const run = async () => {
     await repl(options);
   } else if (command === "sync") {
     await syncManifest(options);
+  } else if (command === "graph:status") {
+    await graphStatus();
+  } else if (command === "graph:rebuild") {
+    await graphRebuild(Boolean(options["clean"]));
+  } else if (command === "graph:reset") {
+    await graphReset();
   } else {
     exitWithError(`Unknown command: ${command}`);
   }
 
+  if (isNeo4jConfigured()) {
+    await closeNeo4j();
+  }
   await mongoose.disconnect();
 };
 
 run().catch((error) => {
   console.error("Unexpected error:", error);
-  mongoose.disconnect().finally(() => process.exit(1));
+  closeNeo4j()
+    .then(() => mongoose.disconnect())
+    .finally(() => process.exit(1));
 });
