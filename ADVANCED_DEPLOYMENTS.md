@@ -28,23 +28,29 @@ The project now supports multiple advanced deployment strategies that enable:
 
 ### Architecture Diagram
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Application Load Balancer                   │
-│                      (Traffic Distribution)                     │
-└───────────────┬─────────────────────────────────┬───────────────┘
-                │                                 │
-    ┌───────────▼───────────┐       ┌───────────▼───────────┐
-    │   Blue Environment    │       │  Green Environment    │
-    │  (Current Version)    │       │   (New Version)       │
-    └───────────────────────┘       └───────────────────────┘
-                │                                 │
-                └──────────┬──────────────────────┘
-                           │
-                ┌──────────▼──────────┐
-                │   Canary Traffic    │
-                │  (Progressive %)    │
-                └─────────────────────┘
+```mermaid
+flowchart TD
+    ALB["Application Load Balancer<br/>(Traffic Distribution)"]
+    ALB --> Blue["Blue Environment<br/>(Current Version)"]
+    ALB --> Green["Green Environment<br/>(New Version)"]
+    Blue --> Canary["Canary Traffic<br/>(Progressive %)"]
+    Green --> Canary
+
+    subgraph "Data Layer"
+        MongoDB[(MongoDB)]
+        Pinecone[(Pinecone<br/>Vector DB)]
+        Neo4j[(Neo4j<br/>Graph DB)]
+    end
+
+    Blue --> MongoDB & Pinecone & Neo4j
+    Green --> MongoDB & Pinecone & Neo4j
+
+    style Blue fill:#4285F4
+    style Green fill:#34A853
+    style Canary fill:#FBBC04
+    style Neo4j fill:#008CC1
+    style Pinecone fill:#FF6F61
+    style MongoDB fill:#47A248
 ```
 
 ## Deployment Strategies
@@ -154,11 +160,16 @@ export AWS_REGION=us-east-1
 
 ### Deployment Process
 
-1. **Pre-deployment:** Validate environment and build new version
-2. **Green Deployment:** Deploy new version to green environment
-3. **Testing:** Optionally test green environment on test port
-4. **Traffic Switch:** Instantly switch 100% traffic to green
-5. **Blue Termination:** Wait 5 minutes, then terminate blue environment
+```mermaid
+flowchart LR
+    P["Pre-deployment<br/>Validate & build"] --> G["Green Deployment<br/>Deploy new version"]
+    G --> T["Testing<br/>Test on green port"]
+    T --> S["Traffic Switch<br/>100% → green"]
+    S --> B["Blue Termination<br/>Wait 5 min, terminate"]
+
+    style P fill:#4285F4
+    style S fill:#34A853
+```
 
 ## Canary Deployments
 
@@ -223,12 +234,20 @@ module "canary_backend" {
 
 ### Traffic Progression
 
-```
-Stage 1: 10% canary, 90% production  (Wait 10 minutes + health checks)
-Stage 2: 25% canary, 75% production  (Wait 10 minutes + health checks)
-Stage 3: 50% canary, 50% production  (Wait 10 minutes + health checks)
-Stage 4: 75% canary, 25% production  (Wait 10 minutes + health checks)
-Stage 5: 100% canary, 0% production  (Complete)
+```mermaid
+flowchart LR
+    S1["Stage 1<br/>10% canary<br/>90% production"] -->|10 min + health| S2["Stage 2<br/>25% canary<br/>75% production"]
+    S2 -->|10 min + health| S3["Stage 3<br/>50% canary<br/>50% production"]
+    S3 -->|10 min + health| S4["Stage 4<br/>75% canary<br/>25% production"]
+    S4 -->|10 min + health| S5["Stage 5<br/>100% canary<br/>Complete"]
+
+    S1 -.->|Rollback| RB["Rollback to<br/>100% production"]
+    S2 -.->|Rollback| RB
+    S3 -.->|Rollback| RB
+    S4 -.->|Rollback| RB
+
+    style S5 fill:#34A853
+    style RB fill:#EA4335
 ```
 
 ### Automated Rollback Triggers
@@ -283,15 +302,20 @@ module "progressive_delivery" {
 
 ### Pipeline Stages
 
-The progressive delivery pipeline includes:
+```mermaid
+flowchart TD
+    V["1. Validation<br/>Tests, linting, security scans"] --> CD["2. Canary Deployment<br/>Deploy to canary env"]
+    CD --> ST["3. Stabilization<br/>Wait for canary to stabilize"]
+    ST --> MV["4. Metrics Validation<br/>Error rates, latency, success rate"]
+    MV -->|Pass| TP["5. Traffic Progression<br/>Gradually increase traffic"]
+    MV -->|Fail| RB["7. Rollback<br/>Automatic rollback"]
+    TP --> C["6. Completion<br/>Finalize deployment"]
+    TP -->|Metrics degrade| RB
 
-1. **Validation:** Pre-deployment checks (tests, linting, security scans)
-2. **Canary Deployment:** Deploy to canary environment
-3. **Stabilization:** Wait for canary to stabilize
-4. **Metrics Validation:** Check error rates, latency, success rate
-5. **Traffic Progression:** Gradually increase traffic
-6. **Completion:** Finalize deployment
-7. **Rollback:** Automatic rollback on failures
+    style V fill:#4285F4
+    style C fill:#34A853
+    style RB fill:#EA4335
+```
 
 ### Manual Execution
 
@@ -574,21 +598,31 @@ Configured CloudWatch Alarms:
 
 ### Rollback Process
 
-**For Blue/Green:**
-```
-1. Stop traffic to green environment
-2. Switch traffic back to blue environment
-3. Terminate green environment tasks
-4. Send rollback notification
+**Blue/Green Rollback:**
+
+```mermaid
+flowchart LR
+    D["Failure Detected"] --> S1["Stop traffic<br/>to green"]
+    S1 --> S2["Switch 100%<br/>back to blue"]
+    S2 --> S3["Terminate green<br/>environment tasks"]
+    S3 --> S4["Send rollback<br/>notification"]
+
+    style D fill:#EA4335
+    style S4 fill:#34A853
 ```
 
-**For Canary:**
-```
-1. Stop traffic progression
-2. Shift 100% traffic back to production
-3. Terminate canary tasks
-4. Clean up canary resources
-5. Send rollback notification
+**Canary Rollback:**
+
+```mermaid
+flowchart LR
+    D["Failure Detected"] --> S1["Stop traffic<br/>progression"]
+    S1 --> S2["Shift 100% traffic<br/>to production"]
+    S2 --> S3["Terminate<br/>canary tasks"]
+    S3 --> S4["Clean up canary<br/>resources"]
+    S4 --> S5["Send rollback<br/>notification"]
+
+    style D fill:#EA4335
+    style S5 fill:#34A853
 ```
 
 ### Manual Rollback Commands
@@ -780,5 +814,5 @@ For issues or questions:
 
 ---
 
-**Last Updated:** January 2025
-**Version:** 1.0.0
+**Last Updated:** March 2026
+**Version:** 2.0.0
