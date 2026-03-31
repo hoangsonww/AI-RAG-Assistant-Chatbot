@@ -387,7 +387,7 @@ aws ecs update-service \
 
 ## 📞 Support Resources
 
-- [Advanced Deployments Guide](./docs/ADVANCED_DEPLOYMENTS.md)
+- [Advanced Deployments Guide](ADVANCED_DEPLOYMENTS.md)
 - [Architecture Documentation](./ARCHITECTURE.md)
 - [Terraform Modules README](./terraform/modules/README.md)
 - [AWS Deployment README](./aws/README.md)

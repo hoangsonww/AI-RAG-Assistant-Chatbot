@@ -1,0 +1,70 @@
+{
+  "sources": [
+    {
+      "externalId": "profile",
+      "title": "Son Nguyen Profile",
+      "sourceType": "bio",
+      "file": "./knowledge/son-nguyen-profile.txt"
+    },
+    {
+      "externalId": "alias",
+      "title": "Son Nguyen Alias",
+      "sourceType": "bio",
+      "file": "./knowledge/son-nguyen-alias.txt"
+    },
+    {
+      "externalId": "projects",
+      "title": "Son Nguyen Projects",
+      "sourceType": "project",
+      "file": "./knowledge/son-nguyen-projects.txt"
+    },
+    {
+      "externalId": "skills",
+      "title": "Son Nguyen Skills",
+      "sourceType": "other",
+      "file": "./knowledge/son-nguyen-skills.txt"
+    },
+    {
+      "externalId": "certifications",
+      "title": "Son Nguyen Certifications",
+      "sourceType": "other",
+      "file": "./knowledge/son-nguyen-certifications.txt"
+    },
+    {
+      "externalId": "publications",
+      "title": "Son Nguyen Publications",
+      "sourceType": "other",
+      "file": "./knowledge/son-nguyen-publications.txt"
+    },
+    {
+      "externalId": "honors-awards",
+      "title": "Son Nguyen Honors and Awards",
+      "sourceType": "other",
+      "file": "./knowledge/son-nguyen-honors-awards.txt"
+    },
+    {
+      "externalId": "volunteering",
+      "title": "Son Nguyen Volunteering",
+      "sourceType": "other",
+      "file": "./knowledge/son-nguyen-volunteering.txt"
+    },
+    {
+      "externalId": "coursework",
+      "title": "Son Nguyen Coursework",
+      "sourceType": "other",
+      "file": "./knowledge/son-nguyen-coursework.txt"
+    },
+    {
+      "externalId": "languages-organizations",
+      "title": "Son Nguyen Languages and Organizations",
+      "sourceType": "other",
+      "file": "./knowledge/son-nguyen-languages-organizations.txt"
+    },
+    {
+      "externalId": "test-scores",
+      "title": "Son Nguyen Test Scores",
+      "sourceType": "other",
+      "file": "./knowledge/son-nguyen-test-scores.txt"
+    }
+  ]
+}

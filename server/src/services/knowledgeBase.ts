@@ -2,6 +2,8 @@ import { TaskType } from "@google/generative-ai";
 import dotenv from "dotenv";
 import { embedText, getEmbeddingModel } from "./geminiEmbeddings";
 import { index } from "./pineconeClient";
+import { isNeo4jConfigured } from "./neo4jClient";
+import { ingestChunksToGraph, deleteGraphDocument } from "./graphKnowledge";
 
 dotenv.config();
 
@@ -258,10 +260,40 @@ export const ingestKnowledgeSource = async (options: {
     await index.namespace(KNOWLEDGE_NAMESPACE).upsert(batch);
   }
 
+  // Ingest to Neo4j graph (non-fatal)
+  if (isNeo4jConfigured()) {
+    try {
+      await ingestChunksToGraph(
+        options.sourceId,
+        options.title,
+        options.sourceType,
+        options.sourceUrl,
+        chunks,
+      );
+    } catch (err) {
+      console.warn(
+        "Graph ingestion failed (non-fatal):",
+        (err as Error).message,
+      );
+    }
+  }
+
   return { chunkCount: chunks.length };
 };
 
 export const deleteKnowledgeSourceVectors = async (sourceId: string) => {
+  // Delete from Neo4j graph (non-fatal)
+  if (isNeo4jConfigured()) {
+    try {
+      await deleteGraphDocument(sourceId);
+    } catch (err) {
+      console.warn(
+        "Graph deletion failed (non-fatal):",
+        (err as Error).message,
+      );
+    }
+  }
+
   try {
     await index.namespace(KNOWLEDGE_NAMESPACE).deleteMany({ sourceId });
   } catch (error: any) {
@@ -341,4 +373,50 @@ export const retrieveKnowledgeChunks = async (
     sourceType: match.metadata?.sourceType,
     chunkIndex: match.metadata?.chunkIndex,
   }));
+};
+
+export const retrieveAllChunksBySourceId = async (
+  sourceId: string,
+): Promise<SourceCitation[]> => {
+  if (!process.env.GOOGLE_AI_API_KEY) {
+    throw new Error("Missing GOOGLE_AI_API_KEY in environment variables");
+  }
+
+  // Use a dummy vector to query with metadata filter — Pinecone requires a vector
+  const model = getEmbeddingModel(process.env.GOOGLE_AI_API_KEY!);
+  const dummyEmbedding = await embedText(
+    model,
+    "retrieve all documents",
+    TaskType.RETRIEVAL_QUERY,
+  );
+
+  const response = await index.namespace(KNOWLEDGE_NAMESPACE).query({
+    vector: dummyEmbedding,
+    topK: 200,
+    includeMetadata: true,
+    filter: { sourceId },
+  });
+
+  const matches = (response.matches ?? []) as PineconeMatch[];
+  return matches
+    .filter(
+      (match) =>
+        typeof match.metadata?.text === "string" &&
+        typeof match.metadata?.sourceId === "string",
+    )
+    .sort(
+      (a, b) =>
+        ((a.metadata?.chunkIndex as number) ?? 0) -
+        ((b.metadata?.chunkIndex as number) ?? 0),
+    )
+    .map((match) => ({
+      id: match.id,
+      sourceId: match.metadata?.sourceId,
+      title: match.metadata?.title,
+      url: match.metadata?.sourceUrl,
+      snippet: match.metadata?.text,
+      score: match.score,
+      sourceType: match.metadata?.sourceType,
+      chunkIndex: match.metadata?.chunkIndex,
+    }));
 };

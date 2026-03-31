@@ -30,8 +30,8 @@ The project now supports multiple advanced deployment strategies that enable:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     Application Load Balancer                    │
-│                      (Traffic Distribution)                      │
+│                     Application Load Balancer                   │
+│                      (Traffic Distribution)                     │
 └───────────────┬─────────────────────────────────┬───────────────┘
                 │                                 │
     ┌───────────▼───────────┐       ┌───────────▼───────────┐

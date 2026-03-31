@@ -22,6 +22,7 @@
   - [Backend Setup](#backend-setup)
   - [Frontend Setup](#frontend-setup)
   - [AI/ML Setup](#aiml-setup)
+  - [Knowledge Management](#knowledge-management)
 - [Deployment](#deployment)
   - [Current Deployment (Vercel)](#current-deployment-vercel)
   - [Docker Deployment](#docker-deployment)
@@ -72,6 +73,7 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
 ![Pinecone](https://img.shields.io/badge/Pinecone-FF6F61?style=for-the-badge&logo=googledataflow&logoColor=white)
+![Neo4j](https://img.shields.io/badge/Neo4j-008CC1?style=for-the-badge&logo=neo4j&logoColor=white)
 ![JWT](https://img.shields.io/badge/JWT-black?style=for-the-badge&logo=json-web-tokens)
 ![Material UI](https://img.shields.io/badge/Material_UI-007FFF?style=for-the-badge&logo=mui&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
@@ -102,7 +104,8 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 - **User Authentication:** Sign up, log in, and log out using JWT authentication.
 - **Conversation History:** Save, retrieve, rename, and search past conversations (only for authenticated users).
 - **Auto-Generated Titles:** AI automatically generates concise, descriptive titles for new conversations based on the first message.
-- **Grounded Knowledge Base:** RAG (Retrieval-Augmented Generation) with Pinecone and inline citations; knowledge is managed via CLI (REPL or one-off commands).
+- **Grounded Knowledge Base:** RAG (Retrieval-Augmented Generation) with Pinecone vector search and Neo4j graph traversal, plus inline citations; knowledge is managed via CLI (REPL or one-off commands) with manifest-based batch sync for easy knowledge management.
+- **Hybrid Graph + Vector RAG:** Parallel retrieval from Pinecone (semantic similarity) and Neo4j (entity-relationship traversal) with intelligent result merging, dual-source scoring, exhaustive list retrieval (automatically fetches ALL chunks from a dominant source for "list all" queries), batched entity extraction (5 chunks per LLM call for efficiency), and model rotation across 6 Gemini models for resilience.
 - **Dynamic Responses:** AI-generated responses with `markdown` formatting for rich text.
 - **Interactive Chat:** Real-time chat interface with smooth animations and transitions.
 - **Reset Password:** Verify email and reset a user's password.
@@ -147,11 +150,16 @@ The project follows a modern, full-stack architecture with clear separation of c
   - Request validation and error handling
 
 - **AI/ML Layer:**
-  RAG (Retrieval-Augmented Generation) implementation that includes:
-  - **Retrieval**: Vector similarity search using Pinecone
+  Hybrid RAG (Retrieval-Augmented Generation) implementation that includes:
+  - **Retrieval**: Hybrid search using Pinecone (vector similarity) and Neo4j (graph traversal) in parallel
+  - **Vector Search**: Semantic search with Pinecone for unstructured data
+  - **Knowledge Graph**: Entity extraction and relationship mapping stored in Neo4j AuraDB
+  - **Result Merging**: Intelligent merging of vector and graph results with dual-source scoring and exhaustive retrieval for list queries
+  - **Entity Extraction**: Batched extraction of entities from retrieved chunks for efficient graph traversal
   - **Augmentation**: Context building with conversation history
   - **Generation**: Response generation using Google Gemini AI
   - **Knowledge Storage**: CLI-driven ingestion into Pinecone with citations returned in responses
+  - **Graceful Degradation**: System operates as vector-only if Neo4j is unavailable
 
 For detailed architecture documentation, including component diagrams, data flows, and deployment strategies, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -184,6 +192,7 @@ graph TB
     subgraph "Data Layer"
         MongoDB[(MongoDB)]
         Pinecone[(Pinecone Vector DB)]
+        Neo4j[(Neo4j Graph DB)]
     end
 
     Browser --> React
@@ -198,6 +207,7 @@ graph TB
     RAG --> Embed
     RAG --> Gemini
     RAG --> Pinecone
+    RAG --> Neo4j
 
     Auth --> MongoDB
     Conv --> MongoDB
@@ -207,10 +217,13 @@ graph TB
     style API fill:#339933
     style MongoDB fill:#47A248
     style Pinecone fill:#FF6F61
+    style Neo4j fill:#008CC1
     style Gemini fill:#4285F4
 ```
 
 ### RAG (Retrieval-Augmented Generation) Flow
+
+Hybrid retrieval from Pinecone and Neo4j in parallel, followed by intelligent merging, augmentation with conversation history, and response generation with Google Gemini AI.
 
 ```mermaid
 sequenceDiagram
@@ -218,6 +231,7 @@ sequenceDiagram
     participant Frontend
     participant Backend
     participant Pinecone
+    participant Neo4j
     participant Gemini
     participant MongoDB
 
@@ -226,9 +240,15 @@ sequenceDiagram
     Backend->>MongoDB: Fetch conversation history
     MongoDB-->>Backend: Previous messages
 
-    Note over Backend,Pinecone: Retrieval Phase
-    Backend->>Pinecone: Generate embedding & search
-    Pinecone-->>Backend: Top-K relevant documents
+    Note over Backend,Neo4j: Retrieval Phase (Parallel)
+    par Parallel Retrieval
+        Backend->>Pinecone: Vector similarity search
+        Pinecone-->>Backend: Top-K vector matches
+    and
+        Backend->>Neo4j: Extract query entities + graph traversal
+        Neo4j-->>Backend: Top-K graph matches
+    end
+    Backend->>Backend: Merge & deduplicate results
 
     Note over Backend,Gemini: Augmentation Phase
     Backend->>Backend: Build augmented context
@@ -263,6 +283,7 @@ flowchart LR
     subgraph "Data Sources"
         MongoDB[(MongoDB)]
         Pinecone[(Pinecone)]
+        Neo4j[(Neo4j)]
         Gemini[Gemini API]
     end
 
@@ -274,10 +295,12 @@ flowchart LR
 
     Services --> MongoDB
     Services --> Pinecone
+    Services --> Neo4j
     Services --> Gemini
 
     MongoDB -.Data.-> Services
     Pinecone -.Vectors.-> Services
+    Neo4j -.Graph.-> Services
     Gemini -.AI Response.-> Services
 
     Services -.JSON.-> Routes
@@ -289,6 +312,7 @@ flowchart LR
     style Services fill:#339933
     style MongoDB fill:#47A248
     style Pinecone fill:#FF6F61
+    style Neo4j fill:#008CC1
     style Gemini fill:#4285F4
 ```
 
@@ -335,6 +359,12 @@ Please see **[ARCHITECTURE.md](ARCHITECTURE.md)**
    GOOGLE_AI_API_KEY=your_google_ai_api_key_here
    PINECONE_API_KEY=your_pinecone_api_key_here
    PINECONE_INDEX_NAME=lumina-index
+
+   # Neo4j AuraDB (optional — enables graph RAG)
+   NEO4J_URI=neo4j+s://your-instance.databases.neo4j.io
+   NEO4J_USERNAME=your_username
+   NEO4J_PASSWORD=your_password
+   NEO4J_DATABASE=your_database
    ```
 
 4. **Run the server in development mode:**
@@ -392,8 +422,29 @@ Please see **[ARCHITECTURE.md](ARCHITECTURE.md)**
      --external-id "resume-2025"
    ```
 
-3. Use the REPL to edit or delete sources (`edit <id>`, `delete <id>`) as your profile changes.
-4. Ensure you ingest at least one knowledge source before using the chatbot so responses can be grounded and cited.
+3. (Optional) Set up Neo4j graph database for hybrid retrieval:
+   - Create a Neo4j AuraDB instance at [https://console.neo4j.io](https://console.neo4j.io)
+   - Add `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`, `NEO4J_DATABASE` to `server/.env`
+   - Rebuild the knowledge graph:
+
+     ```bash
+     npm run knowledge:graph:rebuild
+     ```
+
+   - Check graph status:
+
+     ```bash
+     npm run knowledge:graph:status
+     ```
+
+4. Use the REPL to edit or delete sources (`edit <id>`, `delete <id>`) as your profile changes.
+5. Ensure you ingest at least one knowledge source before using the chatbot so responses can be grounded and cited.
+
+For detailed instructions on managing knowledge (adding, updating, deleting), see [UPDATE_KNOWLEDGE.md](UPDATE_KNOWLEDGE.md).
+
+### Knowledge Management
+
+The knowledge base supports manifest-based batch sync, making it straightforward to add, update, or delete knowledge sources in bulk. The manifest file (`server/knowledge/manifest.json`) declaratively describes all knowledge files and their metadata, enabling one-command synchronization via `npm run knowledge:sync`. For the full guide covering single-file upserts, batch sync, graph rebuilds, and deletion workflows, see **[UPDATE_KNOWLEDGE.md](UPDATE_KNOWLEDGE.md)**.
 
 ## Deployment
 
@@ -405,6 +456,7 @@ The application is currently deployed on Vercel with the following setup:
 - **Backend**: Deployed at [https://ai-assistant-chatbot-server.vercel.app/](https://ai-assistant-chatbot-server.vercel.app/)
 - **Database**: MongoDB Atlas (cloud-hosted)
 - **Vector Database**: Pinecone (cloud-hosted)
+- **Graph Database**: Neo4j AuraDB (cloud-hosted)
 
 #### Deployment Architecture
 
@@ -873,6 +925,7 @@ AI-Assistant-Chatbot/
 ├── openapi.yaml
 ├── README.md
 ├── ARCHITECTURE.md
+├── UPDATE_KNOWLEDGE.md
 ├── LICENSE
 ├── Jenkinsfile
 ├── package.json
@@ -925,6 +978,13 @@ AI-Assistant-Chatbot/
     ├── tsconfig.json
     ├── Dockerfile
     ├── docker-compose.yml
+    ├── knowledge/
+    │   ├── manifest.json            # Declarative manifest for batch knowledge sync
+    │   ├── son-nguyen-profile.txt
+    │   ├── son-nguyen-honors-awards.txt
+    │   ├── son-nguyen-publications.txt
+    │   ├── son-nguyen-projects.txt
+    │   └── son-nguyen-skills.txt
     └── src/
         ├── server.ts
         ├── models/
@@ -938,9 +998,14 @@ AI-Assistant-Chatbot/
         │   ├── chat.ts             # Authenticated chat with streaming
         │   └── guest.ts            # Guest chat with streaming
         ├── services/
-        │   ├── geminiService.ts    # AI service with streaming support
-        │   ├── knowledgeBase.ts    # Chunking, embeddings, retrieval
-        │   └── pineconeClient.ts
+        │   ├── geminiService.ts    # AI service with hybrid RAG + streaming
+        │   ├── geminiEmbeddings.ts # Embedding generation
+        │   ├── knowledgeBase.ts    # Chunking, embeddings, vector+graph retrieval
+        │   ├── pineconeClient.ts   # Pinecone vector DB client
+        │   ├── neo4jClient.ts      # Neo4j graph DB client
+        │   └── graphKnowledge.ts   # Graph entity extraction & retrieval
+        ├── types/
+        │   └── graph.ts            # Graph entity & relationship types
         ├── scripts/
         │   └── knowledgeCli.ts     # CLI + REPL ingestion
         ├── utils/

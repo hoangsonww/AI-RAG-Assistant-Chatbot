@@ -1,0 +1,742 @@
+Personal Projects of Son Nguyen (David Nguyen)
+GitHub: https://github.com/hoangsonww
+Total Public Projects: 87+
+
+This document catalogs the complete collection of Son Nguyen's public GitHub repositories, organized by category. Each project includes a detailed description, tech stack, links, and star count. These projects span AI/ML, full-stack web development, mobile apps, games, data analysis, developer tooling, and more.
+
+================================================================================
+CATEGORY: AI/ML & AGENTIC AI
+================================================================================
+
+Project: Agentic-AI-Pipeline
+Category: AI/ML & Agentic AI
+Description: A production-grade agentic multi-stage bot designed for automated research and outreach. The pipeline uses LangGraph to orchestrate multiple AI agents that collaborate on complex tasks such as web research, data extraction, content generation, and personalized outreach. It features a FastAPI backend with Uvicorn ASGI server, Pydantic v2 models for strict data validation, and a modular agent architecture that allows adding new capabilities without modifying the core orchestration logic. The system demonstrates advanced patterns in agentic AI including tool use, memory management, and multi-step reasoning chains.
+Tech Stack: Python, FastAPI, Uvicorn, LangGraph, LangChain, Pydantic v2, OpenAI API
+GitHub: https://github.com/hoangsonww/Agentic-AI-Pipeline
+Live: https://hoangsonww.github.io/Agentic-AI-Pipeline
+Stars: 52
+
+Project: AI-RAG-Assistant-Chatbot
+Category: AI/ML & Agentic AI
+Description: Lumina is Son Nguyen's personal AI assistant, a full-stack web application that answers questions about David Nguyen and general topics using state-of-the-art AI and Retrieval-Augmented Generation (RAG). The system ingests personal knowledge documents into vector databases for grounded, citation-backed responses. Users can log in to save conversation history or continue as guests. The app features a sleek, responsive UI with intuitive UX, rich animations, and modern design patterns. It includes conversation branching, message editing, and real-time streaming responses.
+Tech Stack: React, Vite, MUI, Framer Motion, Express, TypeScript, MongoDB, Google Gemini, Pinecone, Node.js
+GitHub: https://github.com/hoangsonww/AI-RAG-Assistant-Chatbot
+Live: https://lumina-david.vercel.app
+Stars: 34
+
+Project: RAG-LangChain-AI-System
+Category: AI/ML & Agentic AI
+Description: A comprehensive agentic RAG platform for portfolio intelligence, evidence-backed chat, and API-enriched responses. The repository ships a complete application stack including a React + Vite + MUI frontend for chat, strategy controls, sessions, and traceability; a Flask + Socket.IO + LangChain backend for retrieval, orchestration, and response generation with reranking support; and an Express + MongoDB layer for structured data persistence. The platform supports multiple retrieval strategies, inline citations, and real-time streaming with full traceability of how answers are generated.
+Tech Stack: React, Vite, MUI, Flask, Socket.IO, LangChain, Express, MongoDB, Python, TypeScript
+GitHub: https://github.com/hoangsonww/RAG-LangChain-AI-System
+Live: https://hoangsonww.github.io/RAG-LangChain-AI-System/
+Stars: 34
+
+Project: AI-Agents-Orchestrator
+Category: AI/ML & Agentic AI
+Description: An AI coding tools orchestrator that coordinates multiple AI agents for software development tasks. The system features a Vue.js 3 + Nuxt frontend with Apollo Vue GraphQL integration and Pinia state management, paired with a Flask backend that manages agent lifecycles and task delegation. The orchestrator can dispatch coding tasks to specialized agents, aggregate their outputs, and present unified results. It demonstrates advanced patterns in multi-agent coordination, task decomposition, and result synthesis for developer productivity.
+Tech Stack: Vue.js 3, Nuxt 3, Apollo Vue GraphQL, Pinia, Flask, Python, GraphQL
+GitHub: https://github.com/hoangsonww/AI-Agents-Orchestrator
+Live: https://hoangsonww.github.io/AI-Agents-Orchestrator/
+Stars: 22
+
+Project: DocuThinker-AI-App
+Category: AI/ML & Agentic AI
+Description: DocuThinker is a full-stack AI-powered document analysis and summarization application. Users upload documents (PDFs, text files, etc.) for automated summarization, key insight generation, and interactive AI-powered chat about the document content. The system features blue/green and canary deployment strategies on AWS infrastructure, ensuring zero-downtime updates. The React-based frontend provides a polished interface for document management, while the backend handles document processing, embedding generation, and conversational AI interactions.
+Tech Stack: React, Node.js, AWS (blue/green deployment, canary), AI/ML APIs, Python
+GitHub: https://github.com/hoangsonww/DocuThinker-AI-App
+Live: https://docuthinker.vercel.app
+Stars: 34
+
+Project: EstateWise-Chapel-Hill-Chatbot
+Category: AI/ML & Agentic AI
+Description: EstateWise is a full-stack, monorepo AI/ML chatbot and data analytics project built for real estate in Chapel Hill, NC and surrounding areas (Durham, Raleigh, Cary, Apex, Morrisville, Hillsborough). It features an intelligent chatbot with sleek, responsive UI and smart agentic AI capabilities powered by comprehensive data analysis and advanced machine learning techniques. The system helps users find homes by combining natural language understanding with structured real estate data, property recommendations, and market analytics. It demonstrates the intersection of conversational AI and domain-specific data intelligence.
+Tech Stack: Python, React, AI/ML frameworks, Data Analytics pipelines, NLP
+GitHub: https://github.com/hoangsonww/EstateWise-Chapel-Hill-Chatbot
+Live: https://estatewise.vercel.app
+Stars: 25
+
+Project: AI-ML-Classifiers
+Category: AI/ML & Agentic AI
+Description: A collection of nine AI-powered classifiers for tasks including object detection, face detection, character recognition, emotion detection, and more. Each classifier is built using popular deep learning frameworks such as OpenCV, TensorFlow, and PyTorch. The repository provides standalone scripts and models that can be run independently or integrated into larger systems. It serves as both a practical toolkit and an educational resource demonstrating various computer vision and NLP classification techniques with real-world applications.
+Tech Stack: Python, OpenCV, TensorFlow, PyTorch, Deep Learning
+GitHub: https://github.com/hoangsonww/AI-ML-Classifiers
+Live: https://ai-ml-info.vercel.app
+Stars: 24
+
+Project: AI-Gov-Content-Curator
+Category: AI/ML & Agentic AI
+Description: SynthoraAI is a comprehensive AI-powered system designed to aggregate, summarize, and present curated government-related articles. This monorepo, multi-service project is organized into seven main components: a backend providing robust RESTful APIs to store and serve curated articles, an automated crawler for discovering and scraping government content, an AI summarization pipeline for generating concise article summaries, a React frontend for browsing curated content, and supporting infrastructure services. The system demonstrates end-to-end content intelligence from crawling to AI-powered curation.
+Tech Stack: React, Node.js, Python, AI/ML APIs, Web Crawling, REST APIs
+GitHub: https://github.com/hoangsonww/AI-Gov-Content-Curator
+Live: https://synthoraai.vercel.app
+Stars: 24
+
+Project: AI-News-Briefing
+Category: AI/ML & Agentic AI
+Description: An AI-powered news briefing system that leverages Claude Code CLI with Anthropic Claude Opus, WebSearch tools, and Notion MCP integration to automatically research, summarize, and organize the latest AI and technology news. The system uses the Model Context Protocol (MCP) for structured tool interactions and produces curated, well-organized briefings. It demonstrates advanced patterns in agentic AI workflows including web search orchestration, content synthesis, and automated knowledge management through Notion integration.
+Tech Stack: Python, Claude Code CLI, Anthropic Claude, MCP (Model Context Protocol), Notion API, WebSearch
+GitHub: https://github.com/hoangsonww/AI-News-Briefing
+Live: https://hoangsonww.github.io/AI-News-Briefing/
+Stars: 13
+
+Project: Customizable-AI-Chatbot
+Category: AI/ML & Agentic AI
+Description: A highly customizable AI chatbot platform that allows users to build their own conversational AI in minutes. Built with Next.js, React, Tailwind CSS, and Shadcn UI, the application provides a beautiful, polished interface with Framer Motion animations. Users can configure the chatbot's personality, knowledge base, and behavior through an intuitive settings panel. The system supports multiple AI providers and can be white-labeled for different use cases, making it ideal for businesses and developers who want to deploy AI chat experiences without building from scratch.
+Tech Stack: Next.js, React, Tailwind CSS, Shadcn UI, Framer Motion, AI APIs
+GitHub: https://github.com/hoangsonww/Customizable-AI-Chatbot
+Live: https://customizable-ai-chatbot.vercel.app
+Stars: 18
+
+Project: Spot-the-Scam-AI-Job-Fraud
+Category: AI/ML & Agentic AI
+Description: An AI-powered job fraud detection platform that uses machine learning to identify scam job postings. The system combines scikit-learn classifiers with Hugging Face Transformers and PyTorch for advanced NLP-based detection. It features a FastAPI backend that serves predictions through a REST API, allowing real-time analysis of job listings. The platform uses multiple detection strategies including text classification, feature engineering from job posting metadata, and ensemble methods to achieve high accuracy in distinguishing legitimate postings from fraudulent ones.
+Tech Stack: Python, FastAPI, scikit-learn, Hugging Face Transformers, PyTorch, NLP
+GitHub: https://github.com/hoangsonww/Spot-the-Scam-AI-Job-Fraud
+Live: https://hoangsonww.github.io/Spot-the-Scam-AI-Job-Fraud/
+Stars: 11
+
+Project: YouTube-Success-Prediction-ML
+Category: AI/ML & Agentic AI
+Description: A production-oriented machine learning platform for YouTube channel success prediction and intelligence. The system combines supervised prediction of channel outcomes, unsupervised channel archetype discovery, global analytics with map-ready country/category intelligence, and a production API with frontend delivery and MLOps artifacts. The platform features multi-model ensemble approaches, feature engineering from channel metadata, and comprehensive evaluation dashboards. It demonstrates end-to-end ML pipeline design from data ingestion through model serving.
+Tech Stack: Python, scikit-learn, Machine Learning, FastAPI/Flask, React, MLOps
+GitHub: https://github.com/hoangsonww/YouTube-Success-Prediction-ML
+Live: https://hoangsonww.github.io/YouTube-Success-Prediction-ML/
+Stars: 12
+
+Project: PantryPal-Streamlit-App
+Category: AI/ML & Agentic AI
+Description: PantryPal is a personal AI-powered sous-chef that transforms whatever ingredients you have on hand, combined with dietary preferences, into mouth-watering chef-level recipes in seconds. Built from the frustration of "what's for dinner?", PantryPal combines Google Gemini AI with a sleek Streamlit interface to deliver personalized recipe generation. Users input their available ingredients and constraints, and the AI generates complete recipes with instructions, nutritional information, and cooking tips. The app eliminates the need to scroll through endless recipe sites.
+Tech Stack: Python, Streamlit, Google Gemini AI, NLP
+GitHub: https://github.com/hoangsonww/PantryPal-Streamlit-App
+Live: https://pantrypal-app.streamlit.app
+Stars: 13
+
+Project: Claude-Code-Agent-Monitor
+Category: AI/ML & Agentic AI
+Description: A real-time monitoring platform and professional dashboard for tracking Claude Code agent activity, tool usage, and subagent orchestration. Built with Node.js, Express, React, and SQLite, it integrates directly with Claude Code via its native hook system for seamless session tracking and analytics. The dashboard visualizes agent sessions, tool call frequencies, execution timelines, and performance metrics. It provides insights into how AI coding agents work, making it valuable for developers who want to understand and optimize their AI-assisted development workflows.
+Tech Stack: Node.js, Express, React, SQLite, Claude Code Hooks
+GitHub: https://github.com/hoangsonww/Claude-Code-Agent-Monitor
+Live: https://hoangsonww.github.io/Claude-Code-Agent-Monitor/
+Stars: 32
+
+================================================================================
+CATEGORY: FULL-STACK WEB APPLICATIONS
+================================================================================
+
+Project: MERN-Stack-Ecommerce-App
+Category: Full-Stack Web Applications
+Description: Fusion Electronics is a comprehensive MERN-stack e-commerce application that serves as a working demo of a modern full-stack web platform. Built with MongoDB, Express.js, React.js, and Node.js, it features user authentication, a complete checkout process, product recommendations powered by vector search, shopping cart management, order tracking, and an admin dashboard. The application aims to provide a comprehensive example of building a modern e-commerce platform with real-world features including payment processing, inventory management, and personalized product discovery.
+Tech Stack: MongoDB, Express.js, React.js, Node.js (MERN), Vector Search
+GitHub: https://github.com/hoangsonww/MERN-Stack-Ecommerce-App
+Live: https://fusion-ecommerce-app.vercel.app
+Stars: 102
+
+Project: Employee-Management-Fullstack-App
+Category: Full-Stack Web Applications
+Description: A modern, feature-rich full-stack system for managing employee and department data, demonstrating the power of combining traditional enterprise technologies with modern web frameworks. It features a responsive React frontend alongside a robust Spring Boot backend, delivering CRUD operations, data visualization, authentication, and secure REST APIs. The application includes department management, employee search and filtering, role-based access control, and interactive dashboards for workforce analytics. It serves as a comprehensive example of enterprise-grade full-stack development.
+Tech Stack: React, Spring Boot, Java, REST APIs, Authentication, Data Visualization
+GitHub: https://github.com/hoangsonww/Employee-Management-Fullstack-App
+Live: https://hoangsonww.github.io/Employee-Management-Fullstack-App/
+Stars: 65
+
+Project: Budget-Management-Backend-API
+Category: Full-Stack Web Applications
+Description: A robust microservices backend platform for managing budgets, expenses, users, orders, and notifications. Built with Node.js, Express, and TypeScript, it supports advanced features including GraphQL, gRPC, WebSockets, and REST APIs. The API integrates with PostgreSQL, MongoDB, and MySQL for polyglot persistence, demonstrating how different data stores can serve different microservice needs. The system features service discovery, inter-service communication, API gateway patterns, and comprehensive documentation, making it a showcase of modern backend architecture best practices.
+Tech Stack: Node.js, Express, TypeScript, GraphQL, gRPC, WebSockets, PostgreSQL, MongoDB, MySQL, Microservices
+GitHub: https://github.com/hoangsonww/Budget-Management-Backend-API
+Live: https://hoangsonww.github.io/Budget-Management-Backend-API/
+Stars: 49
+
+Project: Learning-Management-System-Fullstack
+Category: Full-Stack Web Applications
+Description: A full-featured E-Learning Management System (LMS) consisting of an Angular frontend and a Django + Django REST Framework backend, combined with CI/CD technologies including Docker and Jenkins. The LMS manages users, courses, lessons, quizzes, and more with a complete set of CRUD operations. It features role-based access for students, instructors, and administrators, course enrollment workflows, quiz generation and grading, progress tracking, and certificate issuance. The system demonstrates enterprise-grade educational technology with proper DevOps practices.
+Tech Stack: Angular, Django, Django REST Framework, Docker, Jenkins, CI/CD, Python, TypeScript
+GitHub: https://github.com/hoangsonww/Learning-Management-System-Fullstack
+Live: https://hoangsonww.github.io/Learning-Management-System-Fullstack/
+Stars: 33
+
+Project: Urlvy-URL-Shortener-App
+Category: Full-Stack Web Applications
+Description: Urlvy transforms long URLs into memorable slugs, enriches them with AI-powered summaries, and tracks every click in real-time. Users can share, analyze, and chat with an AI analyst about their traffic, all in one sleek workspace. Described as "Bitly x Mixpanel with a built-in data scientist," the application features link analytics dashboards, click tracking with geographic and referrer data, QR code generation, custom slug creation, and an AI-powered traffic analysis chatbot. It demonstrates how URL shortening can be elevated into a full analytics and intelligence platform.
+Tech Stack: Full-Stack JavaScript/TypeScript, AI APIs, Analytics, Real-time tracking
+GitHub: https://github.com/hoangsonww/Urlvy-URL-Shortener-App
+Live: https://urlvy.vercel.app
+Stars: 31
+
+Project: The-MovieVerse-Database
+Category: Full-Stack Web Applications
+Description: The MovieVerse is a digital compass to the cinematic universe, serving more than 1 million users with over 350,000 active users per month. The application provides comprehensive movie information, search functionality, personalized recommendations, watchlists, and user reviews. It integrates with movie database APIs for rich content including cast information, trailers, ratings, and box office data. The platform features a beautifully designed responsive UI with smooth animations and intuitive navigation, making it one of Son's most popular and widely-used projects.
+Tech Stack: HTML, CSS, JavaScript, Movie Database APIs, Web APIs
+GitHub: https://github.com/hoangsonww/The-MovieVerse-Database
+Live: https://movie-verse.com
+Stars: 29
+
+Project: CollabNote-Fullstack-App
+Category: Full-Stack Web Applications
+Description: A full-stack collaborative notetaking application built with NestJS, React, Vite, and Supabase. CollabNote allows users to create, edit, and organize notes with real-time collaboration features. The NestJS backend provides a structured, modular API with TypeScript, while the React + Vite frontend delivers a fast, responsive user experience. Supabase handles authentication, real-time subscriptions, and data persistence. The app features rich text editing, note sharing, tagging, search, and team workspace functionality.
+Tech Stack: NestJS, React, Vite, Supabase, TypeScript
+GitHub: https://github.com/hoangsonww/CollabNote-Fullstack-App
+Live: https://collabnote-app.vercel.app
+Stars: 24
+
+Project: ToDo-App-NextJS-Fullstack
+Category: Full-Stack Web Applications
+Description: Flowlist is a full-stack, lightweight to-do application built using Next.js with both backend and frontend integrated seamlessly. The project demonstrates the power of Next.js as a complete full-stack framework, incorporating authentication, dark mode, and local storage for data persistence. Features include task creation with priorities, due dates, categories, drag-and-drop reordering, completion tracking, and a clean minimalist design. It serves as a practical demonstration of Next.js's capabilities for building full-stack applications with minimal configuration.
+Tech Stack: Next.js, React, TypeScript, Local Storage, Authentication
+GitHub: https://github.com/hoangsonww/ToDo-App-NextJS-Fullstack
+Live: https://flowlist-app.vercel.app
+Stars: 23
+
+Project: The-StickyNotes-App
+Category: Full-Stack Web Applications
+Description: StickyNotes is a dynamic, user-friendly web application designed for effective note-taking and task management. Developed in 2023, it offers a versatile suite of features including voice note recording, color customization, tagging, search, and more. The app features an innovative sticky-note visual metaphor where users can create, arrange, and customize notes on a virtual board. It supports both personal and professional use cases with features like note pinning, archiving, and export. A mobile app version is also available for on-the-go note management.
+Tech Stack: HTML, CSS, JavaScript, Web Speech API, LocalStorage
+GitHub: https://github.com/hoangsonww/The-StickyNotes-App
+Live: https://stickynotes-app.onrender.com/
+Stars: 23
+
+Project: StudySync-Study-Buddy-App
+Category: Full-Stack Web Applications
+Description: StudySync is a productivity and study companion application built with Vue and Express. It includes Pomodoro timers for focused study sessions, music recommendations via Spotify integration, weather checks through OpenWeather API, flashcards for spaced repetition learning, to-do lists for task management, and AI chat assistance for study questions. The app integrates multiple third-party services into a cohesive study environment, helping users stay organized and efficient during study sessions.
+Tech Stack: Vue.js, Express, Spotify API, OpenWeather API, AI APIs, JavaScript
+GitHub: https://github.com/hoangsonww/StudySync-Study-Buddy-App
+Live: https://study-sync-app.vercel.app
+Stars: 22
+
+Project: Meadows-Social-Media
+Category: Full-Stack Web Applications
+Description: Meadows is a full-featured social feed application built for Gen-Z with Next.js, Supabase, and React Query. Users can create posts with optional images, follow other users, like posts, and manage their profiles. The platform includes infinite scrolling for seamless content consumption, light/dark mode toggle, responsive mobile-friendly design, and real-time feed updates. Built with modern patterns including optimistic updates via React Query and Supabase real-time subscriptions for live social interactions.
+Tech Stack: Next.js, Supabase, React Query, React, TypeScript
+GitHub: https://github.com/hoangsonww/Meadows-Social-Media
+Live: https://meadows.vercel.app
+Stars: 19
+
+Project: Huong-Hua-Co-Website
+Category: Full-Stack Web Applications
+Description: A professional website built for Huong Hua Co. Ltd., a company in HCMC, Vietnam specializing in bathroom equipment design and construction. The website is tailored to help the company expand its online presence, attract new and foreign clients, and showcase its expertise in bathroom solutions. It features comprehensive company information, service portfolios, career opportunities, project galleries, and contact functionality. The site is fully responsive and designed to serve both English and Vietnamese-speaking audiences.
+Tech Stack: HTML, CSS, JavaScript, Responsive Web Design
+GitHub: https://github.com/hoangsonww/Huong-Hua-Co-Website
+Live: https://huong-hua-co-website.onrender.com
+Stars: 40
+
+Project: SymptomSync-Health-App
+Category: Full-Stack Web Applications
+Description: SymptomSync is a health management web application built with patient care in mind. It provides a comprehensive dashboard for tracking medications, appointments, and health logs with real-time synchronization across devices. Features include medication reminders, appointment tracking, an AI-powered chatbot for health questions, symptom logging with severity tracking, and interactive health analytics. The application empowers users to take smarter control of their health journey through a unified, accessible interface.
+Tech Stack: React, Node.js, Real-time Sync, AI Chatbot, Health Data APIs
+GitHub: https://github.com/hoangsonww/SymptomSync-Health-App
+Live: https://symptomsync.vercel.app
+Stars: 24
+
+Project: Collabify-Project-Manager
+Category: Full-Stack Web Applications
+Description: Collabify is a Jira and Trello alternative built with Next.js 15 and React 19. It provides project management capabilities including Kanban boards, task tracking, team collaboration, sprint planning, and project timelines. The application features drag-and-drop task management, real-time collaboration, role-based permissions, and customizable workflows. Built with Node.js 18 and Tailwind CSS, it delivers a fast, modern interface that competes with established project management tools while remaining lightweight and easy to deploy.
+Tech Stack: Next.js 15, React 19, Node.js, Tailwind CSS, TypeScript
+GitHub: https://github.com/hoangsonww/Collabify-Project-Manager
+Live: https://collabify-pm.vercel.app
+Stars: 16
+
+Project: Boxed-Inventory-App
+Category: Full-Stack Web Applications
+Description: Boxed is a smart home inventory, packing, and retrieval assistant. Users create boxes, drop items in, add photos, tag types, assign collaborators, mark packed status, and search instantly. The standout feature is BoxedAI, which lets users ask natural language questions like "Where's my winter jacket?" and get answers sourced from their real inventory. Described as "Notion for your physical belongings" with an AI locator and packing coach, the app brings digital organization to physical items with a polished, modern interface.
+Tech Stack: Full-Stack JavaScript/TypeScript, AI APIs, Image Upload, Search
+GitHub: https://github.com/hoangsonww/Boxed-Inventory-App
+Live: https://boxed-app.vercel.app
+Stars: 13
+
+Project: MermaidGenie-UML-Diagram-App
+Category: Full-Stack Web Applications
+Description: MermaidGenie turns text prompts into crisp Mermaid diagrams that users can edit, version, and share. It supports flow charts, UML diagrams, mind maps, ERDs, and more. Users can collaborate with teammates in a sleek, PWA-ready workspace. Described as "Figma for graphs but powered by AI," the application combines AI-powered diagram generation from natural language descriptions with a full-featured visual editor. It features diagram versioning, team sharing, export to multiple formats, and an intuitive editor for fine-tuning generated diagrams.
+Tech Stack: React, Mermaid.js, AI APIs, PWA, TypeScript
+GitHub: https://github.com/hoangsonww/MermaidGenie-UML-Diagram-App
+Live: https://mermaidgenie.vercel.app
+Stars: 13
+
+Project: Tic-Tac-Toe-Fullstack-Game
+Category: Full-Stack Web Applications
+Description: A comprehensive full-stack Tic Tac Toe application featuring multiplayer gameplay, AI integration, user profiles, leaderboards, and more. The backend is built with Node.js, Express, and MongoDB (the MERN-T Stack with TypeScript), while the frontend uses React and Material-UI for a polished, responsive interface. Features include single-player mode against AI opponents of varying difficulty, multiplayer matchmaking, persistent player statistics, ELO-based rankings, and a social leaderboard system.
+Tech Stack: MongoDB, Express, React, Node.js, TypeScript, Material-UI
+GitHub: https://github.com/hoangsonww/Tic-Tac-Toe-Fullstack-Game
+Live: https://tictactoe-ai-app.vercel.app
+Stars: 13
+
+Project: MetaWave-MP3-App
+Category: Full-Stack Web Applications
+Description: MetaWave is a modern MP3 editor and music hub that lets independent artists and collectors upload MP3s, embed or replace cover art, batch update artwork, organize tracks into drag-sortable albums, manage rich metadata, collaborate with others, and share public profiles. Described as a lightweight self-hosted mini streaming console and collaborative curator workspace, the application features a theme-aware UI, audio player with waveform visualization, tag editing, and social sharing capabilities for music creators.
+Tech Stack: Full-Stack JavaScript/TypeScript, Audio APIs, File Upload, Drag-and-Drop
+GitHub: https://github.com/hoangsonww/MetaWave-MP3-App
+Live: https://metawave.vercel.app
+Stars: 11
+
+Project: DevVerse-SWE-Blog
+Category: Full-Stack Web Applications
+Description: DevVerse is a modern, high-performance full-stack blog built with Next.js, featuring 50+ in-depth articles on computer science and software engineering topics. The platform includes Mermaid diagrams for technical illustrations, an AI-powered RAG chatbot for asking questions about articles, Supabase-backed view tracking, MDX content rendering, PWA support, and a rich ecosystem of libraries including Pinecone vector search, Google Gemini, Framer Motion animations, and KaTeX for mathematical notation. It serves as both a content platform and a technical showcase.
+Tech Stack: Next.js, Supabase, Pinecone, Google Gemini, MDX, Framer Motion, KaTeX, PWA
+GitHub: https://github.com/hoangsonww/DevVerse-SWE-Blog
+Live: https://devverse-swe.vercel.app
+Stars: 11
+
+Project: BadminVerse-Property-Booker
+Category: Full-Stack Web Applications
+Description: BadminVerse is a simple, lightweight, and user-friendly web platform designed to simplify the process of finding and booking badminton and basketball courts across Vietnam. Features include court search and booking based on location, date, and time; a visually appealing design with easy navigation; and convenient booking functionality. The platform serves the sports community in Vietnam by aggregating court availability information and providing a streamlined reservation experience.
+Tech Stack: HTML, CSS, JavaScript, Web Development
+GitHub: https://github.com/hoangsonww/BadminVerse-Property-Booker
+Live: https://badminverse-property-booker.onrender.com
+Stars: 11
+
+Project: Django-Poll-Application
+Category: Full-Stack Web Applications
+Description: A simple, lightweight poll application built with Django that showcases fundamental Django concepts including models, views, templates, and the admin interface. The application displays inspirational quotes and polls, allows users to like, comment, and search for content, and includes a user interface for viewing, an admin interface for management, and a REST API using Django REST Framework for programmatic interaction. It serves as an educational resource for Django development patterns.
+Tech Stack: Django, Django REST Framework, Python, SQLite, HTML, CSS
+GitHub: https://github.com/hoangsonww/Django-Poll-Application
+Live: https://hoangsonww.github.io/Django-Poll-Application/
+Stars: 12
+
+Project: Django-Quote-Application
+Category: Full-Stack Web Applications
+Description: A Django-powered web application that displays inspirational quotes with social interaction features. Users can like, comment, and search for quotes through an intuitive interface. The application includes a user-facing interface for browsing and interacting with quotes, an admin interface for content management, and a REST API built with Django REST Framework for programmatic access. It demonstrates Django's capabilities for building content-driven web applications with community engagement features.
+Tech Stack: Django, Django REST Framework, Python, HTML, CSS, JavaScript
+GitHub: https://github.com/hoangsonww/Django-Quote-Application
+Live: https://hoangsonww.github.io/Django-Quote-Application/
+Stars: 10
+
+Project: PetSwipe-Match-App
+Category: Full-Stack Web Applications
+Description: PetSwipe is a swipe-to-adopt platform on a mission to help shelter animals find loving homes. The application connects prospective pet parents with adoptable animals using a Tinder-like swipe interface. Users can browse pets, swipe right to adopt or left to pass, manage their profiles, view their matches, and keep track of their swipe history. The platform makes the journey to pet adoption simpler, faster, and more engaging through gamified interaction design and beautiful pet profile cards with photos and descriptions.
+Tech Stack: React, Node.js, Swipe UI, API Integration
+GitHub: https://github.com/hoangsonww/PetSwipe-Match-App
+Live: https://petswipe.vercel.app
+Stars: 18
+
+Project: The-Event-Horizon-App
+Category: Full-Stack Web Applications
+Description: EventHorizon is a countdown timer application designed to help users anticipate and count down to significant events in their lives. It supports both predefined events like New Year's Eve and custom events such as birthdays and anniversaries. Features include multiple countdown timers, custom event creation with dates and descriptions, visual countdown displays with days/hours/minutes/seconds, notification reminders, and a clean, modern interface. The app helps users stay excited about upcoming milestones.
+Tech Stack: HTML, CSS, JavaScript, Web APIs
+GitHub: https://github.com/hoangsonww/The-Event-Horizon-App
+Live: https://hoangsonww.github.io/The-Event-Horizon-App/
+Stars: 12
+
+Project: RecipeGenie-App
+Category: Full-Stack Web Applications
+Description: RecipeGenie is a feature-rich, user-friendly web application designed to simplify and enhance the cooking experience. Whether for seasoned chefs or kitchen beginners, RecipeGenie offers recipe discovery, ingredient-based search, cooking timers, step-by-step instructions, and nutritional information. The application integrates with recipe APIs to provide a vast library of dishes and includes features like meal planning, shopping list generation, and favorite recipe collections. It serves as a comprehensive digital cooking assistant.
+Tech Stack: HTML, CSS, JavaScript, Recipe APIs, Web Development
+GitHub: https://github.com/hoangsonww/RecipeGenie-App
+Live: https://recipe-genie.netlify.app/
+Stars: 13
+
+Project: WeatherMate-App
+Category: Full-Stack Web Applications
+Description: WeatherMate is a go-to web application for staying updated with the latest weather conditions for any location worldwide. Created in 2024, it features an easy-to-use interface with real-time weather data, multi-day forecasts, location search, and responsive design. The app provides detailed weather information including temperature, humidity, wind speed, UV index, and precipitation probability. A mobile version is also under development. The application integrates with weather APIs to deliver accurate, up-to-date meteorological data.
+Tech Stack: HTML, CSS, JavaScript, Weather APIs, Responsive Design
+GitHub: https://github.com/hoangsonww/WeatherMate-App
+Live: https://the-weathermate.vercel.app/
+Stars: 25
+
+Project: Image-Video-Tools
+Category: Full-Stack Web Applications
+Description: A lightweight, comprehensive suite of tools for manipulating images and videos directly in the browser. The application provides editing capabilities including image resizing, cropping, filtering, format conversion, video trimming, compression, and format conversion. All processing happens client-side for privacy and speed, requiring no server uploads. The tool suite includes batch processing, before/after comparisons, and export in multiple formats, making it a practical utility for quick media editing tasks.
+Tech Stack: HTML, CSS, JavaScript, Canvas API, Video APIs, Browser APIs
+GitHub: https://github.com/hoangsonww/Image-Video-Tools
+Live: https://image-video-tools.onrender.com
+Stars: 23
+
+Project: The-ToDo-App
+Category: Full-Stack Web Applications
+Description: A simple, elegant solution for daily task management with an intuitive and distraction-free user interface. The app supports adding, editing, and deleting tasks with just a few clicks, due date assignment, priority levels, task categorization, completion tracking, and local persistence. It features a clean, minimalist design philosophy focused on reducing friction and maximizing productivity. The interface emphasizes ease of use with drag-and-drop reordering and quick-action buttons.
+Tech Stack: HTML, CSS, JavaScript, LocalStorage
+GitHub: https://github.com/hoangsonww/The-ToDo-App
+Live: https://hoangsonww.github.io/The-ToDo-App/
+Stars: 14
+
+Project: The-Pokedex-Database
+Category: Full-Stack Web Applications
+Description: A beautifully designed, feature-rich Pokedex application built with Next.js, React, Tailwind CSS, and React Query, powered by the PokeAPI. The app allows users to browse, search, and explore detailed information about Pokemon including stats, abilities, types, evolution chains, and more. It features a responsive grid layout, filtering by type, search functionality, and detailed Pokemon profile pages with animated stat bars. The application showcases modern React patterns with server-side rendering and efficient data fetching.
+Tech Stack: Next.js, React, Tailwind CSS, React Query, PokeAPI
+GitHub: https://github.com/hoangsonww/The-Pokedex-Database
+Live: https://pokedex-db.vercel.app
+Stars: 9
+
+Project: The-GitPeek-App
+Category: Full-Stack Web Applications
+Description: GitPeek is a sleek, user-friendly web application designed to provide quick and comprehensive information about any GitHub user. Users enter a GitHub username to get instant access to bio, follower count, repository information, contribution statistics, and more, all presented in an elegant and readable format. Built with HTML, CSS, and JavaScript, the app is lightweight and responsive, offering a clean interface for exploring GitHub profiles without navigating the full GitHub UI.
+Tech Stack: HTML, CSS, JavaScript, GitHub API
+GitHub: https://github.com/hoangsonww/The-GitPeek-App
+Live: https://gitpeek-app.netlify.app/
+Stars: 10
+
+Project: Read-Voyage-Kindle
+Category: Full-Stack Web Applications
+Description: Read Voyage is a Kindle-like web application designed for reading "Twenty Thousand Leagues Under the Sea" by Jules Verne. The application provides a modern reading experience through the browser, integrating classic literature with contemporary web technologies. Features include page-by-page navigation, bookmarking, font size adjustment, reading progress tracking, and a distraction-free reading mode. It demonstrates how web technologies can replicate native e-reader experiences.
+Tech Stack: HTML, CSS, JavaScript, Web Typography, Responsive Design
+GitHub: https://github.com/hoangsonww/Read-Voyage-Kindle
+Live: https://read-voyage-kindle.onrender.com/
+Stars: 10
+
+Project: NuCalc-Calculator-App
+Category: Full-Stack Web Applications
+Description: NuCalc Pro is a sleek, modern, and powerful web-based calculator with PWA support. It brings a responsive, touch-friendly interface, keyboard integration, and installable offline functionality to the browser. Built with TypeScript and Vite, the calculator supports basic arithmetic, scientific functions, history tracking, and expression evaluation. The PWA capabilities allow users to install it as a standalone app on any device, providing a native-like calculator experience with offline support.
+Tech Stack: TypeScript, Vite, PWA, HTML, CSS
+GitHub: https://github.com/hoangsonww/NuCalc-Calculator-App
+Live: https://nucalc-app.vercel.app
+Stars: 9
+
+Project: ClipChronicle-Cross-Platform-App
+Category: Full-Stack Web Applications
+Description: ClipChronicle is an AI-powered, local-first clipboard manager that captures, organizes, and recalls every snippet across desktop and browser, completely offline. Described as "your clipboard's second brain," it features intelligent categorization, search across clipboard history, pinned snippets, tag-based organization, and AI-powered content summarization. The cross-platform PWA design ensures it works on desktop and mobile browsers while keeping all data local for privacy. It aims to make clipboard management a first-class productivity tool.
+Tech Stack: Cross-Platform Web, PWA, AI APIs, Local Storage, TypeScript
+GitHub: https://github.com/hoangsonww/ClipChronicle-Cross-Platform-App
+Live: https://clipchronicle.vercel.app
+Stars: 15
+
+Project: hoangsonww.github.io
+Category: Full-Stack Web Applications
+Description: Son Nguyen's personal portfolio website, a seamless blend of style and functionality showcasing his journey, projects, and skills in the tech world. Built with modern web technologies and creative design, the site provides an interactive user experience with smooth animations, project showcases, skills visualization, and contact information. The portfolio features a responsive layout, dark/light mode, project filtering, and integration with GitHub for live project data. It serves as the central hub for Son's professional online presence.
+Tech Stack: HTML, CSS, JavaScript, Modern Web Technologies
+GitHub: https://github.com/hoangsonww/hoangsonww.github.io
+Live: https://sonnguyenhoang.com
+Stars: 19
+
+================================================================================
+CATEGORY: DEVELOPER TOOLS & NPM PACKAGES
+================================================================================
+
+Project: SQL-Mongo-Query-Converter
+Category: Developer Tools & NPM Packages
+Description: A lightweight SQL to MongoDB (and vice versa) query converter published as a Python package on PyPI. The tool parses SQL queries and translates them into equivalent MongoDB query syntax, and can also convert MongoDB queries back to SQL. It supports SELECT, INSERT, UPDATE, and DELETE operations with WHERE clauses, JOIN operations, aggregation pipelines, and complex nested conditions. The package is designed for developers working with both SQL and NoSQL databases who need quick query translation without manual rewriting.
+Tech Stack: Python, PyPI Package, SQL Parsing, MongoDB Query Language
+GitHub: https://github.com/hoangsonww/SQL-Mongo-Query-Converter
+Live: https://pypi.org/project/sql-mongo-converter/
+Stars: 19
+
+Project: GhostIO-Invisible-Data-Prefetch
+Category: Developer Tools & NPM Packages
+Description: GhostIO is an NPM package for invisible background data prefetching in web applications. It intercepts user interaction patterns like hover, scroll, and viewport visibility to predictively fetch data before users explicitly request it, resulting in near-instant page transitions and content loads. The package is framework-agnostic and works with any JavaScript application. It features configurable prefetch strategies, cache management, request deduplication, and bandwidth-aware throttling to avoid unnecessary network usage.
+Tech Stack: TypeScript, Node.js, NPM Package, Web APIs
+GitHub: https://github.com/hoangsonww/GhostIO-Invisible-Data-Prefetch
+Live: https://npmjs.com/package/ghost-io
+Stars: 10
+
+Project: FastFetch-API-Fetch-Enhancer
+Category: Developer Tools & NPM Packages
+Description: FastFetch is an NPM package that improves API fetching with auto-retry and request deduplication. It wraps the native fetch API with intelligent retry logic, exponential backoff, request caching, timeout handling, and concurrent request deduplication. The package is designed for production applications that need resilient API communication without manual retry implementation. It supports configurable retry counts, custom backoff strategies, request interceptors, and TypeScript type safety out of the box.
+Tech Stack: TypeScript, Node.js, NPM Package, Fetch API
+GitHub: https://github.com/hoangsonww/FastFetch-API-Fetch-Enhancer
+Live: https://npmjs.com/package/@hoangsonw/fast-fetch
+Stars: 9
+
+Project: Passwordless-Auth-Rust
+Category: Developer Tools & NPM Packages
+Description: A self-hosted passwordless authentication server built with Rust and the Axum web framework. The server implements magic link and WebAuthn-based authentication flows, eliminating the need for traditional passwords. It features JWT token management, session handling, rate limiting, and CORS configuration. The system supports email-based magic links, passkey/biometric authentication via WebAuthn, and token refresh flows. Built with Rust for maximum performance and security, it serves as both a production-ready auth server and a reference implementation for passwordless authentication patterns.
+Tech Stack: Rust, Axum, JWT, WebAuthn, Cargo, Email Integration
+GitHub: https://github.com/hoangsonww/Passwordless-Auth-Rust
+Live: https://hoangsonww.github.io/Passwordless-Auth-Rust/
+Stars: 11
+
+Project: Post-Analyzer-Webserver
+Category: Developer Tools & NPM Packages
+Description: A web-based post viewer and analyzer built with Go. The application serves a web interface that allows users to fetch posts from the JSONPlaceholder API, save posts to a file, and perform character frequency analysis on the saved data. It demonstrates Go's capabilities for building web servers, handling HTTP requests, performing file I/O operations, and data analysis. The application features a clean interface for viewing fetched posts and analyzing text patterns in the content.
+Tech Stack: Go, HTTP Server, File I/O, Web Interface, HTML
+GitHub: https://github.com/hoangsonww/Post-Analyzer-Webserver
+Live: https://hoangsonww.github.io/Post-Analyzer-Webserver/
+Stars: 11
+
+Project: Software-Design-Patterns
+Category: Developer Tools & NPM Packages
+Description: A hands-on exploration of essential object-oriented design patterns with fully implemented classes, interfaces, and methods. The repository covers patterns including Singleton, Factory, Observer, Strategy, Decorator, Adapter, Command, and more. Each directory introduces a distinct design pattern with practical examples that illustrate how patterns solve common software engineering challenges by improving code reusability, flexibility, and maintainability. The repository serves as both a learning resource and a reference implementation for professional developers.
+Tech Stack: Java, Object-Oriented Programming, Design Patterns
+GitHub: https://github.com/hoangsonww/Software-Design-Patterns
+Live: https://hoangsonww.github.io/Software-Design-Patterns/
+Stars: 11
+
+Project: C-Shell-Implementation
+Category: Developer Tools & NPM Packages
+Description: A shell implementation written in C that provides basic shell functionality including parsing commands, searching for executables in the system PATH, handling built-in commands (cd, exit), and executing external programs. The shell provides a controlled environment for process management and command execution, demonstrating systems programming concepts including process forking, pipe handling, signal management, and environment variable manipulation. It serves as an educational project for understanding how Unix shells work at a fundamental level.
+Tech Stack: C, Unix/POSIX APIs, Process Management, Shell Scripting
+GitHub: https://github.com/hoangsonww/C-Shell-Implementation
+Live: https://hoangsonww.github.io/C-Shell-Implementation/
+Stars: 9
+
+================================================================================
+CATEGORY: MOBILE APPLICATIONS
+================================================================================
+
+Project: Moodify-Emotion-Music-App
+Category: Mobile Applications
+Description: Moodify is an emotion-based music recommendation application that detects users' emotional states and provides personalized music recommendations. Developed in 2024 to address the growing need for systems that recommend music based on how users feel, it uses emotion detection through facial analysis or text input to determine the user's current mood, then recommends songs and playlists matching that emotional state. The app integrates with music streaming services and features a visually engaging interface with mood-based color themes and smooth transitions.
+Tech Stack: React, Emotion Detection AI, Music APIs, Spotify Integration, Python
+GitHub: https://github.com/hoangsonww/Moodify-Emotion-Music-App
+Live: https://hoangsonww.github.io/Moodify-Emotion-Music-App/
+Stars: 62
+
+Project: Task-Manager-ReactNative
+Category: Mobile Applications
+Description: TaskNexus is a modern, cross-platform task management app built with React Native, Expo, and TypeScript. It allows users to efficiently manage daily tasks with features including task addition, completion, deletion, drag-and-drop reordering, and interactive statistics visualization. The app provides a native mobile experience on both iOS and Android from a single codebase. Features include task categories, priority levels, due date reminders, completion streaks, and visual analytics dashboards showing productivity trends over time.
+Tech Stack: React Native, Expo, TypeScript, Mobile Development
+GitHub: https://github.com/hoangsonww/Task-Manager-ReactNative
+Live: https://hoangsonww.github.io/Task-Manager-ReactNative/
+Stars: 26
+
+Project: Flappy-Bird-Game
+Category: Mobile Applications
+Description: A complete recreation of the popular Flappy Bird mobile game, developed using Swift and SpriteKit for iOS. The game replicates the original's addictive gameplay with a bird that players navigate between obstacles by tapping the screen. Features include physics-based bird movement, procedurally generated pipe obstacles, score tracking with high score persistence, smooth animations, sound effects, and game-over screens. The project demonstrates proficiency in iOS game development with SpriteKit's physics engine and sprite animation system.
+Tech Stack: Swift, SpriteKit, iOS, Xcode
+GitHub: https://github.com/hoangsonww/Flappy-Bird-Game
+Live: https://hoangsonww.github.io/Flappy-Bird-Game/
+Stars: 23
+
+Project: 2048-Game
+Category: Mobile Applications
+Description: A multi-platform implementation of the popular 2048 puzzle game, available as a web application, a Swift version for iOS, and a Kotlin version for Android. The game's objective is to slide numbered tiles on a grid to combine them and create a tile with the number 2048. Each platform version features native UI design, smooth animations, score tracking, undo functionality, and responsive touch/swipe controls. The project demonstrates cross-platform game development with platform-specific optimizations for each target.
+Tech Stack: Swift (iOS), Kotlin (Android), HTML/CSS/JavaScript (Web), SpriteKit, Android SDK
+GitHub: https://github.com/hoangsonww/2048-Game
+Live: https://the-2048.netlify.app/
+Stars: 18
+
+================================================================================
+CATEGORY: GAMES & DESKTOP APPLICATIONS
+================================================================================
+
+Project: The-Maze-Game
+Category: Games & Desktop Applications
+Description: An engaging maze game built with DFS (Depth-First Search) and Prim's algorithms for dynamic maze generation. Each time a player starts a new game, a unique maze is procedurally generated, ensuring no two playthroughs are identical. The game features multiple difficulty levels that affect maze complexity, a timer for speed-running, pathfinding visualization, and a clean visual design. The project demonstrates practical application of graph algorithms for game development and serves as both an entertaining game and an educational tool for algorithm visualization.
+Tech Stack: JavaScript, HTML, CSS, DFS Algorithm, Prim's Algorithm, Canvas
+GitHub: https://github.com/hoangsonww/The-Maze-Game
+Live: https://the-maze-game.onrender.com
+Stars: 24
+
+Project: PuzzleForge-Game-Hub
+Category: Games & Desktop Applications
+Description: PuzzleForge is a production-ready multi-game platform that transforms a simple Wordle clone into a full-featured gaming platform with multiple puzzle games, statistics tracking, and a polished user experience. Built with React 19, TypeScript, and Tailwind CSS 4, the platform features an Express API backend with comprehensive endpoints for all games. It includes multiple game modes, persistent statistics, leaderboards, achievement systems, and social sharing. The platform demonstrates how to build a scalable multi-game architecture with shared infrastructure.
+Tech Stack: React 19, TypeScript, Tailwind CSS 4, Express, React Router
+GitHub: https://github.com/hoangsonww/PuzzleForge-Game-Hub
+Live: https://puzzlesforge.vercel.app
+Stars: 10
+
+Project: Space-Invader-Game-JavaFX
+Category: Games & Desktop Applications
+Description: A Space Shooter game built with JavaFX featuring classic arcade-style gameplay. Players control a spaceship, dodging and destroying waves of enemy invaders. The game includes multiple levels of increasing difficulty, power-ups, particle effects, sound effects, and a scoring system with high score tracking. The UI features a start screen, gameplay interface with HUD, instruction panels, and a game-over screen. It demonstrates JavaFX's capabilities for building interactive, animated desktop applications.
+Tech Stack: Java, JavaFX, Game Development, Desktop Application
+GitHub: https://github.com/hoangsonww/Space-Invader-Game-JavaFX
+Live: https://hoangsonww.github.io/Space-Invader-Game-JavaFX/
+Stars: 11
+
+Project: Bouncing-Ball-Game-JavaFX
+Category: Games & Desktop Applications
+Description: A Bouncing Ball game built with JavaFX featuring physics-based ball movement and paddle control. The game challenges players to keep the ball bouncing by controlling a paddle, with increasing difficulty as the game progresses. Features include a welcome screen, animated gameplay with realistic physics, win/lose conditions, multiple levels, and sound effects. The game demonstrates JavaFX's animation framework, collision detection, and event handling for building engaging desktop games.
+Tech Stack: Java, JavaFX, Physics Simulation, Desktop Application
+GitHub: https://github.com/hoangsonww/Bouncing-Ball-Game-JavaFX
+Live: https://hoangsonww.github.io/Bouncing-Ball-Game-JavaFX/
+Stars: 10
+
+Project: Akari-Puzzle-Game-JavaFX
+Category: Games & Desktop Applications
+Description: A JavaFX implementation of the classic Akari logic puzzle (also known as "Light Up"). The game challenges players to place lamps strategically on a grid to illuminate corridors while adhering to specific rules about lamp placement near numbered cells. The application features a sleek user interface, a collection of puzzles ranging in difficulty from beginner to expert, hint systems, and puzzle validation. It offers hours of brain-teasing fun while demonstrating constraint satisfaction problem-solving in game design.
+Tech Stack: Java, JavaFX, Logic Puzzles, Desktop Application
+GitHub: https://github.com/hoangsonww/Akari-Puzzle-Game-JavaFX
+Live: https://hoangsonww.github.io/Akari-Puzzle-Game-JavaFX/
+Stars: 9
+
+Project: Game-2048-JavaFX
+Category: Games & Desktop Applications
+Description: A JavaFX implementation of the popular 2048 puzzle game where players slide tiles on a grid to combine them into higher-valued tiles. The implementation includes smooth animations, custom styling, and responsive UI design. Features include animated tile merging, score tracking, undo functionality, game state persistence, and a new-game button. The application demonstrates JavaFX's layout management, CSS styling, animation API, and property binding for building polished desktop applications.
+Tech Stack: Java, JavaFX, CSS, Desktop Application
+GitHub: https://github.com/hoangsonww/Game-2048-JavaFX
+Live: https://hoangsonww.github.io/Game-2048-JavaFX/
+Stars: 9
+
+Project: Tic-Tac-Toe-AI-Game
+Category: Games & Desktop Applications
+Description: A Tic Tac Toe game with both console-based and graphical (JavaFX) versions. The console version supports two-player terminal gameplay, while the JavaFX version provides a graphical interface with AI opponents. The AI uses the Minimax algorithm for optimal play, making it unbeatable on standard difficulty. Features include player vs. player mode, player vs. AI with adjustable difficulty, game state tracking, and win/draw detection. The project demonstrates game theory and AI decision-making in a classic game context.
+Tech Stack: Java, JavaFX, Minimax Algorithm, AI, Console Application
+GitHub: https://github.com/hoangsonww/Tic-Tac-Toe-AI-Game
+Live: https://hoangsonww.github.io/Tic-Tac-Toe-AI-Game/
+Stars: 10
+
+Project: Solar-System-VR
+Category: Games & Desktop Applications
+Description: A virtual reality simulation of the solar system that allows users to explore planets, moons, and other celestial bodies in an immersive 3D environment. The project features realistic planet textures, orbital mechanics, scale representations, and interactive controls for navigating through the solar system. Users can zoom in on individual planets to see surface details and learn about planetary characteristics. The VR experience demonstrates 3D graphics programming and spatial computing concepts.
+Tech Stack: VR/3D Technologies, WebGL/Three.js, JavaScript, 3D Rendering
+GitHub: https://github.com/hoangsonww/Solar-System-VR
+Live: https://hoangsonww.github.io/Solar-System-VR/
+Stars: 11
+
+Project: The-Ultimate-Task-Board
+Category: Games & Desktop Applications
+Description: An AI-powered to-do list and cooking recipe generator app that combines task management with culinary creativity. Using machine learning algorithms, the app tracks users' tasks, reminds them of upcoming deadlines, and offers personalized recipe suggestions based on dietary preferences, ingredients on hand, and cooking experience level. As lead developer, Son worked with designers and data scientists to bring this vision to life, combining productivity tooling with AI-driven content generation in a unique application concept.
+Tech Stack: SQL, HTML, Java, Machine Learning, AI
+GitHub: https://github.com/hoangsonww/The-Ultimate-Task-Board
+Live: https://hoangsonww.github.io/The-Ultimate-Task-Board/
+Stars: 11
+
+Project: Stock-Market-Simulator
+Category: Games & Desktop Applications
+Description: A stock market simulator that allows users to practice trading in a risk-free environment with virtual currency. The application simulates real-world stock market conditions, enabling users to buy and sell stocks, track portfolio performance, view historical price charts, and learn investment strategies without financial risk. It provides a realistic trading experience with market data, order types, and portfolio analytics designed for educational purposes and trading practice.
+Tech Stack: Programming Languages, Financial APIs, Data Visualization
+GitHub: https://github.com/hoangsonww/Stock-Market-Simulator
+Stars: 19
+
+Project: Banking-System-Simulator
+Category: Games & Desktop Applications
+Description: A banking system simulator that models core banking operations including account creation, deposits, withdrawals, transfers, and transaction history. The application demonstrates object-oriented programming principles through a realistic banking domain model with features like multiple account types (checking, savings), interest calculation, transaction logging, and balance management. It serves as both a functional simulation and an educational resource for understanding financial software systems.
+Tech Stack: Programming Languages, OOP, Data Structures
+GitHub: https://github.com/hoangsonww/Banking-System-Simulator
+Stars: 10
+
+Project: Inventory-Management
+Category: Games & Desktop Applications
+Description: An inventory management system for tracking products, stock levels, and warehouse operations. The application provides functionality for adding, updating, and removing inventory items, tracking stock quantities, managing suppliers, and generating inventory reports. It demonstrates database design, CRUD operations, and business logic implementation for supply chain management scenarios. The system supports features like low-stock alerts, barcode scanning integration, and category-based organization.
+Tech Stack: Programming Languages, Database, CRUD Operations
+GitHub: https://github.com/hoangsonww/Inventory-Management
+Stars: 14
+
+================================================================================
+CATEGORY: DATA ANALYSIS & RESEARCH
+================================================================================
+
+Project: FRED-Data-Analysis
+Category: Data Analysis & Research
+Description: A comprehensive full-stack application that fetches a wide range of U.S. economic data from the FRED API, vectorizes it using Pinecone, and provides a chatbot interface for querying the data. Built with TypeScript and Express for the backend, and a MUI-powered React frontend. The application enables users to explore economic indicators through natural language queries, with the AI chatbot providing data-grounded responses about GDP, inflation, employment, and other macroeconomic metrics. It demonstrates the application of RAG techniques to economic data analysis.
+Tech Stack: TypeScript, Express, React, MUI, Pinecone, FRED API, RAG
+GitHub: https://github.com/hoangsonww/FRED-Data-Analysis
+Live: https://fred-data-analysis.vercel.app
+Stars: 15
+
+Project: Global-COVID19-Analysis
+Category: Data Analysis & Research
+Description: A comprehensive data analysis and visualization project studying the COVID-19 pandemic using a synthetic dataset reflecting realistic trends in cases, deaths, and vaccination rates across five countries. The repository contains analysis scripts in multiple programming languages including R, Python, Julia, SAS, and Stata, each exploring different aspects of the COVID-19 data. Visualizations include time series of case progressions, vaccination rate comparisons, mortality analysis, and regional trend identification, demonstrating polyglot data science capabilities.
+Tech Stack: R, Python, Julia, SAS, Stata, Data Visualization, Statistical Analysis
+GitHub: https://github.com/hoangsonww/Global-COVID19-Analysis
+Live: https://hoangsonww.github.io/Global-COVID19-Analysis/
+Stars: 13
+
+Project: North-Carolina-Household-Analysis
+Category: Data Analysis & Research
+Description: A data analysis project examining the American Community Survey (ACS) 2022 data focusing on North Carolina. The project analyzes a wide array of demographic and economic data for individuals aged 25 and older across 75,340 observations. The analysis uncovers patterns related to education and income across different cities in North Carolina, using both R and Stata for statistical modeling. It includes regression analysis, demographic breakdowns, geographic comparisons, and policy-relevant findings about socioeconomic disparities in the state.
+Tech Stack: R, Stata, Statistical Analysis, ACS Data, Data Visualization
+GitHub: https://github.com/hoangsonww/North-Carolina-Household-Analysis
+Live: https://hoangsonww.github.io/North-Carolina-Household-Analysis/
+Stars: 13
+
+Project: Earthquake-R-Analysis
+Category: Data Analysis & Research
+Description: A comprehensive R script that fetches global earthquake data (magnitude 2.5 or greater over the past 30 days) from the USGS and generates a suite of 15 exploratory and analytical plots. The analysis includes geographic mapping of earthquake locations, distributional summaries of magnitude and depth, time-series analysis of seismic activity, heatmaps of earthquake frequency, and regression analysis. The project demonstrates advanced R programming for geospatial data analysis and scientific visualization.
+Tech Stack: R, USGS API, Geospatial Analysis, Statistical Visualization, ggplot2
+GitHub: https://github.com/hoangsonww/Earthquake-R-Analysis
+Live: https://hoangsonww.github.io/Earthquake-R-Analysis/
+Stars: 11
+
+Project: Gapminder-R-Analysis
+Category: Data Analysis & Research
+Description: A comprehensive R-based project analyzing the Gapminder dataset (1952-2007) to explore global trends in life expectancy, GDP per capita, and population. The analysis produces a suite of 12 visualizations, fits regression models, and renders an HTML report. The project examines relationships between economic development and health outcomes across countries and continents over five decades, providing insights into global development patterns. It serves as a thorough example of exploratory data analysis with R.
+Tech Stack: R, Gapminder Data, ggplot2, Statistical Modeling, HTML Reporting
+GitHub: https://github.com/hoangsonww/Gapminder-R-Analysis
+Live: https://hoangsonww.github.io/Gapminder-R-Analysis/
+Stars: 11
+
+Project: CO2-Global-Emissions-Analysis
+Category: Data Analysis & Research
+Description: A comprehensive R-based analysis that fetches and processes global CO2 emissions data (per-capita and total) from Our World in Data (OWID). The project generates a suite of 12 exploratory and analytical plots and performs regression analysis of per-capita emissions on GDP per capita. Visualizations include global emissions maps, country-level trends, per-capita comparisons, sector breakdowns, and forecasting models. The analysis provides insights into carbon emission patterns and their relationship with economic development worldwide.
+Tech Stack: R, OWID Data, ggplot2, Regression Analysis, Environmental Data Science
+GitHub: https://github.com/hoangsonww/CO2-Global-Emissions-Analysis
+Live: https://hoangsonww.github.io/CO2-Global-Emissions-Analysis/
+Stars: 10
+
+Project: Stock-Data-Analysis-R
+Category: Data Analysis & Research
+Description: A comprehensive R script that fetches daily adjusted closing prices for a selection of major stock tickers from Yahoo Finance and generates a suite of exploratory and analytical plots. The analysis includes moving averages, daily and cumulative returns, volatility measurement, performance comparison, correlation analysis, and normalized price charts. The project demonstrates quantitative finance techniques in R for stock market analysis, making it useful for investors and students learning financial data science.
+Tech Stack: R, Yahoo Finance API, quantmod, ggplot2, Financial Analysis
+GitHub: https://github.com/hoangsonww/Stock-Data-Analysis-R
+Live: https://hoangsonww.github.io/Stock-Data-Analysis-R/
+Stars: 10
+
+Project: Olympic-Medal-Data-Analysis
+Category: Data Analysis & Research
+Description: A comprehensive R script that pulls the TidyTuesday Olympic medals dataset from GitHub and enriches it with 2016 population and GDP data via the World Bank API. The analysis produces a wide array of exploratory and analytical outputs including geographic mapping of medal distributions, statistical distributions, regression models examining the relationship between GDP/population and medal counts, and clustering analysis of countries by Olympic performance. It demonstrates advanced data enrichment and multi-source analysis techniques.
+Tech Stack: R, TidyTuesday, World Bank API, ggplot2, Clustering, Regression
+GitHub: https://github.com/hoangsonww/Olympic-Medal-Data-Analysis
+Live: https://hoangsonww.github.io/Olympic-Medal-Data-Analysis/
+Stars: 10
+
+Project: Pokemon-Attack-R-Analysis
+Category: Data Analysis & Research
+Description: An exploratory analysis of Pokemon Attack values using a dataset of 1,008 Pokemon. The project computes summary statistics, visualizes the distribution and sampling behavior of the Attack stat, and evaluates normality assumptions. The analysis includes histogram distributions, box plots, QQ plots, confidence intervals, hypothesis testing, and bootstrap sampling experiments. It serves as an educational resource demonstrating statistical analysis concepts through an engaging Pokemon dataset.
+Tech Stack: R, Statistical Analysis, ggplot2, Bootstrap Methods, Hypothesis Testing
+GitHub: https://github.com/hoangsonww/Pokemon-Attack-R-Analysis
+Live: https://hoangsonww.github.io/Pokemon-Attack-R-Analysis/
+Stars: 10
+
+Project: Amazon-Reviews-Analysis
+Category: Data Analysis & Research
+Description: A textual analysis project studying lexical diversity and sentiment intensity in Amazon Fine Food Reviews, completed for LING-460 (Textual Analysis with R) at UNC-Chapel Hill in Spring 2025. The research examines the relationship between review text characteristics and sentiment, using NLP techniques including tokenization, sentiment scoring, lexical diversity metrics, and statistical testing. The analysis includes descriptive statistics, correlation analysis, and hypothesis testing to uncover patterns in how consumers express satisfaction and dissatisfaction through written reviews.
+Tech Stack: R, NLP, Sentiment Analysis, Lexical Analysis, Statistical Testing, tidytext
+GitHub: https://github.com/hoangsonww/Amazon-Reviews-Analysis
+Live: https://hoangsonww.github.io/Amazon-Reviews-Analysis/
+Stars: 9
+
+================================================================================
+CATEGORY: DATA ENGINEERING
+================================================================================
+
+Project: End-to-End-Data-Pipeline
+Category: Data Engineering
+Description: A comprehensive end-to-end data pipeline demonstrating full data engineering lifecycle from ingestion through transformation to visualization. The project uses Python 3.10+ for data processing alongside .NET 8 and C# for service components, with an HTML5 frontend for data visualization dashboards. The pipeline handles data extraction from multiple sources, transformation through configurable processing stages, and loading into target data stores. It demonstrates modern data engineering patterns including schema management, data quality checks, pipeline orchestration, and monitoring.
+Tech Stack: Python, .NET 8, C#, HTML5, Data Pipeline, ETL, Data Engineering
+GitHub: https://github.com/hoangsonww/End-to-End-Data-Pipeline
+Live: https://hoangsonww.github.io/End-to-End-Data-Pipeline/
+Stars: 94
+
+================================================================================
+CATEGORY: DATA STRUCTURES & ALGORITHMS
+================================================================================
+
+Project: Queue-And-HashTable-DSA
+Category: Data Structures & Algorithms
+Description: A Java project comprising tools and utilities for text analysis and movie database management. It features the WordStat application for analyzing word frequencies within text, the CMDb (Case Movie Database) for managing user profiles and favorite movies, and supporting data structures including a Hash Table for efficient data storage and a Priority Queue for ordered data management. The project demonstrates practical applications of hash tables and priority queues in real-world scenarios, combining data structure theory with applied software engineering.
+Tech Stack: Java, Hash Tables, Priority Queues, OOP, Text Analysis
+GitHub: https://github.com/hoangsonww/Queue-And-HashTable-DSA
+Live: https://hoangsonww.github.io/Queue-And-HashTable-DSA/
+Stars: 10
+
+Project: Graph-Data-Structure
+Category: Data Structures & Algorithms
+Description: A Word Ladders game that uses graph data structures to find connections between words. Users enter a starting and ending word, and the program calculates the shortest path (word ladder) between them using either Depth-First Search (DFS) or Breadth-First Search (BFS). The application supports large datasets, processing extensive word lists efficiently. It demonstrates graph construction, traversal algorithms, and shortest-path finding in a practical, engaging context that makes algorithm concepts tangible.
+Tech Stack: Java, Graph Data Structure, BFS, DFS, Word Processing
+GitHub: https://github.com/hoangsonww/Graph-Data-Structure
+Live: https://hoangsonww.github.io/Graph-Data-Structure/
+Stars: 9
+
+Project: Sorting-Algorithms-DSA
+Category: Data Structures & Algorithms
+Description: An Art Museum sorting application designed to manage and manipulate the artwork database of the Cleveland Museum of Art. The application supports adding artworks, sorting them based on various attributes (height, price, width, name, artist name), and generating random artwork lists. It utilizes advanced sorting algorithms including Merge Sort to efficiently organize artwork data. The project demonstrates practical application of sorting algorithms in a museum collection management context, bridging data structures education with real-world use cases.
+Tech Stack: Java, Merge Sort, Sorting Algorithms, OOP, Data Management
+GitHub: https://github.com/hoangsonww/Sorting-Algorithms-DSA
+Live: https://hoangsonww.github.io/Sorting-Algorithms-DSA/
+Stars: 9
+
+Project: Binary-Search-Tree-DSA
+Category: Data Structures & Algorithms
+Description: A Java implementation of a Binary Search Tree (BST) with fundamental operations including insertion, deletion, and traversal. The project supports dynamic tree construction either from scratch, with a single root node, or by parsing an array of integers. It implements in-order, pre-order, and post-order traversal, search operations, node deletion with all three cases (leaf, one child, two children), and tree balancing analysis. The implementation emphasizes efficiency and simplicity, providing an intuitive interface for managing hierarchical integer data.
+Tech Stack: Java, Binary Search Tree, Tree Traversal, OOP, Data Structures
+GitHub: https://github.com/hoangsonww/Binary-Search-Tree-DSA
+Live: https://hoangsonww.github.io/Binary-Search-Tree-DSA/
+Stars: 9
+
+================================================================================
+CATEGORY: HARDWARE & DIGITAL DESIGN
+================================================================================
+
+Project: Digital-Design-Labs
+Category: Hardware & Digital Design
+Description: A suite of digital design modules written in SystemVerilog and assembly language programs. The collection covers a range of topics from basic logic components to complex sequential designs and a microprocessor-interfacing game. Modules include a 3-to-8 line decoder/encoder, finite state machines, ALU designs, memory controllers, VGA display drivers, and a complete game implementation interfacing with hardware. The repository is suitable for educational purposes and as a reference for designing digital systems, demonstrating proficiency in hardware description languages and embedded systems.
+Tech Stack: SystemVerilog, Assembly Language, FPGA, Digital Logic, Hardware Design
+GitHub: https://github.com/hoangsonww/Digital-Design-Labs
+Live: https://hoangsonww.github.io/Digital-Design-Labs/
+Stars: 16
+
+================================================================================
+SUMMARY
+================================================================================
+
+Son Nguyen (David Nguyen) has built and maintains over 87 public GitHub repositories spanning an exceptionally diverse range of software engineering disciplines. His work covers AI/ML and agentic AI systems (including RAG platforms, multi-agent orchestrators, emotion detection, and fraud detection), full-stack web applications (from e-commerce and social media to health management and project management tools), developer tools and NPM packages (including query converters, prefetching libraries, and authentication servers), mobile applications (React Native and native Swift/Kotlin), desktop games (JavaFX-based puzzle and arcade games), comprehensive data analysis projects (using R, Python, Julia, SAS, and Stata for domains ranging from economics to seismology), data engineering pipelines, data structures and algorithms implementations, and hardware design with SystemVerilog.
+
+His most popular projects include Fusion Electronics (102 stars, MERN e-commerce), End-to-End Data Pipeline (94 stars, full data engineering lifecycle), Employee Management App (65 stars, React + Spring Boot), Moodify (62 stars, emotion-based music recommendation), and Agentic AI Pipeline (52 stars, LangGraph multi-agent system). Many of his projects are deployed live with polished UIs, demonstrating not just technical breadth but a commitment to delivering complete, user-facing products. His technology repertoire spans JavaScript/TypeScript (React, Next.js, Vue, Angular, Node.js, Express, NestJS), Python (FastAPI, Flask, Django, LangChain, scikit-learn, PyTorch), Java (Spring Boot, JavaFX), Rust (Axum), Go, C, Swift, Kotlin, SystemVerilog, and R, along with cloud platforms (AWS, Vercel), databases (MongoDB, PostgreSQL, MySQL, Supabase, Pinecone), and modern AI frameworks (LangGraph, LangChain, Hugging Face Transformers, Google Gemini).

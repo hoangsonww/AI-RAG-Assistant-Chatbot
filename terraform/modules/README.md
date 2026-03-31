@@ -417,9 +417,9 @@ aws deploy get-deployment --deployment-id <id>
 
 ## Documentation
 
-- [Advanced Deployments Guide](../docs/ADVANCED_DEPLOYMENTS.md)
-- [Architecture Documentation](../ARCHITECTURE.md)
-- [AWS Deployment README](../aws/README.md)
+- [Advanced Deployments Guide](../../ADVANCED_DEPLOYMENTS.md)
+- [Architecture Documentation](../../ARCHITECTURE.md)
+- [AWS Deployment README](../../aws/README.md)
 
 ## Support
 

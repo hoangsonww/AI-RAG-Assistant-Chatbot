@@ -73,7 +73,7 @@ Lumina's agentic subsystem consists of two packages that work together:
 | `agentic_ai/` | Python | Multi-agent pipeline that plans, researches, analyzes, executes, and reviews complex tasks | LangGraph, LangChain |
 | `mcp_server/` | Python | Standalone tool server exposing 32 tools, 7 resources, and 6 prompts via Model Context Protocol | MCP SDK, asyncio |
 
-The pipeline is a **consumer** of the MCP server. Through an in-process MCP client, every pipeline agent has access to real tools — file I/O, code search, web fetching, Git operations, knowledge-base queries — rather than relying solely on LLM reasoning.
+The pipeline is a **consumer** of the MCP server. Through an in-process MCP client, every pipeline agent has access to real tools — file I/O, code search, web fetching, Git operations, hybrid knowledge-base queries (Pinecone vector search + Neo4j graph traversal) — rather than relying solely on LLM reasoning.
 
 ```mermaid
 graph TB
@@ -113,7 +113,8 @@ graph TB
         FS[File System]
         Git[Git Repositories]
         Web[Web / URLs]
-        Pinecone[(Pinecone)]
+        Pinecone[(Pinecone<br/>Vector DB)]
+        Neo4j[(Neo4j<br/>Graph DB)]
         MongoDB[(MongoDB)]
     end
 
@@ -125,7 +126,9 @@ graph TB
     MCPCli -->|Direct Import| Server
 
     Server --> MW --> Tools & Resources & Prompts
-    Tools --> FS & Git & Web & Pinecone & MongoDB
+    Tools --> FS & Git & Web & Pinecone & Neo4j & MongoDB
+
+    style Neo4j fill:#008CC1
 ```
 
 ---
@@ -454,7 +457,7 @@ flowchart TD
 | `search`, `find`, `grep` + `code` | `search_code` |
 | `fetch`, `download`, `http`, `url`, `web` | `fetch_url` |
 | `git`, `commit`, `diff`, `status` | `git_status` |
-| `knowledge`, `rag`, `knowledge base` | `search_knowledge` |
+| `knowledge`, `rag`, `knowledge base`, `graph` | `search_knowledge` |
 | `analyse`, `analyze` + `file` | `analyze_file` |
 | `csv`, `data`, `parse` | `parse_csv` |
 | *(no match)* | LLM-based reasoning |
@@ -702,7 +705,7 @@ Resources provide read-only data access via `lumina://` URIs:
 | `lumina://pipeline/metrics` | `pipeline_resources.py` | Execution metrics and statistics |
 | `lumina://pipeline/agents` | `pipeline_resources.py` | Agent roster with roles and status |
 | `lumina://knowledge/manifest` | `knowledge_resources.py` | All ingested knowledge sources |
-| `lumina://knowledge/stats` | `knowledge_resources.py` | Knowledge base size and dimension info |
+| `lumina://knowledge/stats` | `knowledge_resources.py` | Knowledge base size, dimension info, and Neo4j graph stats |
 | `lumina://system/info` | `system_resources.py` | OS, Python, memory, CPU details |
 | `lumina://system/capabilities` | `system_resources.py` | Full server capability manifest |
 
@@ -864,8 +867,8 @@ flowchart TD
     KW4 -->|Yes| FU["→ fetch_url"]
     KW4 -->|No| KW5{"Contains git/commit/diff?"}
     KW5 -->|Yes| GS["→ git_status"]
-    KW5 -->|No| KW6{"Contains knowledge/rag?"}
-    KW6 -->|Yes| SK["→ search_knowledge"]
+    KW5 -->|No| KW6{"Contains knowledge/rag/graph?"}
+    KW6 -->|Yes| SK["→ search_knowledge<br/>(Pinecone + Neo4j)"]
     KW6 -->|No| KW7{"Contains analyze + file?"}
     KW7 -->|Yes| AF["→ analyze_file"]
     KW7 -->|No| KW8{"Contains csv/data/parse?"}
@@ -894,10 +897,10 @@ flowchart TD
 
 | Tool | Parameters | Description |
 |------|-----------|-------------|
-| `search_knowledge` | `query` (str, req), `top_k` (int, 5), `filter_type` (str) | Semantic search against RAG knowledge base |
+| `search_knowledge` | `query` (str, req), `top_k` (int, 5), `filter_type` (str) | Hybrid search against RAG knowledge base (Pinecone vectors + Neo4j graph) |
 | `list_knowledge_sources` | `source_type` (str), `limit` (int, 20) | List all ingested knowledge sources |
 | `get_knowledge_document` | `document_id` (str, req), `include_vectors` (bool, false) | Retrieve a specific document |
-| `similarity_search` | `query` (str, req), `top_k` (int, 10), `threshold` (float, 0.7), `namespace` (str) | Vector similarity search |
+| `similarity_search` | `query` (str, req), `top_k` (int, 10), `threshold` (float, 0.7), `namespace` (str) | Hybrid vector + graph similarity search |
 
 ### Code Tools (3)
 

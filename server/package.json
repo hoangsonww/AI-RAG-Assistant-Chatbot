@@ -43,7 +43,11 @@
     "knowledge:delete": "ts-node src/scripts/knowledgeCli.ts delete",
     "knowledge:list": "ts-node src/scripts/knowledgeCli.ts list",
     "knowledge:repl": "ts-node src/scripts/knowledgeCli.ts repl",
-    "knowledge:sync": "ts-node src/scripts/knowledgeCli.ts sync"
+    "knowledge:sync": "ts-node src/scripts/knowledgeCli.ts sync",
+    "knowledge:graph:status": "ts-node src/scripts/knowledgeCli.ts graph:status",
+    "knowledge:graph:rebuild": "ts-node src/scripts/knowledgeCli.ts graph:rebuild",
+    "knowledge:graph:rebuild:clean": "ts-node src/scripts/knowledgeCli.ts graph:rebuild --clean",
+    "knowledge:graph:reset": "ts-node src/scripts/knowledgeCli.ts graph:reset"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
@@ -55,6 +59,7 @@
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^6.0.0",
     "multer": "^1.4.4",
+    "neo4j-driver": "^6.0.1",
     "prettier": "^3.6.2",
     "serve-favicon": "^2.5.0",
     "swagger-jsdoc": "^6.2.8",

@@ -1,6 +1,6 @@
 ---
 name: infra-deploy
-description: Use when changing Terraform, Docker, AWS or Azure deployment assets, or deployment documentation, including terraform/, aws/, docker-compose.yml, DEPLOYMENT.md, docs/ADVANCED_DEPLOYMENTS.md, and agentic_ai/deployments/.
+description: Use when changing Terraform, Docker, AWS or Azure deployment assets, or deployment documentation, including terraform/, aws/, docker-compose.yml, DEPLOYMENT.md, ADVANCED_DEPLOYMENTS.md, and agentic_ai/deployments/.
 ---
 
 # Infra Deploy

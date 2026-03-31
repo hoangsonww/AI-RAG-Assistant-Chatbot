@@ -1,6 +1,6 @@
 # Lumina Backend (Server) 🚀
 
-This directory contains the **server** side of the **Lumina** project – a robust backend built with **Node.js** and **Express** using **TypeScript**. The backend provides all the necessary API endpoints for user authentication, conversation management, and AI chat interactions, as well as integrations with external services like MongoDB, OpenAI, and Pinecone.
+This directory contains the **server** side of the **Lumina** project – a robust backend built with **Node.js** and **Express** using **TypeScript**. The backend provides all the necessary API endpoints for user authentication, conversation management, and AI chat interactions, as well as integrations with external services like MongoDB, OpenAI, Pinecone, and Neo4j.
 
 ---
 
@@ -27,7 +27,7 @@ The Lumina backend is designed to handle:
 - **User Authentication:** Secure sign up, login, and password reset functionalities using JWT.
 - **Conversation Management:** Endpoints for creating, retrieving, updating, searching, and deleting conversations.
 - **AI Chat Integration:** Processes chat queries to generate AI responses.
-- **External Integrations:** Connects with MongoDB for data storage, Pinecone for vector-based searches, and external AI APIs to generate responses.
+- **External Integrations:** Connects with MongoDB for data storage, Pinecone for vector-based searches, Neo4j for graph-based knowledge retrieval, and external AI APIs to generate responses.
 
 ---
 
@@ -36,7 +36,9 @@ The Lumina backend is designed to handle:
 - **Secure API:** Implements robust JWT authentication and authorization mechanisms.
 - **Conversation Handling:** Supports creating, retrieving, updating, and deleting conversations.
 - **AI Chat Service:** Facilitates dynamic interactions with the AI, leveraging advanced language models.
-- **External Integrations:** Seamlessly integrates with MongoDB, Pinecone, and other external services.
+- **Hybrid RAG Pipeline:** Combines Pinecone vector similarity search with Neo4j graph traversal for comprehensive knowledge retrieval. Both retrieval paths run in parallel and their results are merged to produce grounded, citation-backed responses.
+- **Knowledge Graph:** Automatic entity extraction and relationship mapping stored in Neo4j AuraDB. Entities and relationships are extracted from ingested documents using Gemini AI and persisted as a queryable graph.
+- **External Integrations:** Seamlessly integrates with MongoDB, Pinecone, Neo4j, and other external services.
 - **Email & Password Management:** Endpoints for email verification and password reset functionality.
 
 ---
@@ -47,6 +49,7 @@ The Lumina backend is designed to handle:
 - **TypeScript** – Enhances code quality and maintainability with static typing.
 - **MongoDB** (with Mongoose) – Data storage and object modeling.
 - **JWT (JSON Web Tokens)** – Secure authentication mechanism.
+- **Neo4j** (with neo4j-driver) – Graph database for entity-relationship knowledge retrieval.
 - **Additional Libraries:** bcrypt, cors, dotenv, multer, nodemailer, openai, uuid, etc.
 - **Development Tools:** nodemon and ts-node for a smooth development experience.
 
@@ -104,7 +107,15 @@ For additional API details, please refer to the OpenAPI specification file (`ope
    GOOGLE_AI_API_KEY=your_google_ai_api_key_here
    PINECONE_API_KEY=your_pinecone_api_key_here
    PINECONE_INDEX_NAME=lumina-index
+
+   # Neo4j AuraDB (optional — enables graph RAG)
+   NEO4J_URI=neo4j+s://your-instance.databases.neo4j.io
+   NEO4J_USERNAME=your_username
+   NEO4J_PASSWORD=your_password
+   NEO4J_DATABASE=your_database
    ```
+
+   > **Note:** Neo4j is optional. When the Neo4j environment variables are not set or the database is unreachable, the system gracefully degrades to vector-only retrieval via Pinecone.
 
 4. **Run the server in development mode:**
 
@@ -147,7 +158,24 @@ npm run knowledge:delete -- --id <sourceId>
 
 # Batch sync from a manifest
 npm run knowledge:sync -- --manifest ./knowledge/manifest.json
+
+# Check graph database connection and statistics
+npm run knowledge:graph:status
+
+# Rebuild the knowledge graph from all existing sources
+npm run knowledge:graph:rebuild
 ```
+
+### Graph RAG Commands
+
+The graph commands manage the Neo4j knowledge graph that powers the graph-based retrieval path:
+
+| Command | Description |
+|---------|-------------|
+| `npm run knowledge:graph:status` | Display Neo4j connection status, node/edge counts, and schema info. |
+| `npm run knowledge:graph:rebuild` | Re-extract entities and relationships from all ingested sources and rebuild the graph from scratch. |
+
+When new sources are upserted via `knowledge:upsert` or `knowledge:sync`, entities and relationships are automatically extracted and stored in Neo4j alongside the Pinecone vector embeddings. Use `graph:rebuild` if you need to regenerate the graph after changes to the extraction logic or to recover from a corrupted graph state.
 
 ---
 
@@ -170,8 +198,16 @@ server/
     │   ├── auth.ts
     │   ├── conversations.ts
     │   └── chat.ts
+    ├── types/                # TypeScript type definitions
+    │   └── graph.ts          # Graph entity & relationship types
     ├── services/             # Business logic and external service integrations
-    │   └── authService.ts
+    │   ├── authService.ts
+    │   ├── neo4jClient.ts    # Neo4j connection, schema init, health check
+    │   ├── graphKnowledge.ts # Entity extraction, graph ingestion & retrieval
+    │   ├── geminiService.ts  # AI service with hybrid vector+graph RAG
+    │   ├── knowledgeBase.ts  # Chunking, embeddings, vector+graph ingestion
+    │   ├── geminiEmbeddings.ts # Embedding generation
+    │   └── pineconeClient.ts # Pinecone vector DB client
     ├── utils/                # Utility scripts (e.g., ephemeralConversations)
     │   └── ephemeralConversations.ts
     └── middleware/           # Express middleware (e.g., authentication)

@@ -29,19 +29,36 @@ export const getEmbeddingModel = (apiKey: string): GenerativeModel => {
   return genAI.getGenerativeModel({ model: GEMINI_EMBEDDING_MODEL });
 };
 
+const EMBED_RETRY_ATTEMPTS = 5;
+const EMBED_RETRY_BASE_MS = 3_000;
+
 export const embedText = async (
   model: GenerativeModel,
   text: string,
   taskType?: TaskType,
 ) => {
-  const response = await model.embedContent(
-    buildEmbeddingRequest(text, taskType),
-  );
-  const values = response.embedding.values;
+  for (let attempt = 0; attempt < EMBED_RETRY_ATTEMPTS; attempt++) {
+    try {
+      const response = await model.embedContent(
+        buildEmbeddingRequest(text, taskType),
+      );
+      const values = response.embedding.values;
 
-  if (!values || !Array.isArray(values)) {
-    throw new Error("Invalid embedding response format.");
+      if (!values || !Array.isArray(values)) {
+        throw new Error("Invalid embedding response format.");
+      }
+
+      return values;
+    } catch (error: any) {
+      const message = error?.message || "";
+      const isRateLimit =
+        message.includes("429") || message.includes("Too Many Requests");
+      if (!isRateLimit || attempt === EMBED_RETRY_ATTEMPTS - 1) throw error;
+      const delay = EMBED_RETRY_BASE_MS * (attempt + 1);
+      console.log(`Embedding rate limited, retrying in ${delay / 1000}s...`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
   }
 
-  return values;
+  throw new Error("Embedding retry exhausted.");
 };

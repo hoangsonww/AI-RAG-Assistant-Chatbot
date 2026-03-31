@@ -4,7 +4,7 @@
 
 - `docker-compose.yml`
 - `DEPLOYMENT.md`
-- `docs/ADVANCED_DEPLOYMENTS.md`
+- `ADVANCED_DEPLOYMENTS.md`
 
 ## Terraform
 

@@ -9,7 +9,7 @@ Key files:
 - terraform/modules/: ALB, ECS, CloudFront, monitoring, canary, progressive delivery
 - docker-compose.yml: local multi-service orchestration
 - aws/scripts/: deployment scripts
-- DEPLOYMENT.md, docs/ADVANCED_DEPLOYMENTS.md: deployment documentation
+- DEPLOYMENT.md, ADVANCED_DEPLOYMENTS.md: deployment documentation
 
 Rules:
 - Touch only the affected module or platform.

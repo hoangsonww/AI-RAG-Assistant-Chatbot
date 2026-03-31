@@ -18,7 +18,9 @@
   - [Authentication Flow](#authentication-flow)
 - [AI/ML Architecture](#aiml-architecture)
   - [RAG Implementation](#rag-implementation)
+  - [Hybrid Retrieval Pipeline](#hybrid-retrieval-pipeline)
   - [Vector Search Pipeline](#vector-search-pipeline)
+  - [Graph Retrieval Pipeline](#graph-retrieval-pipeline)
   - [Knowledge Storage](#knowledge-storage)
 - [MCP Server Architecture](#mcp-server-architecture)
   - [MCP Protocol Overview](#mcp-protocol-overview)
@@ -31,10 +33,17 @@
   - [MCP Tool Routing](#mcp-tool-routing)
 - [Data Flow](#data-flow)
   - [Chat Message Flow](#chat-message-flow)
+  - [Knowledge Ingestion Data Flow (Vector + Graph)](#knowledge-ingestion-data-flow-vector--graph)
+  - [Hybrid Retrieval Data Flow](#hybrid-retrieval-data-flow)
+  - [Exhaustive List Retrieval](#exhaustive-list-retrieval)
   - [Conversation Management Flow](#conversation-management-flow)
   - [Guest vs Authenticated User Flow](#guest-vs-authenticated-user-flow)
   - [Message Editing & Conversation Branching](#message-editing--conversation-branching)
 - [Database Schema](#database-schema)
+  - [MongoDB Collections](#mongodb-collections)
+  - [Pinecone Vector Database Schema](#pinecone-vector-database-schema)
+  - [Neo4j Knowledge Graph Schema](#neo4j-knowledge-graph-schema)
+- [Graceful Degradation](#graceful-degradation)
 - [Security Architecture](#security-architecture)
 - [Deployment Architecture](#deployment-architecture)
 - [Performance Considerations](#performance-considerations)
@@ -44,15 +53,17 @@
 
 ## Overview
 
-Lumina is a full-stack AI-powered chatbot application that leverages Retrieval-Augmented Generation (RAG) to provide personalized, context-aware responses. The system is built with a modern microservices-oriented architecture, featuring a React frontend, Express.js backend, MongoDB for data persistence, Pinecone for vector storage, and Google's Gemini AI for natural language processing.
+Lumina is a full-stack AI-powered chatbot application that leverages Retrieval-Augmented Generation (RAG) to provide personalized, context-aware responses. The system is built with a modern microservices-oriented architecture, featuring a React frontend, Express.js backend, MongoDB for data persistence, Pinecone for vector storage, Neo4j AuraDB for knowledge graph traversal, and Google's Gemini AI for natural language processing. The hybrid retrieval pipeline combines vector similarity search with graph-based entity traversal, merging results for higher relevance and richer citations.
 
 ### Key Architectural Principles
 
 1. **Separation of Concerns**: Clear boundaries between frontend, backend, and AI/ML components
 2. **Stateless API Design**: RESTful APIs with JWT-based authentication
-3. **Scalable Data Layer**: Distributed databases (MongoDB + Pinecone)
-4. **Event-Driven Communication**: Real-time updates and async processing
-5. **Security First**: JWT authentication, encrypted passwords, CORS protection
+3. **Scalable Data Layer**: Distributed databases (MongoDB + Pinecone + Neo4j)
+4. **Hybrid Retrieval**: Parallel vector similarity and graph traversal with merged scoring
+5. **Graceful Degradation**: System operates in vector-only mode when graph DB is unavailable
+6. **Event-Driven Communication**: Real-time updates and async processing
+7. **Security First**: JWT authentication, encrypted passwords, CORS protection
 
 ---
 
@@ -87,6 +98,7 @@ graph TB
     subgraph "Data Layer"
         MongoDB[(MongoDB)]
         Pinecone[(Pinecone Vector DB)]
+        Neo4j[(Neo4j AuraDB)]
         Cache[(Redis Cache)]
     end
 
@@ -107,6 +119,7 @@ graph TB
     RAG --> Embed
     RAG --> Gemini
     RAG --> Pinecone
+    RAG --> Neo4j
 
     Auth --> MongoDB
     Conv --> MongoDB
@@ -121,6 +134,7 @@ graph TB
     style API fill:#339933
     style MongoDB fill:#47A248
     style Pinecone fill:#FF6F61
+    style Neo4j fill:#008CC1
     style Gemini fill:#4285F4
 ```
 
@@ -148,6 +162,8 @@ graph LR
     subgraph "AI Services"
         GeminiSvc[Gemini Service]
         PineconeSvc[Pinecone Client]
+        Neo4jClient[Neo4j Client]
+        GraphKnowledge[Graph Knowledge Service]
         QueryKnowledge[Knowledge Query]
         KnowledgeCLI[Knowledge CLI - REPL/Batch/CLI]
     end
@@ -167,12 +183,11 @@ graph LR
     GeminiSvc --> PineconeSvc
     GeminiSvc --> QueryKnowledge
     QueryKnowledge --> PineconeSvc
+    QueryKnowledge --> GraphKnowledge
+    GraphKnowledge --> Neo4jClient
     KnowledgeCLI --> PineconeSvc
+    KnowledgeCLI --> GraphKnowledge
     KnowledgeCLI --> Models
-
-    style App fill:#61DAFB
-    style Server fill:#339933
-    style GeminiSvc fill:#4285F4
 ```
 
 ---
@@ -212,6 +227,7 @@ graph LR
 |------------|---------|---------|
 | **Google Gemini AI** | LLM | Auto-rotated (available Gemini models) |
 | **Pinecone** | Vector Database | 4.1.0 |
+| **Neo4j AuraDB** | Knowledge Graph Database | 5.x (AuraDB managed) |
 | **Gemini Embeddings** | Vector Embeddings | gemini-embedding-001 |
 | **MCP SDK** | Model Context Protocol | 1.0.0 |
 | **LangChain** | Agent Framework | Latest |
@@ -261,10 +277,6 @@ graph TD
 
     App --> ThemeProvider[MUI Theme Provider]
     App --> Analytics[Vercel Analytics]
-
-    style App fill:#4285F4
-    style Home fill:#4CAF50
-    style ChatArea fill:#FF9800
 ```
 
 ### State Management
@@ -412,7 +424,7 @@ graph LR
 graph TD
     subgraph "Gemini Service"
         ChatWithAI[chatWithAI Function]
-        SearchKnowledge[Search Pinecone]
+        SearchKnowledge[Search Knowledge - Hybrid]
         BuildContext[Build Context]
         GenerateResponse[Generate Response]
     end
@@ -422,27 +434,56 @@ graph TD
         GetIndex[Get Index]
     end
 
-    subgraph "Query Knowledge"
+    subgraph "Neo4j Client"
+        InitNeo4j[Initialize Driver - Pool: 50]
+        GetSession[Get Session]
+    end
+
+    subgraph "Query Knowledge - Hybrid Retrieval"
         CreateEmbedding[Create Query Embedding]
+        ParallelSearch["Promise.allSettled()"]
         VectorSearch[Vector Similarity Search]
-        ReturnMatches[Return Top Matches]
+        GraphSearch[Graph Traversal Search]
+        MergeResults[Merge & Deduplicate]
+        ReturnMatches[Return Top 10 Matches]
+    end
+
+    subgraph "Graph Knowledge Service"
+        ExtractEntities[Extract Entities from Query - Gemini]
+        FulltextMatch[Fulltext Entity Match]
+        GraphTraversal[2-hop Graph Traversal]
     end
 
     ChatWithAI --> SearchKnowledge
     SearchKnowledge --> CreateEmbedding
-    CreateEmbedding --> VectorSearch
-    VectorSearch --> ReturnMatches
+    CreateEmbedding --> ParallelSearch
+    ParallelSearch --> VectorSearch
+    ParallelSearch --> GraphSearch
+    VectorSearch --> MergeResults
+    GraphSearch --> MergeResults
+    MergeResults --> ReturnMatches
     ReturnMatches --> BuildContext
     BuildContext --> GenerateResponse
 
     VectorSearch --> GetIndex
     GetIndex --> InitPinecone
 
+    GraphSearch --> ExtractEntities
+    ExtractEntities --> FulltextMatch
+    FulltextMatch --> GraphTraversal
+    GraphTraversal --> GetSession
+    GetSession --> InitNeo4j
+
     style ChatWithAI fill:#4285F4
     style VectorSearch fill:#FF6F61
+    style GraphSearch fill:#008CC1
+    style ParallelSearch fill:#FF9800
+    style MergeResults fill:#9C27B0
 ```
 
 ### Data Layer
+
+The data layer comprises three complementary data stores: MongoDB for application state, Pinecone for vector similarity search, and Neo4j AuraDB for knowledge graph traversal.
 
 ```mermaid
 erDiagram
@@ -479,6 +520,43 @@ erDiagram
         Date expiresAt
     }
 ```
+
+#### Neo4j Knowledge Graph
+
+Neo4j AuraDB provides a parallel graph retrieval path alongside Pinecone. Entities are extracted from document chunks at ingest time in batches of 5 chunks per Gemini AI call (with model rotation across 6 models), and graph traversal is used at query time to find contextually related chunks.
+
+```mermaid
+graph LR
+    subgraph "Neo4j Knowledge Graph"
+        D[Document] -->|HAS_CHUNK| C[Chunk]
+        C -->|NEXT| C2[Chunk]
+        C -->|MENTIONS| E[Entity]
+        E -->|RELATED_TO| E2[Entity]
+    end
+```
+
+**New backend services:**
+
+| Service | File | Responsibility |
+|---------|------|----------------|
+| **Neo4j Client** | `neo4jClient.ts` | Connection management, pooling (max 50), health checks, graceful shutdown |
+| **Graph Knowledge** | `graphKnowledge.ts` | Batch entity extraction (5 chunks/call, model rotation) at ingest, graph traversal at query time, merge algorithm |
+
+**Knowledge CLI graph commands:**
+
+| Command | Description |
+|---------|-------------|
+| `npm run graph:reset` | Wipe all nodes and relationships from the Neo4j knowledge graph |
+| `npm run graph:rebuild --clean` | Wipe the graph and then rebuild it from scratch using the current knowledge sources |
+
+**Environment variables:**
+
+| Variable | Description |
+|----------|-------------|
+| `NEO4J_URI` | Neo4j AuraDB connection URI (e.g., `neo4j+s://xxxx.databases.neo4j.io`) |
+| `NEO4J_USERNAME` | Neo4j authentication username |
+| `NEO4J_PASSWORD` | Neo4j authentication password |
+| `NEO4J_DATABASE` | Target database name (default: `neo4j`) |
 
 ### Authentication Flow
 
@@ -527,20 +605,34 @@ sequenceDiagram
 
 ### RAG Implementation
 
-The RAG (Retrieval-Augmented Generation) system grounds responses in Pinecone knowledge and always returns inline citations with a sources list. Knowledge is ingested through CLI tools (REPL or one-off commands) and stored in MongoDB + Pinecone for retrieval.
+The RAG (Retrieval-Augmented Generation) system grounds responses in knowledge retrieved from both Pinecone (vector similarity) and Neo4j (graph traversal), always returning inline citations with a sources list. Knowledge is ingested through CLI tools (REPL or one-off commands) and stored in MongoDB + Pinecone + Neo4j for retrieval. At query time, both retrieval paths run in parallel via `Promise.allSettled`, and results are merged, deduplicated, and scored before being passed to the generation phase.
 
 ```mermaid
 graph TB
-    UserQuery[User Query] --> EmbedQuery[Generate Query Embedding]
+    UserQuery[User Query] --> ParallelRetrieval["Promise.allSettled()"]
 
-    subgraph "Retrieval Phase"
+    subgraph "Retrieval Phase - Vector Path"
+        ParallelRetrieval --> EmbedQuery[Generate Query Embedding]
         EmbedQuery --> VectorSearch[Pinecone Vector Search]
-        VectorSearch --> TopK[Retrieve Top-K Results]
-        TopK --> FilterResults[Filter & Rank Results]
+        VectorSearch --> VectorTopK[Top 15 Vector Matches]
+    end
+
+    subgraph "Retrieval Phase - Graph Path"
+        ParallelRetrieval --> ExtractEntities[Extract Entities from Query - Gemini]
+        ExtractEntities --> GraphSearch[Neo4j Graph Traversal]
+        GraphSearch --> GraphTopK[Top 15 Graph Matches]
+    end
+
+    subgraph "Merge Phase"
+        VectorTopK --> MergeDedup[Merge & Deduplicate by chunkId]
+        GraphTopK --> MergeDedup
+        MergeDedup --> ScoreBonus["Dual-source bonus (+0.1)"]
+        ScoreBonus --> LexicalBoost["Lexical boost (15%)"]
+        LexicalBoost --> Top10[Return Top 10 SourceCitation]
     end
 
     subgraph "Augmentation Phase"
-        FilterResults --> BuildPrompt[Build Augmented Prompt]
+        Top10 --> BuildPrompt[Build Augmented Prompt]
         UserQuery --> BuildPrompt
         ConversationHistory[Conversation History] --> BuildPrompt
         SystemInstructions[System Instructions] --> BuildPrompt
@@ -557,9 +649,48 @@ graph TB
     FinalResponse --> SaveToMongo[Save to MongoDB]
 
     style VectorSearch fill:#FF6F61
+    style GraphSearch fill:#008CC1
+    style ParallelRetrieval fill:#123467
+    style MergeDedup fill:#9C27B0
     style GeminiAPI fill:#4285F4
     style SaveToMongo fill:#47A248
 ```
+
+### Hybrid Retrieval Pipeline
+
+The hybrid retrieval pipeline runs vector similarity search and graph traversal in parallel, then merges the results using a scoring algorithm that rewards chunks found by both paths.
+
+```mermaid
+flowchart TD
+    Q["User Query"] --> P["Promise.allSettled"]
+    P --> V["Vector Path (Pinecone)"]
+    P --> G["Graph Path (Neo4j)"]
+
+    V --> V1["Embed query -> 768-d vector"]
+    V1 --> V2["Pinecone cosine search"]
+    V2 --> V3["Top 15 vector matches"]
+
+    G --> G1["Extract entities from query (Gemini)"]
+    G1 --> G2["Fulltext entity match in Neo4j"]
+    G2 --> G3["2-hop graph traversal"]
+    G3 --> G4["Top 15 graph matches"]
+
+    V3 --> M["Merge & Deduplicate"]
+    G4 --> M
+    M --> S["Score: dual-source bonus +0.1"]
+    S --> L["Apply lexical boost (15%)"]
+    L --> R["Return top 10 SourceCitation[]"]
+```
+
+#### Merge Algorithm Details
+
+| Step | Description |
+|------|-------------|
+| **1. Normalize** | Scale vector scores (0-1) and graph scores (0-1) to a common range |
+| **2. Deduplicate** | Group results by `chunkId`; keep the highest score from each source |
+| **3. Dual-source bonus** | Chunks appearing in both vector and graph results receive a +0.1 score bonus |
+| **4. Lexical boost** | If the original query terms appear in the chunk text, apply a 15% score uplift |
+| **5. Sort and trim** | Sort by final score descending, return the top 10 as `SourceCitation[]` |
 
 ### Vector Search Pipeline
 
@@ -569,6 +700,7 @@ sequenceDiagram
     participant ChatService
     participant GeminiService
     participant Pinecone
+    participant Neo4j
     participant EmbeddingModel
     participant GeminiAI
     participant MongoDB
@@ -576,11 +708,24 @@ sequenceDiagram
     User->>ChatService: Send message
     ChatService->>GeminiService: chatWithAI(history, message)
 
-    Note over GeminiService,Pinecone: Retrieval Phase
-    GeminiService->>EmbeddingModel: Generate query embedding
-    EmbeddingModel-->>GeminiService: Vector embedding
-    GeminiService->>Pinecone: Query vector (topK=6)
-    Pinecone-->>GeminiService: Relevant documents
+    Note over GeminiService,Neo4j: Hybrid Retrieval Phase (parallel)
+    par Vector Path
+        GeminiService->>EmbeddingModel: Generate query embedding
+        EmbeddingModel-->>GeminiService: Vector embedding (768-d)
+        GeminiService->>Pinecone: Query vector (topK=15)
+        Pinecone-->>GeminiService: Vector matches
+    and Graph Path
+        GeminiService->>GeminiAI: Extract entities from query
+        GeminiAI-->>GeminiService: Entity list
+        GeminiService->>Neo4j: Fulltext entity search + 2-hop traversal
+        Neo4j-->>GeminiService: Graph matches
+    end
+
+    Note over GeminiService: Merge & Deduplicate
+    GeminiService->>GeminiService: Normalize scores, deduplicate by chunkId
+    GeminiService->>GeminiService: Apply dual-source bonus (+0.1)
+    GeminiService->>GeminiService: Apply lexical boost (15%)
+    GeminiService->>GeminiService: Return top 10 SourceCitation[]
 
     Note over GeminiService,GeminiAI: Augmentation Phase
     GeminiService->>GeminiService: Build augmented context
@@ -596,16 +741,57 @@ sequenceDiagram
     ChatService-->>User: Display response
 ```
 
+### Graph Retrieval Pipeline
+
+The graph path extracts entities from the user query using Gemini AI, matches them against the Neo4j fulltext index, and then performs a 2-hop traversal to find related chunks.
+
+```mermaid
+sequenceDiagram
+    participant Query as User Query
+    participant Gemini as Gemini AI
+    participant Neo4j as Neo4j AuraDB
+
+    Query->>Gemini: Extract entities from query text
+    Gemini-->>Query: [{name, type}] entity list
+
+    loop For each extracted entity
+        Query->>Neo4j: CALL db.index.fulltext.queryNodes('entityFulltext', name)
+        Neo4j-->>Query: Matching Entity nodes (scored)
+    end
+
+    Query->>Neo4j: MATCH (e:Entity)<-[:MENTIONS]-(c:Chunk)<-[:HAS_CHUNK]-(d:Document)
+    Neo4j-->>Query: Direct chunk matches
+
+    Query->>Neo4j: MATCH (e:Entity)-[:RELATED_TO]-(e2:Entity)<-[:MENTIONS]-(c2:Chunk)
+    Neo4j-->>Query: 2-hop related chunk matches
+
+    Query->>Query: Combine, score, and return top 15 graph matches
+```
+
 ### Knowledge Storage
+
+Knowledge is stored across three complementary systems: MongoDB (source metadata), Pinecone (vector embeddings), and Neo4j (entity graph). At ingestion time, chunks are embedded into Pinecone (with retry on rate limits) and batched in groups of 5 for entity extraction by Gemini AI (with model rotation) into Neo4j.
 
 ```mermaid
 graph TD
     subgraph "Knowledge Ingestion Pipeline (CLI)"
         RawDocs[CLI Input or Files] --> Parse[Parse & Chunk]
         Parse --> Clean[Clean & Preprocess]
-        Clean --> Embed[Generate Embeddings]
+        Clean --> ParallelIngest["Parallel Ingestion"]
+    end
+
+    subgraph "Vector Path"
+        ParallelIngest --> Embed[Generate Embeddings]
         Embed --> Metadata[Add Metadata + Source IDs]
         Metadata --> Upsert[Upsert to Pinecone]
+    end
+
+    subgraph "Graph Path"
+        ParallelIngest --> BatchChunks["Batch Chunks (5 per call)"]
+        BatchChunks --> ExtractEntities["Extract Entities (Gemini AI, model rotation)"]
+        ExtractEntities --> CreateNodes[Create Document + Chunk + Entity Nodes]
+        CreateNodes --> CreateRels[Create MENTIONS + RELATED_TO Relationships]
+        CreateRels --> UpsertNeo4j[Upsert to Neo4j]
     end
 
     subgraph "Vector Database"
@@ -613,15 +799,31 @@ graph TD
         PineconeIndex --> Namespace1[Namespace: knowledge]
     end
 
+    subgraph "Graph Database"
+        UpsertNeo4j --> Neo4jDB[(Neo4j AuraDB)]
+        Neo4jDB --> DocNodes[Document Nodes]
+        Neo4jDB --> ChunkNodes[Chunk Nodes]
+        Neo4jDB --> EntityNodes[Entity Nodes]
+    end
+
     subgraph "Retrieval"
-        Query[User Query] --> QueryEmbed[Generate Query Embedding]
-        QueryEmbed --> Search[Similarity Search]
-        PineconeIndex --> Search
-        Search --> Results[Top-K Results]
+        Query[User Query] --> HybridSearch["Hybrid Search (Parallel)"]
+        HybridSearch --> QueryEmbed[Generate Query Embedding]
+        HybridSearch --> QueryEntities[Extract Query Entities]
+        QueryEmbed --> VectorSearch[Similarity Search]
+        QueryEntities --> GraphTraversal[Graph Traversal]
+        PineconeIndex --> VectorSearch
+        Neo4jDB --> GraphTraversal
+        VectorSearch --> MergeResults[Merge & Deduplicate]
+        GraphTraversal --> MergeResults
+        MergeResults --> Results[Top 10 Results]
     end
 
     style PineconeIndex fill:#FF6F61
+    style Neo4jDB fill:#008CC1
     style Embed fill:#4285F4
+    style ExtractEntities fill:#4285F4
+    style HybridSearch fill:#123144
 ```
 
 #### Knowledge Ingestion CLI Flow
@@ -630,6 +832,7 @@ graph TD
 flowchart LR
     Start([Run CLI]) --> LoadEnv[Load Environment Variables]
     LoadEnv --> InitPinecone[Initialize Pinecone Client]
+    LoadEnv --> InitNeo4j[Initialize Neo4j Driver]
     InitPinecone --> InitEmbeddings[Initialize Embedding Model]
 
     InitEmbeddings --> ReadDocs[Read Content - REPL/File/Inline]
@@ -639,14 +842,56 @@ flowchart LR
     Loop --> CreateEmbed[Create Embedding Vector]
     CreateEmbed --> PrepareMetadata[Prepare Metadata + Source IDs]
     PrepareMetadata --> UpsertVector[Upsert to Pinecone]
+
+    Loop --> BatchEntities["Batch Chunks (5 per LLM call)"]
+    BatchEntities --> ExtractEntities["Extract Entities (Gemini AI, model rotation)"]
+    ExtractEntities --> UpsertGraph["Upsert Document/Chunk/Entity Nodes to Neo4j"]
+    UpsertGraph --> LinkEntities["Create MENTIONS + RELATED_TO Edges"]
+
     UpsertVector --> Loop
+    LinkEntities --> Loop
 
     Loop --> PersistMongo[Save Knowledge Source in MongoDB]
     PersistMongo --> Complete([Storage Complete])
 
     style InitPinecone fill:#FF6F61
+    style InitNeo4j fill:#008CC1
     style CreateEmbed fill:#4285F4
+    style ExtractEntities fill:#4285F4
+    style BatchEntities fill:#213232
 ```
+
+#### Batch Entity Extraction
+
+Entity extraction at ingest time now processes chunks in **batches of 5** per LLM call, reducing the total number of Gemini API requests by up to 80%. Each batch is sent as a single prompt that returns entities and relationships per chunk. The extraction call rotates through 6 Gemini models to spread load and avoid per-model rate limits.
+
+```mermaid
+flowchart LR
+    C1["Chunk 1"] --> B["Batch (5 chunks)"]
+    C2["Chunk 2"] --> B
+    C3["Chunk 3"] --> B
+    C4["Chunk 4"] --> B
+    C5["Chunk 5"] --> B
+    B --> LLM["Single Gemini Call<br/>(model rotation)"]
+    LLM --> E["Entities + Relationships<br/>per chunk"]
+```
+
+**Model rotation pool for entity extraction:**
+
+| # | Model |
+|---|-------|
+| 1 | `gemini-2.5-flash` |
+| 2 | `gemini-2.5-flash-lite` |
+| 3 | `gemini-2.0-flash` |
+| 4 | `gemini-2.0-flash-001` |
+| 5 | `gemini-2.0-flash-lite` |
+| 6 | `gemini-2.0-flash-lite-001` |
+
+This is the same rotation strategy used by the chat generation path, ensuring consistent load distribution across all Gemini endpoints.
+
+#### Manifest-Based Sync
+
+Batch knowledge operations can be driven by a `manifest.json` file located in `server/knowledge/`. The manifest declares all knowledge source files, their metadata, and sync state, enabling reproducible bulk upserts and deletes. See [`UPDATE_KNOWLEDGE.md`](UPDATE_KNOWLEDGE.md) for the full manifest schema and workflow.
 
 ---
 
@@ -824,6 +1069,7 @@ sequenceDiagram
     participant Chat as Chat Route
     participant Gemini as Gemini Service
     participant Pinecone as Pinecone DB
+    participant Neo4j as Neo4j AuraDB
     participant Mongo as MongoDB
 
     UI->>API: POST /api/chat/auth {message, conversationId, editIndex?}
@@ -839,8 +1085,16 @@ sequenceDiagram
     end
 
     Chat->>Gemini: chatWithAI(history, message)
-    Gemini->>Pinecone: Search relevant knowledge
-    Pinecone-->>Gemini: Top-K matches
+
+    par Hybrid Retrieval
+        Gemini->>Pinecone: Vector similarity search (top 15)
+        Pinecone-->>Gemini: Vector matches
+    and
+        Gemini->>Neo4j: Entity extraction + graph traversal (top 15)
+        Neo4j-->>Gemini: Graph matches
+    end
+
+    Gemini->>Gemini: Merge, deduplicate, score (top 10)
     Gemini->>Gemini: Build augmented prompt
     Gemini->>Gemini: Call Google Gemini API
     Gemini-->>Chat: AI response + citations
@@ -851,6 +1105,98 @@ sequenceDiagram
 
     Chat-->>API: {answer, conversationId}
     API-->>UI: Display response
+```
+
+### Knowledge Ingestion Data Flow (Vector + Graph)
+
+This diagram shows how data flows through both vector and graph paths during knowledge ingestion.
+
+```mermaid
+flowchart TD
+    Input["CLI Input (REPL / File / Inline)"] --> Parse["Parse & Chunk Document"]
+    Parse --> StoreMongo["Save KnowledgeSource to MongoDB"]
+
+    Parse --> ParallelIngest{"Parallel Ingestion"}
+
+    subgraph "Vector Ingestion"
+        ParallelIngest --> Embed["Generate Embedding (Gemini)"]
+        Embed --> PineconeUpsert["Upsert vector + metadata to Pinecone"]
+    end
+
+    subgraph "Graph Ingestion"
+        ParallelIngest --> CreateDoc["MERGE Document node in Neo4j"]
+        CreateDoc --> CreateChunk["MERGE Chunk node with text + metadata"]
+        CreateChunk --> LinkChunk["CREATE HAS_CHUNK + NEXT relationships"]
+        LinkChunk --> BatchChunks["Batch chunks (5 per call)"]
+        BatchChunks --> ExtractEntities["Extract entities via Gemini AI<br/>(model rotation, 6 models)"]
+        ExtractEntities --> CreateEntities["MERGE Entity nodes (normalized name + type)"]
+        CreateEntities --> LinkMentions["CREATE MENTIONS relationships (Chunk -> Entity)"]
+        LinkMentions --> LinkRelated["CREATE RELATED_TO relationships (Entity <-> Entity)"]
+    end
+
+    PineconeUpsert --> Done([Ingestion Complete])
+    LinkRelated --> Done
+
+    style PineconeUpsert fill:#FF6F61
+    style CreateDoc fill:#008CC1
+    style ExtractEntities fill:#4285F4
+```
+
+### Hybrid Retrieval Data Flow
+
+This diagram shows how data flows through both vector and graph paths during query-time retrieval.
+
+```mermaid
+flowchart TD
+    Query["User Message"] --> Parallel["Promise.allSettled()"]
+
+    subgraph "Vector Retrieval"
+        Parallel --> EmbedQ["Embed query -> 768-d vector"]
+        EmbedQ --> PineconeQ["Pinecone cosine similarity (topK=15)"]
+        PineconeQ --> VectorResults["Vector SourceCitation[]"]
+    end
+
+    subgraph "Graph Retrieval"
+        Parallel --> ExtractQ["Extract entities from query (Gemini)"]
+        ExtractQ --> FulltextQ["Neo4j fulltext index search"]
+        FulltextQ --> TraverseQ["2-hop graph traversal (Entity -> Chunk -> Entity -> Chunk)"]
+        TraverseQ --> GraphResults["Graph SourceCitation[]"]
+    end
+
+    VectorResults --> Merge["Merge & Deduplicate by chunkId"]
+    GraphResults --> Merge
+    Merge --> Normalize["Normalize scores to 0-1 range"]
+    Normalize --> DualBonus["Dual-source bonus: +0.1 for chunks in both"]
+    DualBonus --> LexBoost["Lexical boost: +15% if query terms in chunk"]
+    LexBoost --> Top10["Sort descending, return top 10"]
+    Top10 --> BuildPrompt["Build augmented prompt for Gemini"]
+
+    style Parallel fill:#FF9800
+    style PineconeQ fill:#FF6F61
+    style FulltextQ fill:#008CC1
+    style Merge fill:#9C27B0
+```
+
+### Exhaustive List Retrieval
+
+For list-type queries (e.g., "list all projects", "show every skill", "what are all the awards"), the system detects list intent via regex and ensures complete coverage rather than returning only a top-K slice.
+
+**How it works:**
+
+1. The query is matched against list-intent patterns (`list all`, `every`, `show all`, etc.).
+2. Normal hybrid retrieval runs with an expanded top-20 window.
+3. If 50% or more of those top results originate from a single source document, the system fetches **all** chunks from that dominant source.
+4. The complete source content (plus any extras from other sources) is passed to the LLM so it can produce an exhaustive answer.
+
+```mermaid
+flowchart TD
+    Q["User: 'List all projects'"] --> D{"List query?"}
+    D -->|No| N["Normal top-K retrieval"]
+    D -->|Yes| H["Hybrid retrieval (top-20)"]
+    H --> DOM{"50%+ from<br/>one source?"}
+    DOM -->|No| R1["Return top-20"]
+    DOM -->|Yes| ALL["Fetch ALL chunks<br/>from dominant source"]
+    ALL --> R2["Return complete source + extras"]
 ```
 
 ### Conversation Management Flow
@@ -1089,6 +1435,71 @@ sequenceDiagram
 }
 ```
 
+### Neo4j Knowledge Graph Schema
+
+The Neo4j knowledge graph stores documents, chunks, and entities with rich relationships. Entities are extracted from document chunks at ingest time using Gemini AI in batches of 5 chunks per call, with model rotation across 6 Gemini models.
+
+```mermaid
+erDiagram
+    Document {
+        string sourceId PK
+        string title
+        string sourceType
+        string sourceUrl
+    }
+    Chunk {
+        string chunkId PK
+        string text
+        int chunkIndex
+        string sourceId FK
+        string title
+        string sourceType
+    }
+    Entity {
+        string normalizedName
+        string type
+        string name
+        string description
+    }
+    Document ||--o{ Chunk : HAS_CHUNK
+    Chunk ||--o| Chunk : NEXT
+    Chunk }o--o{ Entity : MENTIONS
+    Entity }o--o{ Entity : RELATED_TO
+```
+
+#### Entity Types
+
+| Entity Type | Description | Examples |
+|-------------|-------------|----------|
+| **Person** | Individuals mentioned in knowledge sources | Names, authors, colleagues |
+| **Organization** | Companies, institutions, teams | Employers, universities, open-source orgs |
+| **Project** | Software projects, initiatives | Repository names, product names |
+| **Technology** | Programming languages, frameworks, tools | React, Python, Kubernetes |
+| **Skill** | Technical or professional competencies | Machine learning, system design |
+| **Location** | Geographic locations | Cities, states, countries |
+| **Certification** | Professional certifications | AWS Solutions Architect, PMP |
+| **Education** | Degrees, courses, academic programs | B.S. Computer Science, Coursera course |
+| **Award** | Honors, recognitions | Dean's List, hackathon prizes |
+| **Publication** | Papers, articles, blog posts | Conference papers, journal articles |
+
+#### Relationship Types
+
+| Relationship | From | To | Description |
+|-------------|------|-----|-------------|
+| **HAS_CHUNK** | Document | Chunk | Document contains this chunk |
+| **NEXT** | Chunk | Chunk | Sequential ordering of chunks within a document |
+| **MENTIONS** | Chunk | Entity | This chunk mentions this entity |
+| **RELATED_TO** | Entity | Entity | Semantic relationship between entities |
+| **WORKED_AT** | Person | Organization | Employment relationship |
+| **WORKED_ON** | Person | Project | Project contribution |
+| **USES_TECH** | Project | Technology | Technology used by a project |
+| **HAS_SKILL** | Person | Skill | Person possesses this skill |
+| **STUDIED_AT** | Person | Education | Educational background |
+| **EARNED** | Person | Certification | Certification achieved |
+| **PUBLISHED** | Person | Publication | Authorship of a publication |
+| **AWARDED** | Person | Award | Award received |
+| **LOCATED_IN** | Organization | Location | Geographic location of an organization |
+
 ### Database Indexing Strategy
 
 ```mermaid
@@ -1107,9 +1518,70 @@ graph LR
         MetadataFilter[Metadata Filtering]
     end
 
+    subgraph "Neo4j Indexes & Constraints"
+        DocUnique["Document.sourceId - Unique Constraint"]
+        ChunkUnique["Chunk.chunkId - Unique Constraint"]
+        EntityComposite["Entity(normalizedName, type) - Composite Index"]
+        EntityFulltext["Entity(name, normalizedName) - Fulltext Index"]
+    end
+
     style UserEmail fill:#47A248
     style VectorIndex fill:#FF6F61
+    style DocUnique fill:#008CC1
+    style EntityFulltext fill:#008CC1
 ```
+
+---
+
+## Graceful Degradation
+
+The system is designed to operate seamlessly even when individual components are unavailable. The Neo4j graph retrieval path is fully optional -- if the `NEO4J_URI` environment variable is not set, or if the Neo4j connection fails at runtime, the system automatically falls back to vector-only retrieval mode.
+
+```mermaid
+flowchart TD
+    Start["Query arrives"] --> CheckNeo4j{"NEO4J_URI configured?"}
+
+    CheckNeo4j -->|No| VectorOnly["Vector-only mode (Pinecone)"]
+    CheckNeo4j -->|Yes| CheckHealth{"Neo4j connection healthy?"}
+
+    CheckHealth -->|Yes| HybridMode["Hybrid mode (Pinecone + Neo4j in parallel)"]
+    CheckHealth -->|No| FallbackVector["Fallback to vector-only mode"]
+
+    HybridMode --> PromiseAllSettled["Promise.allSettled()"]
+    PromiseAllSettled --> CheckResults{"Both paths succeeded?"}
+
+    CheckResults -->|Yes| MergeBoth["Merge both result sets"]
+    CheckResults -->|Vector only| UseVector["Use vector results only"]
+    CheckResults -->|Graph only| UseGraph["Use graph results only"]
+    CheckResults -->|Both failed| EmptyResults["Return empty citations"]
+
+    VectorOnly --> PineconeSearch["Standard Pinecone search"]
+    FallbackVector --> PineconeSearch
+
+    style VectorOnly fill:#FF6F61
+    style HybridMode fill:#9C27B0
+    style FallbackVector fill:#FF9800
+```
+
+### Degradation Modes
+
+| Scenario | Behavior | User Impact |
+|----------|----------|-------------|
+| **Full hybrid** | Both Pinecone and Neo4j available | Best retrieval quality -- dual-source scoring |
+| **Neo4j URI not set** | Graph path skipped entirely | Identical to pre-Neo4j behavior (fully backwards compatible) |
+| **Neo4j connection failure** | Graph path returns empty via `Promise.allSettled` | Slightly reduced retrieval diversity; no errors surfaced |
+| **Neo4j timeout** | Graph path settles as rejected | Vector results used; response time unaffected |
+| **Pinecone failure** | Vector path returns empty | Graph results used alone (reduced coverage) |
+| **Both fail** | Empty citation list | AI generates response without grounding context |
+
+### Key Design Decisions
+
+- **`Promise.allSettled` over `Promise.all`**: Ensures one failing path never blocks the other
+- **No hard dependency**: The `neo4jClient.ts` module initializes only when `NEO4J_URI` is present
+- **Connection health checks**: Neo4j driver verifies connectivity at startup; failures are logged but do not prevent server boot
+- **Rate-limit awareness**: Entity extraction uses exponential backoff to avoid Gemini API throttling
+- **Embedding retry with backoff**: Embedding generation retries up to 5 attempts with a 3-second backoff between each attempt on rate-limit (429) or transient errors, preventing ingestion failures during high-throughput upserts
+- **Batch entity extraction**: Chunks are grouped into batches of 5 per LLM call, reducing API request volume by up to 80% and improving ingestion throughput
 
 ---
 
@@ -1225,6 +1697,7 @@ graph TB
     subgraph "External Services"
         MongoDB[MongoDB Atlas]
         Pinecone[Pinecone Cloud]
+        Neo4j[Neo4j AuraDB]
         Gemini[Google Gemini API]
     end
 
@@ -1237,11 +1710,13 @@ graph TB
 
     ServerlessFunctions --> MongoDB
     ServerlessFunctions --> Pinecone
+    ServerlessFunctions --> Neo4j
     ServerlessFunctions --> Gemini
 
     style VercelFrontend fill:#000000
     style MongoDB fill:#47A248
     style Pinecone fill:#FF6F61
+    style Neo4j fill:#008CC1
     style Gemini fill:#4285F4
 ```
 
@@ -1257,17 +1732,20 @@ graph LR
 
     subgraph "External Services"
         PineconeCloud[Pinecone Cloud]
+        Neo4jAura[Neo4j AuraDB]
         GeminiAPI[Gemini API]
     end
 
     FrontendContainer -.HTTP.-> BackendContainer
     BackendContainer -.MongoDB Protocol.-> MongoContainer
     BackendContainer -.HTTPS.-> PineconeCloud
+    BackendContainer -."Bolt (neo4j+s://)".-> Neo4jAura
     BackendContainer -.HTTPS.-> GeminiAPI
 
     style FrontendContainer fill:#61DAFB
     style BackendContainer fill:#339933
     style MongoContainer fill:#47A248
+    style Neo4jAura fill:#008CC1
 ```
 
 ### CI/CD Pipeline
@@ -1344,6 +1822,7 @@ graph TB
 
     subgraph "AI/ML Services"
         Pinecone[Pinecone Cloud<br/>Vector DB]
+        Neo4jAura[Neo4j AuraDB<br/>Knowledge Graph]
         Gemini[Google Gemini API]
     end
 
@@ -1374,6 +1853,8 @@ graph TB
 
     ECS2 --> Pinecone
     ECS4 --> Pinecone
+    ECS2 --> Neo4jAura
+    ECS4 --> Neo4jAura
     ECS2 --> Gemini
     ECS4 --> Gemini
 
@@ -1390,6 +1871,7 @@ graph TB
     style ECS2 fill:#339933
     style DocumentDB fill:#47A248
     style Pinecone fill:#FF6F61
+    style Neo4jAura fill:#008CC1
 ```
 
 ---
@@ -1425,11 +1907,16 @@ graph TD
         VectorCache[Vector Search Caching]
         BatchEmbedding[Batch Embedding Generation]
         ModelOptimization[Model Parameter Tuning]
+        ParallelRetrieval[Parallel Hybrid Retrieval]
+        GraphPooling[Neo4j Connection Pooling]
+        RateLimitBackoff[Rate-Limit-Aware Backoff]
     end
 
     style Caching fill:#4CAF50
     style CDN fill:#FF9900
     style VectorCache fill:#FF6F61
+    style ParallelRetrieval fill:#FF9800
+    style GraphPooling fill:#008CC1
 ```
 
 ### Caching Strategy
@@ -1464,7 +1951,23 @@ graph LR
 | Chat Message (without AI) | < 300ms | ~250ms |
 | AI Response Generation | < 3s | ~2.5s |
 | Conversation Load | < 500ms | ~400ms |
-| Vector Search | < 100ms | ~80ms |
+| Vector Search (Pinecone) | < 100ms | ~80ms |
+| Graph Traversal (Neo4j) | < 150ms | ~120ms |
+| Hybrid Retrieval (parallel, both paths) | < 200ms | ~150ms |
+| Entity Extraction (Gemini, query-time) | < 300ms | ~200ms |
+
+### Neo4j Graph Performance
+
+| Optimization | Details |
+|-------------|---------|
+| **Connection Pooling** | Max 50 connections to Neo4j AuraDB; connections reused across requests |
+| **Parallel Retrieval** | Both vector and graph paths execute simultaneously via `Promise.allSettled`, so total retrieval time equals the slower of the two paths rather than the sum |
+| **Graph Indexes** | Unique constraint on `Document.sourceId` and `Chunk.chunkId`; composite index on `Entity(normalizedName, type)`; fulltext index on `Entity(name, normalizedName)` for sub-millisecond lookups |
+| **Rate-Limit-Aware Extraction** | Entity extraction at ingest time uses exponential backoff (base 1s, max 30s) to handle Gemini API rate limits without dropping chunks |
+| **Batch Entity Extraction** | Chunks are grouped into batches of 5 per LLM call; combined with model rotation across 6 Gemini models, this reduces API calls by up to 80% and distributes load evenly |
+| **Embedding Retry** | Embedding generation retries up to 5 times with 3-second backoff on rate-limit or transient errors, ensuring no chunks are silently dropped during ingestion |
+| **Bounded Traversal** | Graph traversal limited to 2 hops to prevent combinatorial explosion on densely connected entities |
+| **Graceful Timeout** | Graph path has a configurable timeout; if exceeded, `Promise.allSettled` settles the graph path as rejected and vector results are used alone |
 
 ---
 
@@ -1554,11 +2057,13 @@ graph TD
 
 | Strategy | Implementation | Use Case |
 |----------|----------------|----------|
-| **Vertical Scaling** | Increase instance size | Initial growth phase |
-| **Read Replicas** | Add read-only copies | Distribute read load |
-| **Sharding** | Partition by user ID | Massive dataset growth |
+| **Vertical Scaling** | Increase instance size (MongoDB, Neo4j) | Initial growth phase |
+| **Read Replicas** | Add read-only copies (MongoDB) | Distribute read load |
+| **Sharding** | Partition by user ID (MongoDB) | Massive dataset growth |
 | **Caching** | Redis/ElastiCache | Reduce DB queries |
-| **Connection Pooling** | Reuse connections | Handle concurrent users |
+| **Connection Pooling** | MongoDB + Neo4j (max 50) connection reuse | Handle concurrent users |
+| **Neo4j AuraDB Scaling** | AuraDB managed tier auto-scales | Graph query load growth |
+| **Parallel Retrieval** | Vector + graph paths run simultaneously | Reduce total latency |
 
 ---
 
@@ -1635,8 +2140,13 @@ graph TB
 
 4. **AI/ML Metrics**
    - AI response time
-   - Vector search latency
+   - Vector search latency (Pinecone)
+   - Graph traversal latency (Neo4j)
+   - Hybrid merge/dedup time
+   - Entity extraction latency (Gemini)
    - Pinecone query performance
+   - Neo4j connection pool utilization
+   - Dual-source hit rate (% of queries with matches from both paths)
    - Token usage/costs
 
 ---
@@ -1685,6 +2195,7 @@ graph LR
 |-----------|-----|-----|----------|
 | **MongoDB** | < 5 minutes | < 30 minutes | Point-in-time restore |
 | **Pinecone** | < 1 hour | < 2 hours | Daily snapshots |
+| **Neo4j AuraDB** | < 1 hour | < 1 hour | AuraDB managed backups; re-ingest from MongoDB/Pinecone if needed |
 | **Frontend** | 0 (immutable) | < 5 minutes | Redeployment |
 | **Backend** | 0 (stateless) | < 5 minutes | Redeployment |
 
@@ -1747,6 +2258,8 @@ This architecture document provides a comprehensive overview of the Lumina AI As
 ### Key Architectural Strengths
 
 - **Modular Design**: Clear separation between frontend, backend, and AI/ML components
+- **Hybrid Retrieval**: Parallel vector similarity (Pinecone) and graph traversal (Neo4j) with merged scoring for higher relevance
+- **Graceful Degradation**: Full backwards compatibility -- system operates in vector-only mode when Neo4j is unavailable
 - **Scalable Infrastructure**: Ready for horizontal scaling with cloud-native patterns
 - **Secure by Design**: Multiple layers of security from network to data
 - **Observable**: Comprehensive monitoring and logging capabilities
@@ -1764,7 +2277,7 @@ This architecture document provides a comprehensive overview of the Lumina AI As
 
 ---
 
-**Document Version**: 2.0
-**Last Updated**: 2025-07-06
+**Document Version**: 3.1
+**Last Updated**: 2026-03-30
 **Maintained By**: David Nguyen
 **Contact**: hoangson091104@gmail.com

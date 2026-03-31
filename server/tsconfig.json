@@ -5,6 +5,8 @@
     "rootDir": "./src",
     "outDir": "./dist",
     "esModuleInterop": true,
-    "strict": true
-  }
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "exclude": ["src/scripts/langchainPinecone.ts"]
 }
