@@ -14,6 +14,7 @@ import { alpha } from "@mui/material/styles";
 import SendIcon from "@mui/icons-material/Send";
 import EditIcon from "@mui/icons-material/Edit";
 import CloseIcon from "@mui/icons-material/Close";
+import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
 import {
   getConversationById,
   streamAuthedChatMessage,
@@ -1237,6 +1238,43 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             }}
           >
             <Box sx={{ width: "100%", maxWidth: 720 }}>
+              <Box
+                sx={{
+                  width: { xs: 66, sm: 74 },
+                  height: { xs: 66, sm: 74 },
+                  mx: "auto",
+                  mb: 1.5,
+                  borderRadius: "20px",
+                  display: "grid",
+                  placeItems: "center",
+                  border: `1px solid ${alpha(
+                    theme.palette.primary.main,
+                    theme.palette.mode === "dark" ? 0.42 : 0.3,
+                  )}`,
+                  background: `linear-gradient(145deg, ${alpha(
+                    theme.palette.primary.main,
+                    theme.palette.mode === "dark" ? 0.34 : 0.2,
+                  )}, ${alpha(
+                    theme.palette.info.main,
+                    theme.palette.mode === "dark" ? 0.22 : 0.12,
+                  )})`,
+                  boxShadow: `0 10px 28px ${alpha(
+                    theme.palette.primary.main,
+                    theme.palette.mode === "dark" ? 0.32 : 0.2,
+                  )}`,
+                  backdropFilter: "blur(8px)",
+                }}
+              >
+                <AutoAwesomeRoundedIcon
+                  sx={{
+                    fontSize: { xs: 36, sm: 40 },
+                    color:
+                      theme.palette.mode === "dark"
+                        ? alpha(theme.palette.common.white, 0.95)
+                        : theme.palette.primary.dark,
+                  }}
+                />
+              </Box>
               <Typography
                 variant="h5"
                 sx={{ fontWeight: 600, mb: 1, color: "text.primary" }}
