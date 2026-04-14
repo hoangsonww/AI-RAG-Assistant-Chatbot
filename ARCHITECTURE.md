@@ -61,7 +61,7 @@ Lumina is a full-stack AI-powered chatbot application that leverages Retrieval-A
 2. **Stateless API Design**: RESTful APIs with JWT-based authentication
 3. **Scalable Data Layer**: Distributed databases (MongoDB + Pinecone + Neo4j)
 4. **Hybrid Retrieval**: Parallel vector similarity and graph traversal with merged scoring
-5. **Graceful Degradation**: System operates in vector-only mode when graph DB is unavailable
+5. **Graceful Degradation**: System operates in vector-only mode when graph DB is unavailable and can use static resume fallback context when live retrieval backends fail
 6. **Event-Driven Communication**: Real-time updates and async processing
 7. **Security First**: JWT authentication, encrypted passwords, CORS protection
 
@@ -605,7 +605,7 @@ sequenceDiagram
 
 ### RAG Implementation
 
-The RAG (Retrieval-Augmented Generation) system grounds responses in knowledge retrieved from both Pinecone (vector similarity) and Neo4j (graph traversal), always returning inline citations with a sources list. Knowledge is ingested through CLI tools (REPL or one-off commands) and stored in MongoDB + Pinecone + Neo4j for retrieval. At query time, both retrieval paths run in parallel via `Promise.allSettled`, and results are merged, deduplicated, and scored before being passed to the generation phase.
+The RAG (Retrieval-Augmented Generation) system grounds responses in knowledge retrieved from both Pinecone (vector similarity) and Neo4j (graph traversal), always returning inline citations with a sources list. Knowledge is ingested through CLI tools (REPL or one-off commands) and stored in MongoDB + Pinecone + Neo4j for retrieval. At query time, both retrieval paths run in parallel via `Promise.allSettled`, and results are merged, deduplicated, and scored before being passed to the generation phase. If live retrieval backends fail, the system can load static resume fallback context from local knowledge manifest/files.
 
 ```mermaid
 graph TB
@@ -658,7 +658,7 @@ graph TB
 
 ### Hybrid Retrieval Pipeline
 
-The hybrid retrieval pipeline runs vector similarity search and graph traversal in parallel, then merges the results using a scoring algorithm that rewards chunks found by both paths.
+The hybrid retrieval pipeline runs vector similarity search and graph traversal in parallel, then merges the results using a scoring algorithm that rewards chunks found by both paths. A failure in one path does not block the other, and when live backend retrieval fails entirely, static resume fallback context is used.
 
 ```mermaid
 flowchart TD
@@ -1177,6 +1177,8 @@ flowchart TD
     style Merge fill:#9C27B0
 ```
 
+If both live retrieval paths fail due backend errors, fallback sources are loaded from `server/knowledge/manifest.json` and the referenced local files. This keeps responses grounded without introducing a UI-based knowledge mutation flow.
+
 ### Exhaustive List Retrieval
 
 For list-type queries (e.g., "list all projects", "show every skill", "what are all the awards"), the system detects list intent via regex and ensures complete coverage rather than returning only a top-K slice.
@@ -1535,7 +1537,7 @@ graph LR
 
 ## Graceful Degradation
 
-The system is designed to operate seamlessly even when individual components are unavailable. The Neo4j graph retrieval path is fully optional -- if the `NEO4J_URI` environment variable is not set, or if the Neo4j connection fails at runtime, the system automatically falls back to vector-only retrieval mode.
+The system is designed to operate seamlessly even when individual components are unavailable. The Neo4j graph retrieval path is fully optional -- if the `NEO4J_URI` environment variable is not set, or if the Neo4j connection fails at runtime, the system automatically falls back to vector-only retrieval mode. If live backend retrieval fails, a static resume fallback from local manifest/files is used before returning empty citations.
 
 ```mermaid
 flowchart TD
@@ -1553,7 +1555,10 @@ flowchart TD
     CheckResults -->|Yes| MergeBoth["Merge both result sets"]
     CheckResults -->|Vector only| UseVector["Use vector results only"]
     CheckResults -->|Graph only| UseGraph["Use graph results only"]
-    CheckResults -->|Both failed| EmptyResults["Return empty citations"]
+    CheckResults -->|Both failed| StaticFallback["Load static resume fallback<br/>(manifest + local files)"]
+    StaticFallback --> StaticAvailable{"Fallback sources found?"}
+    StaticAvailable -->|Yes| UseStatic["Use static fallback sources"]
+    StaticAvailable -->|No| EmptyResults["Return empty citations"]
 
     VectorOnly --> PineconeSearch["Standard Pinecone search"]
     FallbackVector --> PineconeSearch
@@ -1572,13 +1577,14 @@ flowchart TD
 | **Neo4j connection failure** | Graph path returns empty via `Promise.allSettled` | Slightly reduced retrieval diversity; no errors surfaced |
 | **Neo4j timeout** | Graph path settles as rejected | Vector results used; response time unaffected |
 | **Pinecone failure** | Vector path returns empty | Graph results used alone (reduced coverage) |
-| **Both fail** | Empty citation list | AI generates response without grounding context |
+| **Both live retrieval backends fail** | Load static resume fallback from local manifest/files; if unavailable, return empty citations | Responses are usually still grounded by fallback context |
 
 ### Key Design Decisions
 
 - **`Promise.allSettled` over `Promise.all`**: Ensures one failing path never blocks the other
 - **No hard dependency**: The `neo4jClient.ts` module initializes only when `NEO4J_URI` is present
 - **Connection health checks**: Neo4j driver verifies connectivity at startup; failures are logged but do not prevent server boot
+- **File-backed fallback context**: Static resume fallback reads `server/knowledge/manifest.json` and source files, so insert/update/delete remains easy through existing manifest/CLI workflows
 - **Rate-limit awareness**: Entity extraction uses exponential backoff to avoid Gemini API throttling
 - **Embedding retry with backoff**: Embedding generation retries up to 5 attempts with a 3-second backoff between each attempt on rate-limit (429) or transient errors, preventing ingestion failures during high-throughput upserts
 - **Batch entity extraction**: Chunks are grouped into batches of 5 per LLM call, reducing API request volume by up to 80% and improving ingestion throughput
@@ -2259,7 +2265,7 @@ This architecture document provides a comprehensive overview of the Lumina AI As
 
 - **Modular Design**: Clear separation between frontend, backend, and AI/ML components
 - **Hybrid Retrieval**: Parallel vector similarity (Pinecone) and graph traversal (Neo4j) with merged scoring for higher relevance
-- **Graceful Degradation**: Full backwards compatibility -- system operates in vector-only mode when Neo4j is unavailable
+- **Graceful Degradation**: Full backwards compatibility -- system operates in vector-only mode when Neo4j is unavailable and can use static resume fallback context when live retrieval backends fail
 - **Scalable Infrastructure**: Ready for horizontal scaling with cloud-native patterns
 - **Secure by Design**: Multiple layers of security from network to data
 - **Observable**: Comprehensive monitoring and logging capabilities

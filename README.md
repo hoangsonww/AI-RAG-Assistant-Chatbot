@@ -105,7 +105,7 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 - **Conversation History:** Save, retrieve, rename, and search past conversations (only for authenticated users).
 - **Auto-Generated Titles:** AI automatically generates concise, descriptive titles for new conversations based on the first message.
 - **Grounded Knowledge Base:** RAG (Retrieval-Augmented Generation) with Pinecone vector search and Neo4j graph traversal, plus inline citations; knowledge is managed via CLI (REPL or one-off commands) with manifest-based batch sync for easy knowledge management.
-- **Hybrid Graph + Vector RAG:** Parallel retrieval from Pinecone (semantic similarity) and Neo4j (entity-relationship traversal) with intelligent result merging, dual-source scoring, exhaustive list retrieval (automatically fetches ALL chunks from a dominant source for "list all" queries), batched entity extraction (5 chunks per LLM call for efficiency), and model rotation across 6 Gemini models for resilience.
+- **Hybrid Graph + Vector RAG:** Parallel retrieval from Pinecone (semantic similarity) and Neo4j (entity-relationship traversal) with intelligent result merging, dual-source scoring, exhaustive list retrieval (automatically fetches ALL chunks from a dominant source for "list all" queries), batched entity extraction (5 chunks per LLM call for efficiency), and model rotation across 6 Gemini models for resilience. Retrieval paths are isolated via `Promise.allSettled`, and a file-backed static resume fallback is used when live retrieval backends fail.
 - **Dynamic Responses:** AI-generated responses with `markdown` formatting for rich text.
 - **Interactive Chat:** Real-time chat interface with smooth animations and transitions.
 - **Reset Password:** Verify email and reset a user's password.
@@ -159,7 +159,7 @@ The project follows a modern, full-stack architecture with clear separation of c
   - **Augmentation**: Context building with conversation history
   - **Generation**: Response generation using Google Gemini AI
   - **Knowledge Storage**: CLI-driven ingestion into Pinecone with citations returned in responses
-  - **Graceful Degradation**: System operates as vector-only if Neo4j is unavailable
+  - **Graceful Degradation**: System operates as vector-only if Neo4j is unavailable, and can fall back to static resume context from local knowledge files when live retrieval backends fail
 
 For detailed architecture documentation, including component diagrams, data flows, and deployment strategies, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -223,7 +223,7 @@ graph TB
 
 ### RAG (Retrieval-Augmented Generation) Flow
 
-Hybrid retrieval from Pinecone and Neo4j in parallel, followed by intelligent merging, augmentation with conversation history, and response generation with Google Gemini AI.
+Hybrid retrieval from Pinecone and Neo4j in parallel, followed by intelligent merging, augmentation with conversation history, and response generation with Google Gemini AI. One failing retrieval path never blocks the other, and if live retrieval backends fail, Lumina can fall back to static resume context loaded from local manifest/files.
 
 ```mermaid
 sequenceDiagram
@@ -444,7 +444,7 @@ For detailed instructions on managing knowledge (adding, updating, deleting), se
 
 ### Knowledge Management
 
-The knowledge base supports manifest-based batch sync, making it straightforward to add, update, or delete knowledge sources in bulk. The manifest file (`server/knowledge/manifest.json`) declaratively describes all knowledge files and their metadata, enabling one-command synchronization via `npm run knowledge:sync`. For the full guide covering single-file upserts, batch sync, graph rebuilds, and deletion workflows, see **[UPDATE_KNOWLEDGE.md](UPDATE_KNOWLEDGE.md)**.
+The knowledge base supports manifest-based batch sync, making it straightforward to add, update, or delete knowledge sources in bulk. The manifest file (`server/knowledge/manifest.json`) declaratively describes all knowledge files and their metadata, enabling one-command synchronization via `npm run knowledge:sync`. The same manifest/file set also powers the static resume fallback used during live retrieval backend failures, so fallback knowledge is easy to maintain without code changes. For the full guide covering single-file upserts, batch sync, graph rebuilds, and deletion workflows, see **[UPDATE_KNOWLEDGE.md](UPDATE_KNOWLEDGE.md)**.
 
 ## Deployment
 
@@ -1003,7 +1003,8 @@ AI-Assistant-Chatbot/
         │   ├── knowledgeBase.ts    # Chunking, embeddings, vector+graph retrieval
         │   ├── pineconeClient.ts   # Pinecone vector DB client
         │   ├── neo4jClient.ts      # Neo4j graph DB client
-        │   └── graphKnowledge.ts   # Graph entity extraction & retrieval
+        │   ├── graphKnowledge.ts   # Graph entity extraction & retrieval
+        │   └── staticResumeFallback.ts # File-backed fallback retrieval context
         ├── types/
         │   └── graph.ts            # Graph entity & relationship types
         ├── scripts/
