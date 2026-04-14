@@ -1022,8 +1022,13 @@ flowchart TD
   VEC --> MERGE
 
   MERGE --> D{Sources found?}
-  D -- No --> FALL["Return: 'I don't have enough information...'<br/>sources: []"]
   D -- Yes --> E["Assemble grounded prompt"]
+  D -- No --> RET{Live retrieval backend failure?}
+  RET -- Yes --> SF["Load static resume fallback<br/>from local manifest + files"]
+  SF --> SFCHK{Fallback sources found?}
+  SFCHK -- Yes --> E
+  SFCHK -- No --> FALL["Return: 'I don't have enough information...'<br/>sources: []"]
+  RET -- No --> FALL
   E --> F["Call Gemini model"]
   F --> G{Model available?}
   G -- No --> H["Rotate to next model"]
@@ -1037,14 +1042,15 @@ flowchart TD
 | Embedding API 429 (rate limit)    | Exponential backoff retry (3s base, up to 5 attempts) before propagating error      |
 | Embedding API failure (non-429)   | Error propagated as 500 to client                                                   |
 | No matching sources               | Polite fallback message, empty sources array (not an error)                         |
-| Pinecone query failure            | Error propagated as 500 to client                                                   |
+| Pinecone query failure            | If graph path still succeeds, continue with graph-only sources; otherwise static resume fallback is attempted |
 | Vector deletion 404               | Silently ignored (already deleted)                                                  |
 | Primary Gemini model down         | Automatic rotation through fallback models                                          |
 | All Gemini models fail            | Last error thrown as 500 to client                                                  |
 | Model list API unavailable        | Falls back to static model list, then retries                                       |
 | Neo4j not configured              | System operates as pure vector RAG; graph features silently disabled                |
 | Neo4j connection failure at boot  | Warning logged; server continues without graph features                             |
-| Neo4j query failure at runtime    | Graph path returns empty results; vector results used alone (warning logged)        |
+| Neo4j query failure at runtime    | Graph failure does not block vector results; warning logged                          |
+| Both live retrieval backends fail | Static resume fallback is loaded from `server/knowledge/manifest.json` and local files |
 | Neo4j transient error             | Automatic retry with exponential backoff (500ms base, up to 3 attempts)             |
 | Graph ingestion failure           | Non-fatal; vector ingestion is preserved, warning logged                            |
 | Entity extraction rate limit (429)| Exponential backoff retry (15s, 30s, 45s) + model rotation through 6 Gemini models  |

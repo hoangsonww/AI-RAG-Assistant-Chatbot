@@ -1,6 +1,6 @@
 # Lumina Backend (Server) 🚀
 
-This directory contains the **server** side of the **Lumina** project – a robust backend built with **Node.js** and **Express** using **TypeScript**. The backend provides all the necessary API endpoints for user authentication, conversation management, and AI chat interactions, as well as integrations with external services like MongoDB, OpenAI, Pinecone, and Neo4j.
+This directory contains the **server** side of the **Lumina** project – a robust backend built with **Node.js** and **Express** using **TypeScript**. The backend provides all the necessary API endpoints for user authentication, conversation management, and AI chat interactions, as well as integrations with external services like MongoDB, Google Gemini, Pinecone, and Neo4j.
 
 ---
 
@@ -36,7 +36,7 @@ The Lumina backend is designed to handle:
 - **Secure API:** Implements robust JWT authentication and authorization mechanisms.
 - **Conversation Handling:** Supports creating, retrieving, updating, and deleting conversations.
 - **AI Chat Service:** Facilitates dynamic interactions with the AI, leveraging advanced language models.
-- **Hybrid RAG Pipeline:** Combines Pinecone vector similarity search with Neo4j graph traversal for comprehensive knowledge retrieval. Both retrieval paths run in parallel and their results are merged to produce grounded, citation-backed responses.
+- **Hybrid RAG Pipeline:** Combines Pinecone vector similarity search with Neo4j graph traversal for comprehensive knowledge retrieval. Both retrieval paths run in parallel via `Promise.allSettled`, so one failing path never blocks the other. Results are merged to produce grounded, citation-backed responses, and static resume fallback context can be used when live retrieval backends fail.
 - **Knowledge Graph:** Automatic entity extraction and relationship mapping stored in Neo4j AuraDB. Entities and relationships are extracted from ingested documents using Gemini AI and persisted as a queryable graph.
 - **External Integrations:** Seamlessly integrates with MongoDB, Pinecone, Neo4j, and other external services.
 - **Email & Password Management:** Endpoints for email verification and password reset functionality.
@@ -115,7 +115,7 @@ For additional API details, please refer to the OpenAPI specification file (`ope
    NEO4J_DATABASE=your_database
    ```
 
-   > **Note:** Neo4j is optional. When the Neo4j environment variables are not set or the database is unreachable, the system gracefully degrades to vector-only retrieval via Pinecone.
+   > **Note:** Neo4j is optional. When the Neo4j environment variables are not set or the database is unreachable, the system gracefully degrades to vector-only retrieval via Pinecone. If live retrieval backends fail, static resume fallback context is loaded from `server/knowledge/manifest.json` and referenced files.
 
 4. **Run the server in development mode:**
 
@@ -175,7 +175,7 @@ The graph commands manage the Neo4j knowledge graph that powers the graph-based 
 | `npm run knowledge:graph:status` | Display Neo4j connection status, node/edge counts, and schema info. |
 | `npm run knowledge:graph:rebuild` | Re-extract entities and relationships from all ingested sources and rebuild the graph from scratch. |
 
-When new sources are upserted via `knowledge:upsert` or `knowledge:sync`, entities and relationships are automatically extracted and stored in Neo4j alongside the Pinecone vector embeddings. Use `graph:rebuild` if you need to regenerate the graph after changes to the extraction logic or to recover from a corrupted graph state.
+When new sources are upserted via `knowledge:upsert` or `knowledge:sync`, entities and relationships are automatically extracted and stored in Neo4j alongside the Pinecone vector embeddings. Use `graph:rebuild` if you need to regenerate the graph after changes to the extraction logic or to recover from a corrupted graph state. The same manifest/file workflow also powers static resume fallback retrieval, so fallback data can be inserted, updated, or removed without changing runtime code.
 
 ---
 
@@ -207,7 +207,8 @@ server/
     │   ├── geminiService.ts  # AI service with hybrid vector+graph RAG
     │   ├── knowledgeBase.ts  # Chunking, embeddings, vector+graph ingestion
     │   ├── geminiEmbeddings.ts # Embedding generation
-    │   └── pineconeClient.ts # Pinecone vector DB client
+    │   ├── pineconeClient.ts # Pinecone vector DB client
+    │   └── staticResumeFallback.ts # File-backed fallback retrieval context
     ├── utils/                # Utility scripts (e.g., ephemeralConversations)
     │   └── ephemeralConversations.ts
     └── middleware/           # Express middleware (e.g., authentication)

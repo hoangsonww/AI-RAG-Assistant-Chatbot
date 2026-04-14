@@ -13,6 +13,7 @@ import {
 } from "./knowledgeBase";
 import { isNeo4jConfigured } from "./neo4jClient";
 import { retrieveGraphChunks } from "./graphKnowledge";
+import { retrieveStaticResumeFallbackSources } from "./staticResumeFallback";
 
 dotenv.config();
 
@@ -42,6 +43,17 @@ const isListQuery = (message: string): boolean =>
 
 const getEffectiveTopK = (message: string): number =>
   isListQuery(message) ? RAG_LIST_TOP_K : RAG_TOP_K;
+
+type HybridRetrievalResult = {
+  sources: SourceCitation[];
+  usedStaticFallback: boolean;
+};
+
+const toErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  return String(error);
+};
 
 const mergeRetrievalResults = (
   vectorResults: SourceCitation[],
@@ -111,29 +123,62 @@ const expandListResults = async (
 const retrieveHybridSources = async (
   message: string,
   topK: number,
-): Promise<SourceCitation[]> => {
-  let results: SourceCitation[];
+): Promise<HybridRetrievalResult> => {
+  let results: SourceCitation[] = [];
+  let shouldUseStaticFallback = false;
 
   if (isNeo4jConfigured()) {
     const [vectorResult, graphResult] = await Promise.allSettled([
       retrieveKnowledgeChunks(message, topK + 5),
       retrieveGraphChunks(message, topK + 5),
     ]);
+
+    if (vectorResult.status === "rejected") {
+      console.warn(
+        `Vector retrieval failed: ${toErrorMessage(vectorResult.reason)}`,
+      );
+    }
+    if (graphResult.status === "rejected") {
+      console.warn(
+        `Graph retrieval failed: ${toErrorMessage(graphResult.reason)}`,
+      );
+    }
+
     const vectorSources =
       vectorResult.status === "fulfilled" ? vectorResult.value : [];
     const graphSources =
       graphResult.status === "fulfilled" ? graphResult.value : [];
     results = mergeRetrievalResults(vectorSources, graphSources, topK);
+
+    shouldUseStaticFallback =
+      vectorResult.status === "rejected" && graphSources.length === 0;
   } else {
-    results = await retrieveKnowledgeChunks(message, topK);
+    try {
+      results = await retrieveKnowledgeChunks(message, topK);
+    } catch (error) {
+      console.warn(
+        `Vector retrieval failed while graph retrieval is unavailable: ${toErrorMessage(error)}`,
+      );
+      shouldUseStaticFallback = true;
+    }
   }
 
   // For list queries, expand to fetch all chunks from the dominant source
-  if (isListQuery(message)) {
+  if (results.length > 0 && isListQuery(message)) {
     results = await expandListResults(results);
   }
 
-  return results;
+  if (shouldUseStaticFallback) {
+    const fallbackSources = await retrieveStaticResumeFallbackSources(
+      message,
+      topK,
+    );
+    if (fallbackSources.length > 0) {
+      return { sources: fallbackSources, usedStaticFallback: true };
+    }
+  }
+
+  return { sources: results, usedStaticFallback: false };
 };
 
 const IDENTITY_SYSTEM_INSTRUCTION =
@@ -440,10 +485,15 @@ export const chatWithAI = async (
     throw new Error("Missing GOOGLE_AI_API_KEY in environment variables");
   }
 
-  const sources = await retrieveHybridSources(
+  const { sources, usedStaticFallback } = await retrieveHybridSources(
     message,
     getEffectiveTopK(message),
   );
+  if (usedStaticFallback) {
+    console.warn(
+      "Using static resume fallback after retrieval backend failure.",
+    );
+  }
   if (sources.length === 0) {
     return getNoSourcesResponse();
   }
@@ -495,10 +545,15 @@ export const streamChatWithAI = async (
     throw new Error("Missing GOOGLE_AI_API_KEY in environment variables");
   }
 
-  const sources = await retrieveHybridSources(
+  const { sources, usedStaticFallback } = await retrieveHybridSources(
     message,
     getEffectiveTopK(message),
   );
+  if (usedStaticFallback) {
+    console.warn(
+      "Using static resume fallback after retrieval backend failure.",
+    );
+  }
   if (sources.length === 0) {
     const fallback = getNoSourcesResponse();
     onChunk(fallback.text);
