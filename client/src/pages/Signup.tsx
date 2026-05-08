@@ -8,11 +8,23 @@ import {
   IconButton,
   InputAdornment,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
-import { signupUser, setTokenInLocalStorage, loginUser } from "../services/api";
+import {
+  signupUser,
+  setTokenInLocalStorage,
+  loginUser,
+  passkeysSupported,
+  registerPasskey,
+} from "../services/api";
 import { useNavigate } from "react-router-dom";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import FingerprintIcon from "@mui/icons-material/Fingerprint";
 
 /**
  * The Signup component
@@ -26,6 +38,8 @@ const Signup: React.FC = () => {
   const [showPw, setShowPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [loadingSignup, setLoadingSignup] = useState(false);
+  const [passkeyDialogOpen, setPasskeyDialogOpen] = useState(false);
+  const [registeringPasskey, setRegisteringPasskey] = useState(false);
 
   const navigate = useNavigate();
 
@@ -43,12 +57,43 @@ const Signup: React.FC = () => {
       // Automatically log in after sign up.
       const token = await loginUser(email, password);
       setTokenInLocalStorage(token);
-      navigate("/chat");
+      // Offer passkey enrollment one time, but only if the browser supports it.
+      // Skipping this step still lands the user in /chat — they can always add
+      // a passkey later from /passkeys.
+      if (passkeysSupported()) {
+        setPasskeyDialogOpen(true);
+      } else {
+        navigate("/chat");
+      }
     } catch (err: any) {
       alert(err?.response?.data?.message || err.message);
     } finally {
       setLoadingSignup(false);
     }
+  };
+
+  const handleEnrollPasskey = async () => {
+    setRegisteringPasskey(true);
+    try {
+      await registerPasskey();
+      setPasskeyDialogOpen(false);
+      navigate("/chat");
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        (err?.name === "NotAllowedError"
+          ? "Passkey prompt was dismissed. You can add one later from your account."
+          : err?.message) ||
+        "Failed to set up passkey";
+      alert(msg);
+    } finally {
+      setRegisteringPasskey(false);
+    }
+  };
+
+  const handleSkipPasskey = () => {
+    setPasskeyDialogOpen(false);
+    navigate("/chat");
   };
 
   return (
@@ -190,6 +235,49 @@ const Signup: React.FC = () => {
           </Typography>
         </Box>
       </Paper>
+
+      <Dialog
+        open={passkeyDialogOpen}
+        onClose={registeringPasskey ? undefined : handleSkipPasskey}
+        aria-labelledby="passkey-setup-title"
+      >
+        <DialogTitle
+          id="passkey-setup-title"
+          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        >
+          <FingerprintIcon color="primary" /> Set up a passkey?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Sign in next time with Face ID, Touch ID, Windows Hello, or your
+            phone — no password to type. You can always add or remove passkeys
+            later from your account settings.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={handleSkipPasskey}
+            disabled={registeringPasskey}
+            color="inherit"
+          >
+            Skip for now
+          </Button>
+          <Button
+            onClick={handleEnrollPasskey}
+            disabled={registeringPasskey}
+            variant="contained"
+            startIcon={
+              registeringPasskey ? (
+                <CircularProgress size={18} color="inherit" />
+              ) : (
+                <FingerprintIcon />
+              )
+            }
+          >
+            {registeringPasskey ? "Waiting…" : "Set up passkey"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

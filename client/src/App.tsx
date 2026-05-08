@@ -7,6 +7,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import LandingPage from "./pages/LandingPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import TermsPage from "./pages/Terms";
+import Passkeys from "./pages/Passkeys";
 import { ThemeProvider } from "@mui/material/styles";
 import { lightTheme, darkTheme } from "./theme";
 import { Analytics } from "@vercel/analytics/react";
@@ -46,6 +47,7 @@ const App: React.FC = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/" element={<LandingPage />} />
         <Route path="/terms" element={<TermsPage />} />
+        <Route path="/passkeys" element={<Passkeys />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <Analytics />

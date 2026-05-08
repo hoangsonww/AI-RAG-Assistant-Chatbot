@@ -102,11 +102,14 @@ resource "aws_secretsmanager_secret" "backend_env" {
 resource "aws_secretsmanager_secret_version" "backend_env" {
   secret_id     = aws_secretsmanager_secret.backend_env.id
   secret_string = jsonencode({
-    MONGODB_URI       = module.documentdb.connection_string,
-    REDIS_ENDPOINT    = module.elasticache.redis_endpoint,
-    JWT_SECRET        = var.jwt_secret,
-    GOOGLE_AI_API_KEY = var.google_ai_api_key,
-    PINECONE_API_KEY  = var.pinecone_api_key
+    MONGODB_URI              = module.documentdb.connection_string,
+    REDIS_ENDPOINT           = module.elasticache.redis_endpoint,
+    JWT_SECRET               = var.jwt_secret,
+    GOOGLE_AI_API_KEY        = var.google_ai_api_key,
+    PINECONE_API_KEY         = var.pinecone_api_key,
+    WEBAUTHN_RP_ID           = var.webauthn_rp_id,
+    WEBAUTHN_RP_NAME         = var.webauthn_rp_name,
+    WEBAUTHN_EXPECTED_ORIGIN = var.webauthn_expected_origin
   })
 }
 

@@ -324,6 +324,22 @@ variable "pinecone_index_name" {
   default     = "lumina-knowledge-base"
 }
 
+variable "webauthn_rp_id" {
+  description = "WebAuthn Relying Party ID — apex domain (no scheme, no port). Passkeys are bound to this value; changing it invalidates existing credentials."
+  type        = string
+}
+
+variable "webauthn_rp_name" {
+  description = "Human-readable Relying Party name shown in the browser passkey prompt."
+  type        = string
+  default     = "Lumina AI"
+}
+
+variable "webauthn_expected_origin" {
+  description = "Comma-separated list of allowed front-end origins (scheme + host + optional port) for WebAuthn ceremonies."
+  type        = string
+}
+
 # Monitoring Configuration
 variable "log_retention_days" {
   description = "CloudWatch log retention in days"

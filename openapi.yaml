@@ -129,6 +129,186 @@ paths:
         '500':
           description: "Server error."
 
+  /api/auth/passkey/register/options:
+    post:
+      tags:
+        - "Auth"
+      summary: "Begin passkey registration"
+      description: "Generate WebAuthn registration options for the authenticated user. The returned `challengeId` must be echoed back to `/register/verify` together with the browser's attestation response."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nickname:
+                  type: string
+                  description: "Friendly label persisted with the credential when verification succeeds."
+      responses:
+        '200':
+          description: "Registration options + opaque challengeId."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  options:
+                    type: object
+                    description: "PublicKeyCredentialCreationOptionsJSON to pass into @simplewebauthn/browser startRegistration()."
+                  challengeId:
+                    type: string
+        '401':
+          description: "Authorization header missing."
+        '403':
+          description: "Invalid token."
+        '404':
+          description: "User not found."
+
+  /api/auth/passkey/register/verify:
+    post:
+      tags:
+        - "Auth"
+      summary: "Complete passkey registration"
+      description: "Verify the WebAuthn attestation produced by the browser and persist the new credential on the user."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - challengeId
+                - response
+              properties:
+                challengeId:
+                  type: string
+                nickname:
+                  type: string
+                response:
+                  type: object
+                  description: "RegistrationResponseJSON returned by startRegistration()."
+      responses:
+        '200':
+          description: "Credential registered."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  credential:
+                    $ref: '#/components/schemas/PasskeySummary'
+        '400':
+          description: "Invalid challenge or verification failed."
+
+  /api/auth/passkey/login/options:
+    post:
+      tags:
+        - "Auth"
+      summary: "Begin passkey login"
+      description: "Generate WebAuthn authentication options. If `email` is supplied the response is scoped to that user's credentials; otherwise discoverable (usernameless) login is used."
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: "Authentication options + opaque challengeId."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  options:
+                    type: object
+                  challengeId:
+                    type: string
+
+  /api/auth/passkey/login/verify:
+    post:
+      tags:
+        - "Auth"
+      summary: "Complete passkey login"
+      description: "Verify the WebAuthn assertion and return a JWT (same shape as password login)."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - challengeId
+                - response
+              properties:
+                challengeId:
+                  type: string
+                response:
+                  type: object
+                  description: "AuthenticationResponseJSON returned by startAuthentication()."
+      responses:
+        '200':
+          description: "Successfully authenticated."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '400':
+          description: "Invalid challenge or verification failed."
+
+  /api/auth/passkey:
+    get:
+      tags:
+        - "Auth"
+      summary: "List the authenticated user's passkeys"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "List of registered passkeys."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  credentials:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PasskeySummary'
+
+  /api/auth/passkey/{credentialId}:
+    delete:
+      tags:
+        - "Auth"
+      summary: "Remove a registered passkey"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: credentialId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Passkey removed."
+        '404':
+          description: "Credential not found."
+
   /api/auth/reset-password:
     post:
       tags:
@@ -438,7 +618,35 @@ paths:
           description: "Internal server error."
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
+    PasskeySummary:
+      type: object
+      properties:
+        credentialID:
+          type: string
+          description: "Base64url-encoded credential ID. Stable across sign-ins; safe to expose."
+        nickname:
+          type: string
+        transports:
+          type: array
+          items:
+            type: string
+        deviceType:
+          type: string
+          description: "Either 'singleDevice' or 'multiDevice' (synced)."
+        backedUp:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type: string
+          format: date-time
     Conversation:
       type: object
       properties:

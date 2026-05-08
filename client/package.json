@@ -38,6 +38,7 @@
     "@mui/material": "^5.16.14",
     "@react-buddy/ide-toolbox": "^2.4.0",
     "@react-buddy/palette-mui": "^5.0.1",
+    "@simplewebauthn/browser": "^9.0.1",
     "@vercel/analytics": "^1.5.0",
     "axios": "^1.7.9",
     "framer-motion": "^12.4.2",
