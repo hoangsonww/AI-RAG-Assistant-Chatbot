@@ -1,5 +1,5 @@
 """
-Main entry point for the Agentic AI Pipeline
+Main entry point for the Lumina Agentic AI Pipeline
 """
 
 import asyncio
