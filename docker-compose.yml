@@ -25,6 +25,11 @@ services:
       - GOOGLE_AI_API_KEY=your_google_ai_api_key_here
       - PINECONE_API_KEY=your_pinecone_api_key_here
       - PINECONE_INDEX_NAME=lumina-index
+      # WebAuthn / passkeys. RP_ID is the apex domain (no scheme/port);
+      # EXPECTED_ORIGIN is a comma-separated list of allowed front-end origins.
+      - WEBAUTHN_RP_ID=localhost
+      - WEBAUTHN_RP_NAME=Lumina AI
+      - WEBAUTHN_EXPECTED_ORIGIN=http://localhost:3000
     depends_on:
       - mongo
 

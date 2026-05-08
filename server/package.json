@@ -52,6 +52,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
     "@pinecone-database/pinecone": "^4.1.0",
+    "@simplewebauthn/server": "^9.0.3",
     "bcrypt": "^5.0.1",
     "cors": "^2.8.5",
     "dotenv": "^16.0.0",

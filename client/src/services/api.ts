@@ -1,4 +1,10 @@
 import axios from "axios";
+import {
+  startRegistration,
+  startAuthentication,
+  browserSupportsWebAuthn,
+  platformAuthenticatorIsAvailable,
+} from "@simplewebauthn/browser";
 import type {
   IConversation,
   IMessage,
@@ -699,6 +705,95 @@ export const streamAuthedChatMessage = async (
     onError,
     maxRetries,
   );
+};
+
+// --- Passkey (WebAuthn) Endpoints ---
+
+export interface PasskeySummary {
+  credentialID: string;
+  nickname?: string;
+  transports?: string[];
+  deviceType?: string;
+  backedUp?: boolean;
+  createdAt?: string;
+  lastUsedAt?: string;
+}
+
+/**
+ * Whether the current browser/device can use WebAuthn at all.
+ */
+export const passkeysSupported = (): boolean => {
+  try {
+    return browserSupportsWebAuthn();
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Whether a built-in platform authenticator (Touch ID, Windows Hello, etc.)
+ * is available. Useful for deciding whether to surface passkey UI prominently.
+ */
+export const platformPasskeyAvailable = async (): Promise<boolean> => {
+  if (!passkeysSupported()) return false;
+  try {
+    return await platformAuthenticatorIsAvailable();
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Register a new passkey for the currently authenticated user.
+ *
+ * @param nickname Optional friendly label persisted alongside the credential.
+ */
+export const registerPasskey = async (
+  nickname?: string,
+): Promise<PasskeySummary> => {
+  const optsResp = await API.post("/auth/passkey/register/options", {
+    nickname,
+  });
+  const { options, challengeId } = optsResp.data;
+  const attResp = await startRegistration(options);
+  const verifyResp = await API.post("/auth/passkey/register/verify", {
+    challengeId,
+    nickname,
+    response: attResp,
+  });
+  return verifyResp.data.credential as PasskeySummary;
+};
+
+/**
+ * Sign in with a passkey. If `email` is omitted the browser prompts for any
+ * discoverable credential bound to the relying party.
+ *
+ * @returns the JWT token (same shape as password login).
+ */
+export const loginWithPasskey = async (email?: string): Promise<string> => {
+  const optsResp = await API.post("/auth/passkey/login/options", { email });
+  const { options, challengeId } = optsResp.data;
+  const assertion = await startAuthentication(options);
+  const verifyResp = await API.post("/auth/passkey/login/verify", {
+    challengeId,
+    response: assertion,
+  });
+  return verifyResp.data.token as string;
+};
+
+/**
+ * List the authenticated user's registered passkeys.
+ */
+export const listPasskeys = async (): Promise<PasskeySummary[]> => {
+  const resp = await API.get("/auth/passkey");
+  return resp.data.credentials || [];
+};
+
+/**
+ * Remove a registered passkey.
+ */
+export const deletePasskey = async (credentialId: string): Promise<void> => {
+  await API.delete(`/auth/passkey/${encodeURIComponent(credentialId)}`);
 };
 
 /**

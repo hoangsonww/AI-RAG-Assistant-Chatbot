@@ -102,6 +102,7 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 
 - **AI Chatbot:** Ask questions about David Nguyen and general topics; receive responses from an AI.
 - **User Authentication:** Sign up, log in, and log out using JWT authentication.
+- **Passkey (WebAuthn) Sign-in:** Passwordless login with Touch ID, Face ID, Windows Hello, or a phone via QR. Supports discoverable (usernameless) credentials and per-user passkey management at `/passkeys`. Email + password remains as a fallback.
 - **Conversation History:** Save, retrieve, rename, and search past conversations (only for authenticated users).
 - **Auto-Generated Titles:** AI automatically generates concise, descriptive titles for new conversations based on the first message.
 - **Grounded Knowledge Base:** RAG (Retrieval-Augmented Generation) with Pinecone vector search and Neo4j graph traversal, plus inline citations; knowledge is managed via CLI (REPL or one-off commands) with manifest-based batch sync for easy knowledge management.
@@ -365,6 +366,16 @@ Please see **[ARCHITECTURE.md](ARCHITECTURE.md)**
    NEO4J_USERNAME=your_username
    NEO4J_PASSWORD=your_password
    NEO4J_DATABASE=your_database
+
+   # Passkeys (WebAuthn)
+   # RP_ID is the apex domain that the browser binds the passkey to (no scheme,
+   # no port). Use "localhost" for local development. EXPECTED_ORIGIN is a
+   # comma-separated list of every front-end origin that may register or sign
+   # in. Credentials are domain-bound, so changing RP_ID later invalidates all
+   # previously-registered passkeys.
+   WEBAUTHN_RP_ID=localhost
+   WEBAUTHN_RP_NAME=Lumina AI
+   WEBAUTHN_EXPECTED_ORIGIN=http://localhost:3000
    ```
 
 4. **Run the server in development mode:**
@@ -780,6 +791,12 @@ The retry logic uses exponential backoff to avoid overwhelming the server while 
 - **GET /api/auth/verify-email?email=example@example.com:** Check if an email exists.
 - **POST /api/auth/reset-password:** Reset a user's password.
 - **GET /api/auth/validate-token:** Validate the current JWT token.
+- **POST /api/auth/passkey/register/options:** Begin passkey registration for the authenticated user. Returns WebAuthn options + an opaque `challengeId`.
+- **POST /api/auth/passkey/register/verify:** Complete passkey registration. Persists the new credential.
+- **POST /api/auth/passkey/login/options:** Begin passkey sign-in. Body may include `email` to scope the prompt; omit it for discoverable (usernameless) login.
+- **POST /api/auth/passkey/login/verify:** Complete passkey sign-in and return a JWT (same shape as `/login`).
+- **GET /api/auth/passkey:** List the authenticated user's registered passkeys.
+- **DELETE /api/auth/passkey/:credentialId:** Remove a registered passkey.
 
 #### Authentication Flow
 

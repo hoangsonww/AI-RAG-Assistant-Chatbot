@@ -64,6 +64,13 @@ google_ai_api_key = "your-google-ai-api-key"
 pinecone_api_key  = "your-pinecone-api-key"
 pinecone_index_name = "lumina-knowledge-base"
 
+# WebAuthn / passkeys. RP ID must be the apex domain — no scheme, no port.
+# EXPECTED_ORIGIN is a comma-separated list of all front-end origins.
+# Changing rp_id later invalidates every passkey users have already enrolled.
+webauthn_rp_id           = "lumina.example.com"
+webauthn_rp_name         = "Lumina AI"
+webauthn_expected_origin = "https://lumina.example.com"
+
 # Monitoring
 log_retention_days = 30
 

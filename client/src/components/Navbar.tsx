@@ -19,6 +19,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import LogoutIcon from "@mui/icons-material/Logout";
 import AddCommentIcon from "@mui/icons-material/AddComment";
 import AccountCircle from "@mui/icons-material/AccountCircle";
+import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 
@@ -347,14 +348,25 @@ const Navbar: React.FC<NavbarProps> = ({
               </Menu>
             </>
           ) : (
-            <Tooltip title="Logout" arrow>
-              <IconButton
-                onClick={handleLogout}
-                sx={{ ml: 1, color: "error.main" }}
-              >
-                <LogoutIcon />
-              </IconButton>
-            </Tooltip>
+            <>
+              <Tooltip title="Manage passkeys" arrow>
+                <IconButton
+                  onClick={() => navigate("/passkeys")}
+                  sx={{ ml: 1 }}
+                  color="inherit"
+                >
+                  <FingerprintIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Logout" arrow>
+                <IconButton
+                  onClick={handleLogout}
+                  sx={{ ml: 1, color: "error.main" }}
+                >
+                  <LogoutIcon />
+                </IconButton>
+              </Tooltip>
+            </>
           )}
         </Box>
 

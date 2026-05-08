@@ -3,10 +3,13 @@ import User, { IUser } from "../models/User";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import passkeyRouter from "./passkey";
 dotenv.config();
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
+
+router.use("/passkey", passkeyRouter);
 
 /**
  * @swagger

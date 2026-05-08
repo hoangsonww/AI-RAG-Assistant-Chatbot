@@ -2,32 +2,32 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
         <loc>https://lumina-david.vercel.app/</loc>
-        <lastmod>2025-03-08</lastmod>
+        <lastmod>2026-05-09</lastmod>
         <priority>1.00</priority>
     </url>
     <url>
         <loc>https://lumina-david.vercel.app/chat</loc>
-        <lastmod>2025-03-08</lastmod>
+        <lastmod>2026-05-09</lastmod>
         <priority>0.80</priority>
     </url>
     <url>
         <loc>https://lumina-david.vercel.app/terms</loc>
-        <lastmod>2025-03-08</lastmod>
+        <lastmod>2026-05-09</lastmod>
         <priority>0.80</priority>
     </url>
     <url>
         <loc>https://lumina-david.vercel.app/login</loc>
-        <lastmod>2025-03-08</lastmod>
+        <lastmod>2026-05-09</lastmod>
         <priority>0.80</priority>
     </url>
     <url>
         <loc>https://lumina-david.vercel.app/signup</loc>
-        <lastmod>2025-03-08</lastmod>
+        <lastmod>2026-05-09</lastmod>
         <priority>0.80</priority>
     </url>
     <url>
         <loc>https://lumina-david.vercel.app/forgot-password</loc>
-        <lastmod>2025-03-08</lastmod>
+        <lastmod>2026-05-09</lastmod>
         <priority>0.60</priority>
     </url>
 </urlset>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Paper,
@@ -8,11 +8,18 @@ import {
   IconButton,
   InputAdornment,
   CircularProgress,
+  Divider,
 } from "@mui/material";
-import { loginUser, setTokenInLocalStorage } from "../services/api";
+import {
+  loginUser,
+  setTokenInLocalStorage,
+  loginWithPasskey,
+  passkeysSupported,
+} from "../services/api";
 import { useNavigate } from "react-router-dom";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import FingerprintIcon from "@mui/icons-material/Fingerprint";
 
 /**
  * The Login component
@@ -24,8 +31,14 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loadingLogin, setLoadingLogin] = useState(false);
+  const [loadingPasskey, setLoadingPasskey] = useState(false);
+  const [canUsePasskey, setCanUsePasskey] = useState(false);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setCanUsePasskey(passkeysSupported());
+  }, []);
 
   /**
    * Handle the login button click
@@ -40,6 +53,29 @@ const Login: React.FC = () => {
       alert(err?.response?.data?.message || err.message);
     } finally {
       setLoadingLogin(false);
+    }
+  };
+
+  /**
+   * Handle "Sign in with passkey". If email is empty, the browser will prompt
+   * the user to pick any discoverable passkey bound to this site.
+   */
+  const handlePasskeyLogin = async () => {
+    setLoadingPasskey(true);
+    try {
+      const token = await loginWithPasskey(email.trim() || undefined);
+      setTokenInLocalStorage(token);
+      navigate("/chat");
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        (err?.name === "NotAllowedError"
+          ? "Passkey prompt was dismissed."
+          : err?.message) ||
+        "Passkey sign-in failed.";
+      alert(message);
+    } finally {
+      setLoadingPasskey(false);
     }
   };
 
@@ -79,7 +115,7 @@ const Login: React.FC = () => {
               handleLogin();
             }
           }}
-          disabled={loadingLogin}
+          disabled={loadingLogin || loadingPasskey}
         />
         <TextField
           fullWidth
@@ -95,13 +131,13 @@ const Login: React.FC = () => {
               handleLogin();
             }
           }}
-          disabled={loadingLogin}
+          disabled={loadingLogin || loadingPasskey}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
                 <IconButton
                   onClick={() => setShowPw(!showPw)}
-                  disabled={loadingLogin}
+                  disabled={loadingLogin || loadingPasskey}
                 >
                   {showPw ? <VisibilityOff /> : <Visibility />}
                 </IconButton>
@@ -116,7 +152,10 @@ const Login: React.FC = () => {
           onClick={handleLogin}
           style={{ marginTop: "1rem" }}
           disabled={
-            loadingLogin || email.trim() === "" || password.trim() === ""
+            loadingLogin ||
+            loadingPasskey ||
+            email.trim() === "" ||
+            password.trim() === ""
           }
         >
           {loadingLogin ? (
@@ -125,6 +164,38 @@ const Login: React.FC = () => {
             "Login"
           )}
         </Button>
+
+        {canUsePasskey && (
+          <>
+            <Divider sx={{ my: 2 }}>or</Divider>
+            <Button
+              variant="outlined"
+              color="primary"
+              fullWidth
+              startIcon={
+                loadingPasskey ? (
+                  <CircularProgress size={18} color="inherit" />
+                ) : (
+                  <FingerprintIcon />
+                )
+              }
+              onClick={handlePasskeyLogin}
+              disabled={loadingLogin || loadingPasskey}
+            >
+              {loadingPasskey ? "Waiting for passkey…" : "Sign in with passkey"}
+            </Button>
+            <Typography
+              variant="caption"
+              display="block"
+              sx={{ mt: 0.5, color: "text.secondary", textAlign: "center" }}
+            >
+              {email.trim()
+                ? "We'll use a passkey registered for this email."
+                : "Leave email blank to choose any saved passkey."}
+            </Typography>
+          </>
+        )}
+
         <Box marginTop="1rem">
           <Typography variant="body2">
             Don't have an account?{" "}
