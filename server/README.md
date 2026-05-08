@@ -40,6 +40,9 @@ The Lumina backend is designed to handle:
 - **Knowledge Graph:** Automatic entity extraction and relationship mapping stored in Neo4j AuraDB. Entities and relationships are extracted from ingested documents using Gemini AI and persisted as a queryable graph.
 - **External Integrations:** Seamlessly integrates with MongoDB, Pinecone, Neo4j, and other external services.
 - **Email & Password Management:** Endpoints for email verification and password reset functionality.
+- **CLI for Knowledge Management:** Command-line tools for ingesting, updating, and managing knowledge sources, as well as monitoring and rebuilding the Neo4j graph.
+- **Dockerized:** Comes with a Dockerfile and optional Docker Compose configuration for easy containerization and deployment.
+- **Passkeys**: Supports passwordless authentication using WebAuthn passkeys for enhanced security and user convenience.
 
 ---
 
