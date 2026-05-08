@@ -170,7 +170,7 @@ const Passkeys: React.FC = () => {
           </Alert>
         )}
 
-        <Box display="flex" gap={1} alignItems="flex-start" mb={2}>
+        <Box display="flex" gap={1} alignItems="center" mb={2}>
           <TextField
             label="Nickname (optional)"
             placeholder="e.g. iPhone, Work laptop"
@@ -182,16 +182,23 @@ const Passkeys: React.FC = () => {
           />
           <Button
             variant="contained"
+            size="small"
             startIcon={
               registering ? (
-                <CircularProgress size={18} color="inherit" />
+                <CircularProgress size={16} color="inherit" />
               ) : (
-                <FingerprintIcon />
+                <FingerprintIcon fontSize="small" />
               )
             }
             onClick={handleRegister}
             disabled={!supported || registering}
-            sx={{ whiteSpace: "nowrap" }}
+            sx={{
+              whiteSpace: "nowrap",
+              textTransform: "none",
+              flexShrink: 0,
+              px: 2,
+              height: 40,
+            }}
           >
             Add passkey
           </Button>
