@@ -16,20 +16,28 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
+// CORS first — runs before favicon, body parser, or anything else that might
+// throw, so preflight always succeeds even on cold-start hiccups.
+const corsOptions = {
+  origin: "*", // Allow all origins
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: "*",
+  exposedHeaders: ["Content-Type", "Authorization"],
+  credentials: false,
+  maxAge: 86400,
+};
+
+app.use(cors(corsOptions));
+// Short-circuit every preflight with the cors middleware regardless of which
+// path Express thinks it matched.
+app.options("*", cors(corsOptions));
+
 app.use(favicon(path.join(__dirname, "public", "favicon.ico")));
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
 });
 
-const corsOptions = {
-  origin: "*", // Allow all origins
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: false,
-};
-
-app.use(cors(corsOptions));
 app.use(express.json());
 
 // Connect to MongoDB
