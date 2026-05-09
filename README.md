@@ -75,6 +75,8 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 ![Pinecone](https://img.shields.io/badge/Pinecone-FF6F61?style=for-the-badge&logo=googledataflow&logoColor=white)
 ![Neo4j](https://img.shields.io/badge/Neo4j-008CC1?style=for-the-badge&logo=neo4j&logoColor=white)
 ![JWT](https://img.shields.io/badge/JWT-black?style=for-the-badge&logo=json-web-tokens)
+![WebAuthn](https://img.shields.io/badge/WebAuthn-000000?style=for-the-badge&logo=webauthn&logoColor=white)
+![Passkeys](https://img.shields.io/badge/Passkeys-000000?style=for-the-badge&logo=passport&logoColor=white)
 ![Material UI](https://img.shields.io/badge/Material_UI-007FFF?style=for-the-badge&logo=mui&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
 ![Netlify](https://img.shields.io/badge/Netlify-00C7B7?style=for-the-badge&logo=netlify&logoColor=white)
