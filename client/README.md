@@ -41,6 +41,8 @@ The frontend seamlessly integrates with the backend to provide functionalities s
 
 - **AI Chat Interface:** Interact with an intelligent assistant that answers questions about David Nguyen and various topics.
 - **User Authentication:** Sign up, log in, and manage your account with JWT-based authentication.
+- **Passkey (WebAuthn) Sign-in:** Passwordless login with Touch ID, Face ID, Windows Hello, or a phone via QR. Supports discoverable (usernameless) credentials, an optional post-signup enrollment prompt, and a `/passkeys` management page for adding, naming, and revoking credentials. Email + password remains as a fallback.
+- **Toast Notifications:** Global `ToastProvider` surfaces success and error messages from auth/passkey flows instead of relying on `alert()`.
 - **Conversation History:** Save, retrieve, rename, and search your past interactions (available for authenticated users).
 - **Auto-Generated Titles:** AI automatically generates concise titles for conversations based on the first message.
 - **Theme Toggle:** Switch between dark and light modes, with your preference stored locally.
@@ -55,6 +57,7 @@ The frontend seamlessly integrates with the backend to provide functionalities s
 - **Material‑UI (MUI)** – for modern, responsive UI components
 - **React Router** – for seamless navigation between pages
 - **Axios** – for API communication with the backend
+- **@simplewebauthn/browser** – browser-side WebAuthn helpers (`startRegistration`, `startAuthentication`) for passkey flows
 - **React Markdown** – for rendering AI-generated markdown content
 
 ---
@@ -65,7 +68,8 @@ The client application features several distinct pages and components:
 
 - **Landing Page:** Showcases the app’s features with animations and call-to-action buttons.
 - **Homepage:** The central hub for chatting with the AI, featuring a collapsible sidebar for conversation history.
-- **Authentication Pages:** Includes login, signup, and password reset pages.
+- **Authentication Pages:** Includes login, signup, and password reset pages. The login page exposes a "Sign in with passkey" action when WebAuthn is available; signup offers a one-time enrollment dialog after account creation.
+- **Passkeys Page (`/passkeys`):** Authenticated route for adding, naming, and revoking passkeys. Reachable via the fingerprint icon in the navbar.
 - **Theme Toggle:** Easily switch between dark and light modes using the navigation bar.
 - **Responsive Design:** Ensures a consistent experience across all devices.
 
