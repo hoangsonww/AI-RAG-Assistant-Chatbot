@@ -104,7 +104,8 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 
 - **AI Chatbot:** Ask questions about David Nguyen and general topics; receive responses from an AI.
 - **User Authentication:** Sign up, log in, and log out using JWT authentication.
-- **Passkey (WebAuthn) Sign-in:** Passwordless login with Touch ID, Face ID, Windows Hello, or a phone via QR. Supports discoverable (usernameless) credentials and per-user passkey management at `/passkeys`. Email + password remains as a fallback.
+- **Passkey (WebAuthn) Sign-in:** Passwordless login with Touch ID, Face ID, Windows Hello, or a phone via QR. Supports discoverable (usernameless) credentials, an optional post-signup enrollment dialog, and per-user passkey management at `/passkeys` (list/add/nickname/revoke). Backed by `@simplewebauthn/server` v9 with a TTL-indexed `challenges` collection consumed exactly once. Email + password remains as a fallback.
+- **Toast Notifications:** Global `ToastProvider` surfaces auth, passkey, and API errors in non-blocking snackbars instead of `alert()` dialogs.
 - **Conversation History:** Save, retrieve, rename, and search past conversations (only for authenticated users).
 - **Auto-Generated Titles:** AI automatically generates concise, descriptive titles for new conversations based on the first message.
 - **Grounded Knowledge Base:** RAG (Retrieval-Augmented Generation) with Pinecone vector search and Neo4j graph traversal, plus inline citations; knowledge is managed via CLI (REPL or one-off commands) with manifest-based batch sync for easy knowledge management.

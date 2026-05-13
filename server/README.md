@@ -53,6 +53,7 @@ The Lumina backend is designed to handle:
 - **MongoDB** (with Mongoose) – Data storage and object modeling.
 - **JWT (JSON Web Tokens)** – Secure authentication mechanism.
 - **Neo4j** (with neo4j-driver) – Graph database for entity-relationship knowledge retrieval.
+- **@simplewebauthn/server** – WebAuthn/FIDO2 server library powering passkey registration and authentication.
 - **Additional Libraries:** bcrypt, cors, dotenv, multer, nodemailer, openai, uuid, etc.
 - **Development Tools:** nodemon and ts-node for a smooth development experience.
 
@@ -65,7 +66,19 @@ The Lumina backend is designed to handle:
 - **POST /api/auth/signup:** Register a new user.
 - **POST /api/auth/login:** Authenticate a user and return a JWT.
 - **GET /api/auth/verify-email?email=example@example.com:** Verify if an email exists.
-- **POST /api/auth/reset-password:** Reset a user’s password.
+- **POST /api/auth/reset-password:** Reset a user's password.
+- **GET /api/auth/validate-token:** Validate the current JWT token.
+
+#### Passkeys (WebAuthn)
+
+- **POST /api/auth/passkey/register/options:** Begin passkey registration for the authenticated user. Returns WebAuthn options + an opaque `challengeId`.
+- **POST /api/auth/passkey/register/verify:** Complete passkey registration. Persists the new credential on the user document.
+- **POST /api/auth/passkey/login/options:** Begin passkey sign-in. Body may include `email` to scope the prompt; omit it for discoverable (usernameless) login.
+- **POST /api/auth/passkey/login/verify:** Complete passkey sign-in and return a JWT (same shape as `/login`).
+- **GET /api/auth/passkey:** List the authenticated user's registered passkeys.
+- **DELETE /api/auth/passkey/:credentialId:** Remove a registered passkey.
+
+Challenges are stored in a `challenges` collection with a TTL index (5-minute expiry) and consumed exactly once. Email + password remains the fallback if a user loses every passkey.
 
 ### Conversations
 
@@ -116,6 +129,14 @@ For additional API details, please refer to the OpenAPI specification file (`ope
    NEO4J_USERNAME=your_username
    NEO4J_PASSWORD=your_password
    NEO4J_DATABASE=your_database
+
+   # Passkeys (WebAuthn). RP_ID is the apex domain — no scheme, no port.
+   # EXPECTED_ORIGIN is a comma-separated list of front-end origins allowed to
+   # register or sign in. Credentials are domain-bound; changing RP_ID after
+   # users enroll invalidates all previously-registered passkeys.
+   WEBAUTHN_RP_ID=localhost
+   WEBAUTHN_RP_NAME=Lumina AI
+   WEBAUTHN_EXPECTED_ORIGIN=http://localhost:3000
    ```
 
    > **Note:** Neo4j is optional. When the Neo4j environment variables are not set or the database is unreachable, the system gracefully degrades to vector-only retrieval via Pinecone. If live retrieval backends fail, static resume fallback context is loaded from `server/knowledge/manifest.json` and referenced files.
