@@ -10,6 +10,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../components/ToastProvider";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { verifyEmail, resetPassword } from "../services/api";
@@ -31,6 +32,7 @@ const ForgotPassword: React.FC = () => {
   const [loadingReset, setLoadingReset] = useState(false);
 
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   /**
    * Handle the verify email button click
@@ -63,8 +65,9 @@ const ForgotPassword: React.FC = () => {
     setLoadingReset(true);
     try {
       await resetPassword(email, newPassword);
-      alert(
+      showToast(
         "Password reset successfully. Please login with your new password.",
+        "success",
       );
       navigate("/login");
     } catch (err: any) {

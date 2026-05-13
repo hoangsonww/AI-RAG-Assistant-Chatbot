@@ -10,6 +10,7 @@ import TermsPage from "./pages/Terms";
 import Passkeys from "./pages/Passkeys";
 import { ThemeProvider } from "@mui/material/styles";
 import { lightTheme, darkTheme } from "./theme";
+import ToastProvider from "./components/ToastProvider";
 import { Analytics } from "@vercel/analytics/react";
 
 /**
@@ -37,19 +38,23 @@ const App: React.FC = () => {
 
   return (
     <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
-      <Routes>
-        <Route
-          path="/chat"
-          element={<Home onToggleTheme={toggleThemeMode} darkMode={darkMode} />}
-        />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/terms" element={<TermsPage />} />
-        <Route path="/passkeys" element={<Passkeys />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+      <ToastProvider>
+        <Routes>
+          <Route
+            path="/chat"
+            element={
+              <Home onToggleTheme={toggleThemeMode} darkMode={darkMode} />
+            }
+          />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/passkeys" element={<Passkeys />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </ToastProvider>
       <Analytics />
     </ThemeProvider>
   );
