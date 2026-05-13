@@ -40,17 +40,31 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-// Connect to MongoDB
+// ---------------------------------------------------------------------------
+// MongoDB connection
+// ---------------------------------------------------------------------------
 const mongoURI =
   process.env.MONGODB_URI || "mongodb://localhost:27017/ai-assistant";
-mongoose
-  .connect(mongoURI)
-  .then(() => {
-    console.log("MongoDB connected");
-  })
-  .catch((err) => {
-    console.error("MongoDB connection error: ", err);
-  });
+
+const mongoConnectPromise = mongoose.connect(mongoURI, {
+  serverSelectionTimeoutMS: 10000,
+  socketTimeoutMS: 45000,
+  heartbeatFrequencyMS: 10000,
+  maxPoolSize: 10,
+  minPoolSize: 2,
+  retryWrites: true,
+  retryReads: true,
+});
+
+mongoConnectPromise
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.error("MongoDB initial connection error:", err));
+
+mongoose.connection.on("error", (err) => console.error("MongoDB error:", err));
+mongoose.connection.on("disconnected", () =>
+  console.warn("MongoDB disconnected — driver will auto-reconnect"),
+);
+mongoose.connection.on("reconnected", () => console.log("MongoDB reconnected"));
 
 // Initialize Neo4j graph schema
 if (isNeo4jConfigured()) {
@@ -167,9 +181,10 @@ app.use("/api/chat/guest", guestRoutes);
  * Vercel automatically handles starting the server.
  */
 if (process.env.NODE_ENV !== "production") {
-  // For local development only.
-  app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
+  mongoConnectPromise.then(() => {
+    app.listen(port, () => {
+      console.log(`Server listening on port ${port}`);
+    });
   });
 }
 

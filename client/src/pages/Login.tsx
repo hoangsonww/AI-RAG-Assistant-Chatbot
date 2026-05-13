@@ -17,6 +17,7 @@ import {
   passkeysSupported,
 } from "../services/api";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../components/ToastProvider";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
@@ -35,6 +36,7 @@ const Login: React.FC = () => {
   const [canUsePasskey, setCanUsePasskey] = useState(false);
 
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   useEffect(() => {
     setCanUsePasskey(passkeysSupported());
@@ -50,7 +52,7 @@ const Login: React.FC = () => {
       setTokenInLocalStorage(token);
       navigate("/chat");
     } catch (err: any) {
-      alert(err?.response?.data?.message || err.message);
+      showToast(err?.response?.data?.message || err.message, "error");
     } finally {
       setLoadingLogin(false);
     }
@@ -73,7 +75,7 @@ const Login: React.FC = () => {
           ? "Passkey prompt was dismissed."
           : err?.message) ||
         "Passkey sign-in failed.";
-      alert(message);
+      showToast(message, "error");
     } finally {
       setLoadingPasskey(false);
     }

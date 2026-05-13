@@ -50,6 +50,19 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
+// Intercept 503 (database unavailable) to give a clear message
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 503) {
+      error.message =
+        error.response?.data?.message ||
+        "Service temporarily unavailable. Please try again in a moment.";
+    }
+    return Promise.reject(error);
+  },
+);
+
 // For guest users, store or retrieve the guestId
 const GUEST_KEY = "guestConversationId";
 const GUEST_MESSAGES_KEY = "guestMessages";

@@ -13,6 +13,11 @@ import {
   Divider,
   Tooltip,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
@@ -43,6 +48,7 @@ const Passkeys: React.FC = () => {
   const [nickname, setNickname] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const supported = passkeysSupported();
 
   const refresh = useCallback(async () => {
@@ -95,13 +101,7 @@ const Passkeys: React.FC = () => {
   };
 
   const handleDelete = async (credentialID: string) => {
-    if (
-      !window.confirm(
-        "Remove this passkey? You'll need another sign-in method to access your account from the device that used it.",
-      )
-    ) {
-      return;
-    }
+    setConfirmDeleteId(null);
     setDeletingId(credentialID);
     setError(null);
     setInfo(null);
@@ -227,7 +227,7 @@ const Passkeys: React.FC = () => {
                   <IconButton
                     edge="end"
                     aria-label="delete passkey"
-                    onClick={() => handleDelete(c.credentialID)}
+                    onClick={() => setConfirmDeleteId(c.credentialID)}
                     disabled={deletingId === c.credentialID}
                   >
                     {deletingId === c.credentialID ? (
@@ -257,6 +257,31 @@ const Passkeys: React.FC = () => {
           </List>
         )}
       </Paper>
+
+      <Dialog
+        open={confirmDeleteId !== null}
+        onClose={() => setConfirmDeleteId(null)}
+      >
+        <DialogTitle>Remove passkey?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            You'll need another sign-in method to access your account from the
+            device that used this passkey.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setConfirmDeleteId(null)} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            onClick={() => confirmDeleteId && handleDelete(confirmDeleteId)}
+            color="error"
+            variant="contained"
+          >
+            Remove
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

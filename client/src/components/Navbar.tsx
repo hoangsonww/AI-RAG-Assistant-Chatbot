@@ -20,6 +20,8 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import AddCommentIcon from "@mui/icons-material/AddComment";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
+import LoginIcon from "@mui/icons-material/Login";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 
@@ -335,6 +337,7 @@ const Navbar: React.FC<NavbarProps> = ({
                     navigate("/login");
                   }}
                 >
+                  <LoginIcon fontSize="small" sx={{ mr: 1.25 }} />
                   Login
                 </MenuItem>
                 <MenuItem
@@ -343,29 +346,51 @@ const Navbar: React.FC<NavbarProps> = ({
                     navigate("/signup");
                   }}
                 >
+                  <PersonAddIcon fontSize="small" sx={{ mr: 1.25 }} />
                   Register
                 </MenuItem>
               </Menu>
             </>
           ) : (
             <>
-              <Tooltip title="Manage passkeys" arrow>
+              <Tooltip title="Account" arrow>
                 <IconButton
-                  onClick={() => navigate("/passkeys")}
                   sx={{ ml: 1 }}
                   color="inherit"
+                  onClick={handleMenuOpen}
                 >
-                  <FingerprintIcon />
+                  <AccountCircle />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Logout" arrow>
-                <IconButton
-                  onClick={handleLogout}
-                  sx={{ ml: 1, color: "error.main" }}
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+              >
+                <MenuItem
+                  onClick={() => {
+                    handleMenuClose();
+                    navigate("/passkeys");
+                  }}
                 >
-                  <LogoutIcon />
-                </IconButton>
-              </Tooltip>
+                  <FingerprintIcon fontSize="small" sx={{ mr: 1.25 }} />
+                  Passkeys
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    handleMenuClose();
+                    handleLogout();
+                  }}
+                >
+                  <LogoutIcon
+                    fontSize="small"
+                    sx={{ mr: 1.25, color: "error.main" }}
+                  />
+                  <Box component="span" sx={{ color: "error.main" }}>
+                    Sign Out
+                  </Box>
+                </MenuItem>
+              </Menu>
             </>
           )}
         </Box>

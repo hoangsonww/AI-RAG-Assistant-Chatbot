@@ -22,6 +22,7 @@ import {
   registerPasskey,
 } from "../services/api";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../components/ToastProvider";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
@@ -42,13 +43,14 @@ const Signup: React.FC = () => {
   const [registeringPasskey, setRegisteringPasskey] = useState(false);
 
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   /**
    * Handle the signup button click
    */
   const handleSignup = async () => {
     if (password !== confirmPassword) {
-      alert("Passwords don't match");
+      showToast("Passwords don't match", "warning");
       return;
     }
     setLoadingSignup(true);
@@ -66,7 +68,7 @@ const Signup: React.FC = () => {
         navigate("/chat");
       }
     } catch (err: any) {
-      alert(err?.response?.data?.message || err.message);
+      showToast(err?.response?.data?.message || err.message, "error");
     } finally {
       setLoadingSignup(false);
     }
@@ -85,7 +87,7 @@ const Signup: React.FC = () => {
           ? "Passkey prompt was dismissed. You can add one later from your account."
           : err?.message) ||
         "Failed to set up passkey";
-      alert(msg);
+      showToast(msg, "error");
     } finally {
       setRegisteringPasskey(false);
     }
