@@ -665,7 +665,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       botMessageStartedRef.current = false;
 
       // Schedule state transitions:
-      setTimeout(() => {
+      if (thinkingTimerRef.current) clearTimeout(thinkingTimerRef.current);
+      thinkingTimerRef.current = setTimeout(() => {
         setLoadingState("thinking");
       }, 300);
 
@@ -682,6 +683,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
         // On the first chunk, mark the new bot message for a scroll-to-top and
         // stop bottom-follow so it doesn't yank back to the bottom while growing.
+        if (thinkingTimerRef.current) {
+          clearTimeout(thinkingTimerRef.current);
+          thinkingTimerRef.current = null;
+        }
         if (!botMessageStartedRef.current) {
           botMessageStartedRef.current = true;
           pendingBotStartScrollRef.current = true;
@@ -888,7 +893,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       setIsStreaming(false);
       botMessageStartedRef.current = false;
 
-      setTimeout(() => {
+      if (thinkingTimerRef.current) clearTimeout(thinkingTimerRef.current);
+      thinkingTimerRef.current = setTimeout(() => {
         setLoadingState("thinking");
       }, 300);
 
@@ -902,6 +908,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         setLoadingState("done");
         setIsStreaming(true);
 
+        if (thinkingTimerRef.current) {
+          clearTimeout(thinkingTimerRef.current);
+          thinkingTimerRef.current = null;
+        }
         if (!botMessageStartedRef.current) {
           botMessageStartedRef.current = true;
           pendingBotStartScrollRef.current = true;
@@ -1087,6 +1097,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const lastMessageRef = useRef<HTMLDivElement | null>(null);
   const pendingBotStartScrollRef = useRef(false);
   const botMessageStartedRef = useRef(false);
+  // Pending "thinking" transition timer — cancelled on the first chunk so a fast
+  // (e.g. greeting) response can't get re-flagged as thinking after it's done.
+  const thinkingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // When a bot reply starts streaming, scroll so the TOP of that message sits at
   // the top of the viewport (so the user reads it from the beginning). Later
@@ -2173,36 +2186,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             </Typography>
           </Box>
         )}
-
-        {loadingConversation && (
-          <Box
-            sx={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "rgba(0, 0, 0, 0.5)",
-              zIndex: 1000,
-            }}
-          >
-            <Box display="flex" alignItems="center">
-              <CircularProgress size={24} />
-              <Typography
-                variant="caption"
-                ml={1}
-                sx={{
-                  color: "white",
-                }}
-              >
-                Loading Conversation...
-              </Typography>
-            </Box>
-          </Box>
-        )}
       </Box>
 
       {/* Input area */}
@@ -2268,6 +2251,32 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         </MuiLink>
         .
       </Typography>
+
+      {/* Full-page loading overlay — covers the entire viewport (navbar + sidebar too). */}
+      {loadingConversation && (
+        <Box
+          sx={{
+            position: "fixed",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor:
+              theme.palette.mode === "dark"
+                ? "rgba(0,0,0,0.55)"
+                : "rgba(15,23,42,0.45)",
+            backdropFilter: "blur(2px)",
+            zIndex: 13000,
+          }}
+        >
+          <Box display="flex" alignItems="center">
+            <CircularProgress size={24} />
+            <Typography variant="caption" ml={1} sx={{ color: "white" }}>
+              Loading Conversation...
+            </Typography>
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 };
