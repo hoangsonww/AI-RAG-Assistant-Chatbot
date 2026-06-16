@@ -272,7 +272,9 @@ const Navbar: React.FC<NavbarProps> = ({
           >
             {hasRealTitle
               ? activeTitle
-              : "Welcome to Lumina - ask me anything about David"}
+              : isMobile
+                ? "Welcome to Lumina"
+                : "Welcome to Lumina - ask me anything about David"}
           </Typography>
         </Box>
 
