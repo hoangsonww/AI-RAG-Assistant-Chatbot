@@ -30,13 +30,14 @@ const STATIC_GEMINI_MODELS = [
   "gemini-2.0-flash-lite",
   "gemini-2.0-flash-lite-001",
 ];
-const RAG_TOP_K = 10;
-const RAG_LIST_TOP_K = 20;
+const RAG_TOP_K = 12;
+const RAG_LIST_TOP_K = 24;
 const MAX_CONTEXT_SNIPPET_CHARS = 1200;
+const MAX_MERGED_CHUNKS = 30;
 const DUAL_SOURCE_BONUS = 0.1;
 
 const LIST_QUERY_PATTERN =
-  /\b(list|all|every|everything|comprehensive|complete|full list|enumerate|name all|show all|what are all)\b/i;
+  /\b(list|all|every|everything|comprehensive|complete|full list|enumerate|name all|show all|what are all|career|careers|experience|experiences|work history|employment|milestones?|background|resume|cv|timeline|roles?|jobs?|positions?|certifications?|publications?|papers?|awards?|honors?|education|internships?)\b/i;
 
 const isListQuery = (message: string): boolean =>
   LIST_QUERY_PATTERN.test(message);
@@ -120,6 +121,91 @@ const expandListResults = async (
   return initial;
 };
 
+// Maps a question topic to the canonical knowledge source(s) that should be
+// pulled in FULL so the model always has the complete picture for that topic.
+// Only compact sources are listed here; large docs (projects, skills) keep
+// using vector + list expansion to avoid flooding the context window.
+const CATEGORY_FULL_SOURCES: Array<{ pattern: RegExp; sourceIds: string[] }> = [
+  {
+    pattern:
+      /\b(career|careers|experience|experiences|work history|employment|employer|roles?|jobs?|positions?|milestones?|background|resume|cv|timeline|worked|internships?|interned)\b/i,
+    sourceIds: ["career-timeline", "profile"],
+  },
+  {
+    pattern:
+      /\b(education|degrees?|university|college|gpa|major|minor|graduated?|school|academic|coursework|courses?|classes)\b/i,
+    sourceIds: ["profile", "coursework"],
+  },
+  {
+    pattern:
+      /\b(certification|certifications|certificates?|certified|certs?)\b/i,
+    sourceIds: ["certifications"],
+  },
+  {
+    pattern:
+      /\b(publication|publications|papers?|research|arxiv|journal|conference|articles?)\b/i,
+    sourceIds: ["publications"],
+  },
+  {
+    pattern: /\b(awards?|honors?|achievements?|recognition|scholarships?)\b/i,
+    sourceIds: ["honors-awards"],
+  },
+  {
+    pattern: /\b(volunteer|volunteering|community|nonprofit)\b/i,
+    sourceIds: ["volunteering", "profile"],
+  },
+  {
+    pattern: /\b(languages?|fluent|bilingual|organizations?|affiliations?)\b/i,
+    sourceIds: ["languages-organizations"],
+  },
+  {
+    pattern: /\b(test scores?|sat|gre|toefl|ielts)\b/i,
+    sourceIds: ["test-scores"],
+  },
+];
+
+const detectCategorySourceIds = (message: string): string[] => {
+  const ids = new Set<string>();
+  for (const { pattern, sourceIds } of CATEGORY_FULL_SOURCES) {
+    if (pattern.test(message)) {
+      for (const id of sourceIds) ids.add(id);
+    }
+  }
+  return Array.from(ids);
+};
+
+// Pulls every chunk of the given canonical sources and places them ahead of the
+// relevance-ranked base results, deduped and capped to a budget. This makes
+// topic answers (experience, education, certifications, ...) deterministically
+// complete instead of depending on whether each chunk cleared the top-K cutoff.
+const augmentWithFullSources = async (
+  baseResults: SourceCitation[],
+  sourceIds: string[],
+  budget: number,
+): Promise<SourceCitation[]> => {
+  if (sourceIds.length === 0) return baseResults;
+
+  const seen = new Set(baseResults.map((s) => s.id));
+  const ensured: SourceCitation[] = [];
+  for (const sourceId of sourceIds) {
+    try {
+      const chunks = await retrieveAllChunksBySourceId(sourceId);
+      for (const chunk of chunks) {
+        if (!seen.has(chunk.id)) {
+          seen.add(chunk.id);
+          ensured.push(chunk);
+        }
+      }
+    } catch (error) {
+      console.warn(
+        `Full-source augmentation failed for "${sourceId}": ${toErrorMessage(error)}`,
+      );
+    }
+  }
+
+  return [...ensured, ...baseResults].slice(0, budget);
+};
+
 const retrieveHybridSources = async (
   message: string,
   topK: number,
@@ -168,6 +254,14 @@ const retrieveHybridSources = async (
     results = await expandListResults(results);
   }
 
+  // Deterministic topic completeness: pull the full canonical source(s) for the
+  // detected topic so recent/important items are never dropped by the top-K cut.
+  const categorySourceIds = detectCategorySourceIds(message);
+  if (results.length > 0 && categorySourceIds.length > 0) {
+    const budget = Math.max(MAX_MERGED_CHUNKS, results.length);
+    results = await augmentWithFullSources(results, categorySourceIds, budget);
+  }
+
   if (shouldUseStaticFallback) {
     const fallbackSources = await retrieveStaticResumeFallbackSources(
       message,
@@ -194,6 +288,7 @@ const RAG_PROMPT_INSTRUCTIONS = [
   "Avoid repeating the same item; de-duplicate by title or project name.",
   "When the user asks for a list, respond with a short intro sentence and a clean bullet list.",
   "For lists, use the format: Project — timeframe — one-sentence description.",
+  "When summarizing experience, career, education, projects, or similar topics, include EVERY relevant item present in the sources, ordered most-recent-first for roles, and never omit the most recent ones.",
   "Do not restate identity or titles unless explicitly asked.",
 ].join(" ");
 

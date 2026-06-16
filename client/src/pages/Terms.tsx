@@ -10,7 +10,9 @@ import {
   useMediaQuery,
   Link as MuiLink,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
+import { gradientTextSx, brandButtonSx } from "../components/auth/styles";
 
 /**
  * TermsPage Component
@@ -22,6 +24,35 @@ const TermsPage: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isDark = theme.palette.mode === "dark";
+
+  const pageBackground = isDark
+    ? `radial-gradient(circle at 15% 15%, ${alpha(
+        theme.palette.primary.main,
+        0.18,
+      )}, transparent 45%),
+       radial-gradient(circle at 85% 20%, ${alpha(
+         theme.palette.info.main,
+         0.16,
+       )}, transparent 45%),
+       linear-gradient(180deg, #0b0f1a 0%, #0f172a 60%, #111827 100%)`
+    : `radial-gradient(circle at 15% 15%, ${alpha(
+        theme.palette.primary.main,
+        0.12,
+      )}, transparent 45%),
+       radial-gradient(circle at 85% 20%, ${alpha(
+         theme.palette.info.main,
+         0.1,
+       )}, transparent 45%),
+       linear-gradient(180deg, #f8fafc 0%, #eef2ff 60%, #f8fafc 100%)`;
+
+  const sectionHeadingSx = {
+    fontWeight: 700,
+    mt: 3.5,
+    pl: 1.5,
+    borderLeft: `3px solid ${theme.palette.primary.main}`,
+    color: isDark ? "#fff" : "#0f172a",
+  };
 
   // States to control staggered animations.
   const [showHeader, setShowHeader] = useState(false);
@@ -43,36 +74,67 @@ const TermsPage: React.FC = () => {
     <Box
       sx={{
         minHeight: "100vh",
-        background:
-          theme.palette.mode === "dark"
-            ? theme.palette.grey[900]
-            : theme.palette.grey[100],
+        "@supports (height: 100svh)": { minHeight: "100svh" },
+        background: pageBackground,
         color: theme.palette.text.primary,
         display: "flex",
         flexDirection: "column",
         overflowX: "hidden",
+        position: "relative",
         py: 4,
       }}
     >
-      <Container maxWidth="lg">
+      <Box
+        sx={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: "none",
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)",
+          backgroundSize: "64px 64px",
+          opacity: isDark ? 0.12 : 0.05,
+        }}
+      />
+      <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1 }}>
         {/* Header Section */}
         <Fade in={showHeader} timeout={800}>
           <Box sx={{ textAlign: "center", my: 4 }}>
+            <Typography
+              variant="overline"
+              sx={{
+                letterSpacing: "0.3em",
+                fontWeight: 700,
+                color: alpha(theme.palette.text.primary, 0.6),
+                display: "block",
+                mb: 1,
+              }}
+            >
+              LEGAL
+            </Typography>
             <Typography
               variant={isMobile ? "h4" : "h3"}
               component="h1"
               gutterBottom
               sx={{
-                fontWeight: "bold",
-                color: theme.palette.mode === "dark" ? "white" : "black",
-                textShadow: "1px 1px 2px rgba(0,0,0,0.3)",
+                fontWeight: 800,
+                color: isDark ? "white" : "black",
               }}
             >
-              Terms and Conditions
+              Terms &amp;{" "}
+              <Box component="span" sx={gradientTextSx(theme)}>
+                Conditions
+              </Box>
             </Typography>
             <Typography variant="subtitle1" color="textSecondary">
               Please read these Terms and Conditions carefully before using
               Lumina AI.
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{ display: "block", mt: 1, color: "text.secondary" }}
+            >
+              Last updated June 2026
             </Typography>
           </Box>
         </Fade>
@@ -82,18 +144,33 @@ const TermsPage: React.FC = () => {
           <Box
             sx={{
               my: 4,
-              background: theme.palette.background.paper,
-              p: 4,
-              borderRadius: 2,
-              boxShadow: theme.shadows[3],
+              position: "relative",
+              overflow: "hidden",
+              p: { xs: 3, sm: 4 },
+              borderRadius: 3,
+              backgroundColor: alpha(
+                theme.palette.background.paper,
+                isDark ? 0.72 : 0.92,
+              ),
+              border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
+              backdropFilter: "blur(16px)",
+              boxShadow: isDark
+                ? "0 24px 50px rgba(0,0,0,0.45)"
+                : "0 24px 50px rgba(15,23,42,0.12)",
             }}
           >
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 3,
+                background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.info.main}, ${theme.palette.secondary.main})`,
+              }}
+            />
             {/* 1. Acceptance of Terms */}
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: "bold", mt: 2 }}
-            >
+            <Typography variant="h6" gutterBottom sx={sectionHeadingSx}>
               1. Acceptance of Terms
             </Typography>
             <Typography variant="body1" paragraph>
@@ -107,11 +184,7 @@ const TermsPage: React.FC = () => {
             </Typography>
 
             {/* 2. Use of Lumina AI */}
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: "bold", mt: 2 }}
-            >
+            <Typography variant="h6" gutterBottom sx={sectionHeadingSx}>
               2. Use of Lumina AI
             </Typography>
             <Typography variant="body1" paragraph>
@@ -155,11 +228,7 @@ const TermsPage: React.FC = () => {
             </ul>
 
             {/* 3. User Conduct and Responsibilities */}
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: "bold", mt: 2 }}
-            >
+            <Typography variant="h6" gutterBottom sx={sectionHeadingSx}>
               3. User Conduct and Responsibilities
             </Typography>
             <Typography variant="body1" paragraph>
@@ -174,11 +243,7 @@ const TermsPage: React.FC = () => {
             </Typography>
 
             {/* 4. Intellectual Property Rights */}
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: "bold", mt: 2 }}
-            >
+            <Typography variant="h6" gutterBottom sx={sectionHeadingSx}>
               4. Intellectual Property Rights
             </Typography>
             <Typography variant="body1" paragraph>
@@ -191,11 +256,7 @@ const TermsPage: React.FC = () => {
             </Typography>
 
             {/* 5. Data Privacy and Security */}
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: "bold", mt: 2 }}
-            >
+            <Typography variant="h6" gutterBottom sx={sectionHeadingSx}>
               5. Data Privacy and Security
             </Typography>
             <Typography variant="body1" paragraph>
@@ -213,11 +274,7 @@ const TermsPage: React.FC = () => {
             </Typography>
 
             {/* 6. Modifications to the Terms and Service */}
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: "bold", mt: 2 }}
-            >
+            <Typography variant="h6" gutterBottom sx={sectionHeadingSx}>
               6. Modifications to the Terms and Service
             </Typography>
             <Typography variant="body1" paragraph>
@@ -229,11 +286,7 @@ const TermsPage: React.FC = () => {
             </Typography>
 
             {/* 7. Limitation of Liability */}
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: "bold", mt: 2 }}
-            >
+            <Typography variant="h6" gutterBottom sx={sectionHeadingSx}>
               7. Limitation of Liability
             </Typography>
             <Typography variant="body1" paragraph>
@@ -249,11 +302,7 @@ const TermsPage: React.FC = () => {
             </Typography>
 
             {/* 8. Indemnification */}
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: "bold", mt: 2 }}
-            >
+            <Typography variant="h6" gutterBottom sx={sectionHeadingSx}>
               8. Indemnification
             </Typography>
             <Typography variant="body1" paragraph>
@@ -279,11 +328,7 @@ const TermsPage: React.FC = () => {
             </ul>
 
             {/* 9. Dispute Resolution */}
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: "bold", mt: 2 }}
-            >
+            <Typography variant="h6" gutterBottom sx={sectionHeadingSx}>
               9. Dispute Resolution
             </Typography>
             <Typography variant="body1" paragraph>
@@ -301,11 +346,7 @@ const TermsPage: React.FC = () => {
             </Typography>
 
             {/* 10. Governing Law and Jurisdiction */}
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: "bold", mt: 2 }}
-            >
+            <Typography variant="h6" gutterBottom sx={sectionHeadingSx}>
               10. Governing Law and Jurisdiction
             </Typography>
             <Typography variant="body1" paragraph>
@@ -317,11 +358,7 @@ const TermsPage: React.FC = () => {
             </Typography>
 
             {/* 11. Termination of Access */}
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: "bold", mt: 2 }}
-            >
+            <Typography variant="h6" gutterBottom sx={sectionHeadingSx}>
               11. Termination of Access
             </Typography>
             <Typography variant="body1" paragraph>
@@ -332,11 +369,7 @@ const TermsPage: React.FC = () => {
             </Typography>
 
             {/* 12. Account Security and User Data */}
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: "bold", mt: 2 }}
-            >
+            <Typography variant="h6" gutterBottom sx={sectionHeadingSx}>
               12. Account Security and User Data
             </Typography>
             <Typography variant="body1" paragraph>
@@ -352,11 +385,7 @@ const TermsPage: React.FC = () => {
             </Typography>
 
             {/* 13. Service Availability and Maintenance */}
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: "bold", mt: 2 }}
-            >
+            <Typography variant="h6" gutterBottom sx={sectionHeadingSx}>
               13. Service Availability and Maintenance
             </Typography>
             <Typography variant="body1" paragraph>
@@ -368,11 +397,7 @@ const TermsPage: React.FC = () => {
             </Typography>
 
             {/* 14. Third-Party Services and Integrations */}
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: "bold", mt: 2 }}
-            >
+            <Typography variant="h6" gutterBottom sx={sectionHeadingSx}>
               14. Third-Party Services and Integrations
             </Typography>
             <Typography variant="body1" paragraph>
@@ -385,11 +410,7 @@ const TermsPage: React.FC = () => {
             </Typography>
 
             {/* 15. Disclaimer of Endorsements */}
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: "bold", mt: 2 }}
-            >
+            <Typography variant="h6" gutterBottom sx={sectionHeadingSx}>
               15. Disclaimer of Endorsements
             </Typography>
             <Typography variant="body1" paragraph>
@@ -401,11 +422,7 @@ const TermsPage: React.FC = () => {
             </Typography>
 
             {/* 16. Feedback and Contact */}
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: "bold", mt: 2 }}
-            >
+            <Typography variant="h6" gutterBottom sx={sectionHeadingSx}>
               16. Feedback and Contact
             </Typography>
             <Typography variant="body1" paragraph>
@@ -452,17 +469,9 @@ const TermsPage: React.FC = () => {
           >
             <Button
               variant="contained"
-              color="primary"
               size="large"
               onClick={() => navigate("/chat")}
-              sx={{
-                px: 4,
-                py: 1.5,
-                fontWeight: "bold",
-                borderRadius: 2,
-                transition: "transform 0.3s",
-                "&:hover": { transform: "scale(1.05)" },
-              }}
+              sx={brandButtonSx(theme)}
             >
               Back to Chat
             </Button>

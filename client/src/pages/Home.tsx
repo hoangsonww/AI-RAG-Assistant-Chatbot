@@ -12,6 +12,29 @@ import {
 } from "../services/api";
 import { IConversation } from "../types/conversation";
 
+// Best-effort cache of the signed-in user's conversation list so reloads render
+// the sidebar instantly instead of flashing a spinner during the API round-trip.
+const AUTH_CONVOS_CACHE_KEY = "cachedAuthConversations";
+
+const readCachedConversations = (): IConversation[] => {
+  if (!isAuthenticated()) return [];
+  try {
+    const raw = localStorage.getItem(AUTH_CONVOS_CACHE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeCachedConversations = (items: IConversation[]): void => {
+  try {
+    localStorage.setItem(AUTH_CONVOS_CACHE_KEY, JSON.stringify(items));
+  } catch {
+    // Ignore quota / serialization errors — the cache is best-effort.
+  }
+};
+
 interface HomeProps {
   onToggleTheme: () => void;
   darkMode: boolean;
@@ -36,7 +59,9 @@ const Home: React.FC<HomeProps> = ({ onToggleTheme, darkMode }) => {
     }
     return storedPreference === "true";
   });
-  const [conversations, setConversations] = useState<IConversation[]>([]);
+  const [conversations, setConversations] = useState<IConversation[]>(() =>
+    readCachedConversations(),
+  );
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
   >(() => {
@@ -87,15 +112,25 @@ const Home: React.FC<HomeProps> = ({ onToggleTheme, darkMode }) => {
     });
   };
 
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+    if (!isAuthenticated()) {
+      localStorage.setItem(guestSidebarKey, "false");
+    }
+  };
+
   /**
    * Load the conversations from the API
    */
   const loadConversations = async () => {
-    setLoading(true);
+    // Only show the blocking spinner when there's nothing to display yet; on
+    // reload we render the cached list immediately and refresh quietly.
+    if (conversations.length === 0) setLoading(true);
     try {
       if (isAuthenticated()) {
         const resp = await getConversations();
         setConversations(resp);
+        writeCachedConversations(resp);
       } else {
         const guestConversations = getGuestConversationsFromLocalStorage();
         setConversations(guestConversations);
@@ -182,7 +217,10 @@ const Home: React.FC<HomeProps> = ({ onToggleTheme, darkMode }) => {
         onSelectConversation={handleSelectConversation}
         onToggleTheme={onToggleTheme}
         darkMode={darkMode}
-        setConversations={setConversations}
+        activeTitle={
+          conversations.find((c) => c._id === selectedConversationId)?.title ||
+          ""
+        }
       />
       <Box display="flex" flex="1" overflow="hidden">
         <Sidebar
@@ -194,6 +232,8 @@ const Home: React.FC<HomeProps> = ({ onToggleTheme, darkMode }) => {
           isMobile={isMobile}
           loadingConversations={loading}
           isStreamingOrProcessing={isStreamingOrProcessing}
+          onClose={closeSidebar}
+          setConversations={setConversations}
         />
         {/* Fix ChatArea container to have a fixed height and hidden overflow */}
         <Box

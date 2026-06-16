@@ -7,6 +7,12 @@
       "file": "./knowledge/son-nguyen-profile.txt"
     },
     {
+      "externalId": "career-timeline",
+      "title": "Son Nguyen Career Timeline",
+      "sourceType": "bio",
+      "file": "./knowledge/son-nguyen-career-timeline.txt"
+    },
+    {
       "externalId": "alias",
       "title": "Son Nguyen Alias",
       "sourceType": "bio",

@@ -131,6 +131,9 @@ const ConversationSchema: Schema = new Schema(
   { timestamps: true },
 );
 
+// Serves the per-user list (filter by user, sort by createdAt) and search.
+ConversationSchema.index({ user: 1, createdAt: -1 });
+
 export default mongoose.model<IConversation>(
   "Conversation",
   ConversationSchema,

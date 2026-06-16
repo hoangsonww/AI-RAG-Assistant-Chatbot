@@ -11,7 +11,6 @@ import {
   ListItem,
   ListItemText,
   Divider,
-  Tooltip,
   Alert,
   Dialog,
   DialogTitle,
@@ -19,6 +18,7 @@ import {
   DialogContentText,
   DialogActions,
 } from "@mui/material";
+import { alpha, useTheme } from "@mui/material/styles";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -31,6 +31,7 @@ import {
   passkeysSupported,
   PasskeySummary,
 } from "../services/api";
+import { gradientTextSx, authFieldSx } from "../components/auth/styles";
 
 const formatDate = (iso?: string) => {
   if (!iso) return "—";
@@ -50,6 +51,28 @@ const Passkeys: React.FC = () => {
   const [info, setInfo] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const supported = passkeysSupported();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+
+  const pageBackground = isDark
+    ? `radial-gradient(circle at 15% 15%, ${alpha(
+        theme.palette.primary.main,
+        0.18,
+      )}, transparent 45%),
+       radial-gradient(circle at 85% 20%, ${alpha(
+         theme.palette.info.main,
+         0.16,
+       )}, transparent 45%),
+       linear-gradient(180deg, #0b0f1a 0%, #0f172a 60%, #111827 100%)`
+    : `radial-gradient(circle at 15% 15%, ${alpha(
+        theme.palette.primary.main,
+        0.12,
+      )}, transparent 45%),
+       radial-gradient(circle at 85% 20%, ${alpha(
+         theme.palette.info.main,
+         0.1,
+       )}, transparent 45%),
+       linear-gradient(180deg, #f8fafc 0%, #eef2ff 60%, #f8fafc 100%)`;
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -127,23 +150,99 @@ const Passkeys: React.FC = () => {
       justifyContent="center"
       alignItems="flex-start"
       sx={{
-        background: "linear-gradient(to right, #00c6ff, #0072ff)",
-        py: { xs: 3, sm: 6 },
+        background: pageBackground,
+        color: theme.palette.text.primary,
+        position: "relative",
+        overflow: "hidden",
+        py: { xs: 5, sm: 8 },
         px: 2,
       }}
     >
-      <Paper sx={{ p: { xs: 2.5, sm: 4 }, maxWidth: 560, width: "100%" }}>
-        <Box display="flex" alignItems="center" mb={1}>
-          <Tooltip title="Back to chat">
-            <IconButton onClick={() => navigate("/chat")} sx={{ mr: 1 }}>
-              <ArrowBackIcon />
-            </IconButton>
-          </Tooltip>
-          <Typography variant="h5" sx={{ flex: 1 }}>
-            Your passkeys
+      <Box
+        sx={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: "none",
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)",
+          backgroundSize: "64px 64px",
+          opacity: isDark ? 0.12 : 0.05,
+        }}
+      />
+      <Paper
+        elevation={0}
+        sx={{
+          position: "relative",
+          zIndex: 1,
+          overflow: "hidden",
+          p: { xs: 2.5, sm: 4 },
+          maxWidth: 560,
+          width: "100%",
+          borderRadius: 3,
+          backgroundColor: alpha(
+            theme.palette.background.paper,
+            isDark ? 0.72 : 0.92,
+          ),
+          border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
+          backdropFilter: "blur(16px)",
+          boxShadow: isDark
+            ? "0 24px 50px rgba(0,0,0,0.45)"
+            : "0 24px 50px rgba(15,23,42,0.12)",
+        }}
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 3,
+            background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.info.main}, ${theme.palette.secondary.main})`,
+          }}
+        />
+        <Button
+          onClick={() => navigate("/chat")}
+          startIcon={<ArrowBackIcon />}
+          sx={{
+            textTransform: "none",
+            color: "text.secondary",
+            mb: 2.5,
+            ml: -0.5,
+            px: 1,
+            minWidth: 0,
+          }}
+        >
+          Back to chat
+        </Button>
+        <Box display="flex" alignItems="center" gap={1.5} mb={1}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: 2.5,
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.info.main})`,
+              boxShadow: "0 10px 22px rgba(0,0,0,0.22)",
+            }}
+          >
+            <FingerprintIcon sx={{ color: "#fff", fontSize: 26 }} />
+          </Box>
+          <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
+            Your{" "}
+            <Box component="span" sx={gradientTextSx(theme)}>
+              passkeys
+            </Box>
           </Typography>
         </Box>
-        <Typography variant="body2" color="text.secondary" mb={2}>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ mt: 2, mb: 2 }}
+        >
           Passkeys let you sign in instantly with Face ID, Touch ID, Windows
           Hello, or your phone — no password to type. Your password still works
           as a fallback.
@@ -179,6 +278,7 @@ const Passkeys: React.FC = () => {
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
             disabled={!supported || registering}
+            sx={authFieldSx}
           />
           <Button
             variant="contained"
@@ -196,8 +296,18 @@ const Passkeys: React.FC = () => {
               whiteSpace: "nowrap",
               textTransform: "none",
               flexShrink: 0,
-              px: 2,
+              px: 2.5,
               height: 40,
+              borderRadius: 2,
+              fontWeight: 700,
+              background: `linear-gradient(120deg, ${theme.palette.primary.main}, ${theme.palette.info.main})`,
+              boxShadow: "0 10px 20px rgba(0,0,0,0.2)",
+              transition: "transform 0.2s",
+              "&:hover": { transform: "translateY(-1px)" },
+              "&.Mui-disabled": {
+                background: alpha(theme.palette.primary.main, 0.3),
+                color: alpha(theme.palette.common.white, 0.6),
+              },
             }}
           >
             Add passkey

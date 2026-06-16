@@ -46,8 +46,8 @@ const RELATIONSHIP_TYPES: ReadonlySet<string> = new Set<RelationshipType>([
 
 const EXTRACTION_CONCURRENCY = 2;
 const GRAPH_RETRIEVAL_TOP_K = 15;
-const EXTRACTION_RETRY_ATTEMPTS = 3;
 const EXTRACTION_BASE_DELAY_MS = 15_000;
+const EXTRACTION_MAX_DELAY_MS = 60_000;
 
 const EXTRACTION_MODELS = [
   "gemini-2.5-flash",
@@ -117,24 +117,62 @@ If no specific entities, return [].`;
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
-const withRateLimitRetry = async <T>(
-  fn: () => Promise<T>,
-  attempts: number = EXTRACTION_RETRY_ATTEMPTS,
-): Promise<T> => {
-  for (let i = 0; i < attempts; i++) {
+const parseRetryDelayMs = (message: string): number => {
+  const match =
+    message.match(/retry in ([\d.]+)s/i) ||
+    message.match(/"retrydelay"\s*:\s*"(\d+)s?"/i);
+  if (!match) return 0;
+  const seconds = parseFloat(match[1]);
+  return Number.isFinite(seconds)
+    ? Math.min((Math.ceil(seconds) + 2) * 1000, EXTRACTION_MAX_DELAY_MS)
+    : 0;
+};
+
+const withRateLimitRetry = async <T>(fn: () => Promise<T>): Promise<T> => {
+  let attempt = 0;
+  // Retry quota (429) + transient network/5xx errors INDEFINITELY; surface any
+  // other error immediately so we never loop on an unrecoverable failure.
+  for (;;) {
     try {
       return await fn();
     } catch (error: any) {
-      const message = error?.message || "";
+      const message = (error?.message || "").toLowerCase();
+      const causeCode = String(error?.cause?.code || "").toUpperCase();
       const isRateLimit =
-        message.includes("429") || message.includes("Too Many Requests");
-      if (!isRateLimit || i === attempts - 1) throw error;
-      const delay = EXTRACTION_BASE_DELAY_MS * (i + 1);
-      console.log(`Rate limited, retrying in ${delay / 1000}s...`);
+        message.includes("429") || message.includes("too many requests");
+      const isTransient =
+        message.includes("fetch failed") ||
+        message.includes("network") ||
+        message.includes("timeout") ||
+        message.includes("socket hang up") ||
+        message.includes("econnreset") ||
+        message.includes("etimedout") ||
+        message.includes("enotfound") ||
+        /\b(500|502|503|504)\b/.test(message) ||
+        [
+          "ECONNRESET",
+          "ETIMEDOUT",
+          "ENOTFOUND",
+          "EAI_AGAIN",
+          "ECONNREFUSED",
+          "UND_ERR_CONNECT_TIMEOUT",
+          "UND_ERR_SOCKET",
+          "UND_ERR_HEADERS_TIMEOUT",
+        ].includes(causeCode);
+      if (!isRateLimit && !isTransient) throw error;
+      attempt += 1;
+      const suggested = isRateLimit ? parseRetryDelayMs(message) : 0;
+      const delay =
+        suggested ||
+        Math.min(EXTRACTION_BASE_DELAY_MS * attempt, EXTRACTION_MAX_DELAY_MS);
+      console.log(
+        `Graph extraction ${
+          isRateLimit ? "rate limited" : "request failed"
+        }, retrying in ${delay / 1000}s (attempt ${attempt})...`,
+      );
       await sleep(delay);
     }
   }
-  throw new Error("Retry exhausted");
 };
 
 const LUCENE_SPECIAL = /[+\-&|!(){}[\]^"~*?:\\/]/g;

@@ -119,8 +119,14 @@ const buildQueryVariants = (query: string) => {
     variants.push("recent projects portfolio notable projects");
   }
 
-  if (/(experience|worked|work history)/.test(lower)) {
-    variants.push("work experience projects");
+  if (
+    /(experience|worked|work history|career|milestone|role|job|employ|resume|cv|timeline|background|internship)/.test(
+      lower,
+    )
+  ) {
+    variants.push(
+      "work experience career timeline employment history roles companies",
+    );
   }
 
   return Array.from(new Set(variants.filter(Boolean))).slice(

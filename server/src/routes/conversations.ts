@@ -145,9 +145,12 @@ router.post("/", authenticateJWT, async (req: AuthRequest, res: Response) => {
 router.get("/", authenticateJWT, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;
-    const conversations = await Conversation.find({ user: userId }).sort({
-      createdAt: -1,
-    });
+    // List view only needs metadata — exclude the (potentially large) messages
+    // array and return lean objects for a much smaller, faster response.
+    const conversations = await Conversation.find({ user: userId })
+      .select("title createdAt updatedAt")
+      .sort({ createdAt: -1 })
+      .lean();
     res.json(conversations);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -435,7 +438,10 @@ router.get(
           { title: { $regex: query, $options: "i" } },
           { "messages.text": { $regex: query, $options: "i" } },
         ],
-      });
+      })
+        .select("title createdAt updatedAt")
+        .sort({ updatedAt: -1 })
+        .lean();
       res.json(conversations);
     } catch (error: any) {
       res.status(500).json({ message: error.message });

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Box,
   List,
@@ -13,10 +13,14 @@ import {
   DialogActions,
   TextField,
   Button,
+  InputBase,
+  Tooltip,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import CloseIcon from "@mui/icons-material/Close";
+import SearchIcon from "@mui/icons-material/Search";
 import { isAuthenticated } from "../services/api";
 import { IConversation } from "../types/conversation";
 import { useTheme } from "@mui/material/styles";
@@ -27,6 +31,8 @@ import {
   generateGuestConversationTitle,
   updateGuestConversationInLocalStorage,
   deleteGuestConversationFromLocalStorage,
+  searchConversations,
+  getGuestConversationsFromLocalStorage,
 } from "../services/api";
 
 /**
@@ -41,6 +47,8 @@ interface SidebarProps {
   isMobile: boolean;
   loadingConversations: boolean;
   isStreamingOrProcessing?: boolean;
+  onClose?: () => void;
+  setConversations: React.Dispatch<React.SetStateAction<IConversation[]>>;
 }
 
 /**
@@ -64,12 +72,17 @@ const Sidebar: React.FC<SidebarProps> = ({
   isMobile,
   loadingConversations,
   isStreamingOrProcessing = false,
+  onClose,
+  setConversations,
 }) => {
   const theme = useTheme();
   const authed = isAuthenticated();
   const [loadingRenameId, setLoadingRenameId] = useState<string | null>(null);
   const [loadingDeleteId, setLoadingDeleteId] = useState<string | null>(null);
   const [loadingGenerateTitle, setLoadingGenerateTitle] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchDebounceRef = useRef<number | null>(null);
 
   // Rename dialog state
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
@@ -85,6 +98,44 @@ const Sidebar: React.FC<SidebarProps> = ({
   const positionValue = isMobile ? "absolute" : "relative";
   const topValue = isMobile ? "56px" : 0;
   const heightValue = isMobile ? "calc(100vh - 64px)" : "auto";
+
+  /**
+   * Debounced search across conversations (server-side when authed, local for
+   * guests). An empty query restores the full list via onRefresh.
+   */
+  const debouncedSearch = (value: string) => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = window.setTimeout(async () => {
+      if (!value.trim()) {
+        onRefresh();
+        setSearchLoading(false);
+        return;
+      }
+      try {
+        if (authed) {
+          const results = await searchConversations(value);
+          setConversations(results);
+        } else {
+          const lower = value.toLowerCase();
+          setConversations(
+            getGuestConversationsFromLocalStorage().filter((c) =>
+              c.title.toLowerCase().includes(lower),
+            ),
+          );
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 500);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setSearchLoading(true);
+    debouncedSearch(e.target.value);
+  };
 
   /**
    * Handle renaming a conversation
@@ -198,6 +249,78 @@ const Sidebar: React.FC<SidebarProps> = ({
         boxShadow: isMobile && open ? 5 : 0,
       }}
     >
+      <Box
+        sx={{
+          position: "sticky",
+          top: 0,
+          zIndex: 1,
+          px: 1.5,
+          py: 1.25,
+          backgroundColor: theme.palette.background.paper,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          transition: "background-color 0.3s ease, border-color 0.3s ease",
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            mb: 1,
+          }}
+        >
+          <Typography
+            variant="subtitle1"
+            sx={{
+              fontWeight: 700,
+              pl: 0.5,
+              fontSize: "1.05rem",
+              color: theme.palette.text.primary,
+            }}
+          >
+            Conversations
+          </Typography>
+          {onClose && (
+            <Tooltip title="Close Sidebar" arrow>
+              <IconButton
+                size="small"
+                onClick={onClose}
+                aria-label="Close sidebar"
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            borderRadius: 1.5,
+            px: 1,
+            py: 0.5,
+            backgroundColor:
+              theme.palette.mode === "dark"
+                ? theme.palette.grey[800]
+                : theme.palette.grey[100],
+            border: `1px solid ${theme.palette.divider}`,
+            transition: "background-color 0.3s ease, border-color 0.3s ease",
+          }}
+        >
+          <SearchIcon
+            fontSize="small"
+            sx={{ color: "text.secondary", mr: 1 }}
+          />
+          <InputBase
+            placeholder="Search conversations…"
+            value={searchTerm}
+            onChange={handleSearchChange}
+            sx={{ flex: 1, fontSize: "0.9rem" }}
+          />
+          {searchLoading && <CircularProgress size={16} sx={{ ml: 1 }} />}
+        </Box>
+      </Box>
+
       {loadingConversations && (
         <Box textAlign="center" padding="1rem">
           <CircularProgress />

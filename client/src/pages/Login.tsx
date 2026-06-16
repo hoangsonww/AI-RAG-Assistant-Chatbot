@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from "react";
 import {
   Box,
-  Paper,
   Typography,
   TextField,
   Button,
-  IconButton,
   InputAdornment,
   CircularProgress,
   Divider,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import {
   loginUser,
   setTokenInLocalStorage,
@@ -18,9 +17,17 @@ import {
 } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../components/ToastProvider";
-import Visibility from "@mui/icons-material/Visibility";
-import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import MailOutlineIcon from "@mui/icons-material/MailOutline";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
+import AuthShell from "../components/auth/AuthShell";
+import PasswordField from "../components/auth/PasswordField";
+import {
+  authFieldSx,
+  authLinkSx,
+  brandButtonSx,
+  gradientTextSx,
+} from "../components/auth/styles";
 
 /**
  * The Login component
@@ -30,11 +37,11 @@ import FingerprintIcon from "@mui/icons-material/Fingerprint";
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPw, setShowPw] = useState(false);
   const [loadingLogin, setLoadingLogin] = useState(false);
   const [loadingPasskey, setLoadingPasskey] = useState(false);
   const [canUsePasskey, setCanUsePasskey] = useState(false);
 
+  const theme = useTheme();
   const navigate = useNavigate();
   const { showToast } = useToast();
 
@@ -81,98 +88,121 @@ const Login: React.FC = () => {
     }
   };
 
+  const busy = loadingLogin || loadingPasskey;
+
   return (
-    <Box
-      display="flex"
-      height="100vh"
-      justifyContent="center"
-      alignItems="center"
-      sx={{ background: "linear-gradient(to right, #00c6ff, #0072ff)" }}
+    <AuthShell
+      eyebrow="WELCOME BACK"
+      title={
+        <>
+          Sign in to{" "}
+          <Box component="span" sx={gradientTextSx(theme)}>
+            Lumina
+          </Box>
+        </>
+      }
+      subtitle="Log in to save your chat history and continue as a registered user."
+      footer={
+        <>
+          <Typography variant="body2" align="center" color="text.secondary">
+            Don&apos;t have an account?{" "}
+            <Button
+              size="small"
+              onClick={() => navigate("/signup")}
+              sx={authLinkSx}
+            >
+              Sign Up
+            </Button>
+          </Typography>
+          <Typography variant="body2" align="center" color="text.secondary">
+            Prefer not to sign in?{" "}
+            <Button
+              size="small"
+              onClick={() => navigate("/chat")}
+              sx={{ ...authLinkSx, color: theme.palette.success.main }}
+            >
+              Continue as Guest
+            </Button>
+          </Typography>
+        </>
+      }
     >
-      <Paper style={{ padding: "2rem", maxWidth: 400, width: "100%" }}>
-        <Typography
-          variant="h4"
-          marginBottom="1rem"
-          sx={{ textAlign: "center" }}
-        >
-          Login
-        </Typography>
-        <Typography
-          variant="body2"
-          marginBottom="1rem"
-          sx={{ textAlign: "center" }}
-        >
-          Login to save your chat history and continue as a registered user.
-        </Typography>
+      <Box
+        component="form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!busy && email.trim() && password.trim()) handleLogin();
+        }}
+        sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+      >
         <TextField
           fullWidth
           label="Email"
-          margin="normal"
-          required={true}
+          type="email"
+          autoComplete="email"
+          autoFocus
+          required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          onKeyPress={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleLogin();
-            }
-          }}
-          disabled={loadingLogin || loadingPasskey}
-        />
-        <TextField
-          fullWidth
-          label="Password"
-          margin="normal"
-          required={true}
-          type={showPw ? "text" : "password"}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onKeyPress={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleLogin();
-            }
-          }}
-          disabled={loadingLogin || loadingPasskey}
+          disabled={busy}
+          sx={authFieldSx}
           InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  onClick={() => setShowPw(!showPw)}
-                  disabled={loadingLogin || loadingPasskey}
-                >
-                  {showPw ? <VisibilityOff /> : <Visibility />}
-                </IconButton>
+            startAdornment: (
+              <InputAdornment position="start">
+                <MailOutlineIcon fontSize="small" />
               </InputAdornment>
             ),
           }}
         />
-        <Button
-          variant="contained"
-          color="primary"
+        <PasswordField
           fullWidth
-          onClick={handleLogin}
-          style={{ marginTop: "1rem" }}
-          disabled={
-            loadingLogin ||
-            loadingPasskey ||
-            email.trim() === "" ||
-            password.trim() === ""
-          }
+          label="Password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          disabled={busy}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <LockOutlinedIcon fontSize="small" />
+              </InputAdornment>
+            ),
+          }}
+        />
+
+        <Box sx={{ textAlign: "right", mt: -0.5 }}>
+          <Button
+            size="small"
+            onClick={() => navigate("/forgot-password")}
+            sx={{ ...authLinkSx, color: theme.palette.text.secondary }}
+          >
+            Forgot password?
+          </Button>
+        </Box>
+
+        <Button
+          type="submit"
+          variant="contained"
+          fullWidth
+          disabled={busy || email.trim() === "" || password.trim() === ""}
+          sx={brandButtonSx(theme)}
         >
           {loadingLogin ? (
             <CircularProgress size={24} color="inherit" />
           ) : (
-            "Login"
+            "Log In"
           )}
         </Button>
 
         {canUsePasskey && (
           <>
-            <Divider sx={{ my: 2 }}>or</Divider>
+            <Divider sx={{ color: "text.secondary", fontSize: "0.8rem" }}>
+              or
+            </Divider>
             <Button
+              type="button"
               variant="outlined"
-              color="primary"
               fullWidth
               startIcon={
                 loadingPasskey ? (
@@ -182,14 +212,20 @@ const Login: React.FC = () => {
                 )
               }
               onClick={handlePasskeyLogin}
-              disabled={loadingLogin || loadingPasskey}
+              disabled={busy}
+              sx={{
+                py: 1.1,
+                borderRadius: 2,
+                fontWeight: 600,
+                textTransform: "none",
+              }}
             >
               {loadingPasskey ? "Waiting for passkey…" : "Sign in with passkey"}
             </Button>
             <Typography
               variant="caption"
               display="block"
-              sx={{ mt: 0.5, color: "text.secondary", textAlign: "center" }}
+              sx={{ color: "text.secondary", textAlign: "center", mt: -0.5 }}
             >
               {email.trim()
                 ? "We'll use a passkey registered for this email."
@@ -197,35 +233,8 @@ const Login: React.FC = () => {
             </Typography>
           </>
         )}
-
-        <Box marginTop="1rem">
-          <Typography variant="body2">
-            Don't have an account?{" "}
-            <Button onClick={() => navigate("/signup")} color="primary">
-              Sign Up
-            </Button>
-          </Typography>
-          <Typography variant="body2">
-            Don't want to login?{" "}
-            <Button
-              style={{ color: "green" }}
-              onClick={() => navigate("/chat")}
-            >
-              Continue as Guest
-            </Button>
-          </Typography>
-          <Typography variant="body2">
-            Forgot your password?{" "}
-            <Button
-              style={{ color: "red" }}
-              onClick={() => navigate("/forgot-password")}
-            >
-              Reset Password
-            </Button>
-          </Typography>
-        </Box>
-      </Paper>
-    </Box>
+      </Box>
+    </AuthShell>
   );
 };
 

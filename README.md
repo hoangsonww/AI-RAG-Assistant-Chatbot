@@ -71,6 +71,9 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
 ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Three.js](https://img.shields.io/badge/Three.js-000000?style=for-the-badge&logo=threedotjs&logoColor=white)
+![React Three Fiber](https://img.shields.io/badge/React_Three_Fiber-black?style=for-the-badge&logo=reactos&logoColor=white)
+![WebGL](https://img.shields.io/badge/WebGL-990000?style=for-the-badge&logo=webgl&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
 ![Pinecone](https://img.shields.io/badge/Pinecone-FF6F61?style=for-the-badge&logo=googledataflow&logoColor=white)
 ![Neo4j](https://img.shields.io/badge/Neo4j-008CC1?style=for-the-badge&logo=neo4j&logoColor=white)
@@ -107,16 +110,20 @@ Alternatively, the backup app is deployed live on Netlify at: [https://lumina-ai
 - **Passkey (WebAuthn) Sign-in:** Passwordless login with Touch ID, Face ID, Windows Hello, or a phone via QR. Supports discoverable (usernameless) credentials, an optional post-signup enrollment dialog, and per-user passkey management at `/passkeys` (list/add/nickname/revoke). Backed by `@simplewebauthn/server` v9 with a TTL-indexed `challenges` collection consumed exactly once. Email + password remains as a fallback.
 - **Toast Notifications:** Global `ToastProvider` surfaces auth, passkey, and API errors in non-blocking snackbars instead of `alert()` dialogs.
 - **Conversation History:** Save, retrieve, rename, and search past conversations (only for authenticated users).
+- **Fast Conversation Loading:** The conversation list and search endpoints return metadata only (no messages) via field projection and `.lean()`, backed by a compound index, and the signed-in conversation list is cached client-side (stale-while-revalidate) so reloads render instantly.
 - **Auto-Generated Titles:** AI automatically generates concise, descriptive titles for new conversations based on the first message.
 - **Grounded Knowledge Base:** RAG (Retrieval-Augmented Generation) with Pinecone vector search and Neo4j graph traversal, plus inline citations; knowledge is managed via CLI (REPL or one-off commands) with manifest-based batch sync for easy knowledge management.
 - **Hybrid Graph + Vector RAG:** Parallel retrieval from Pinecone (semantic similarity) and Neo4j (entity-relationship traversal) with intelligent result merging, dual-source scoring, exhaustive list retrieval (automatically fetches ALL chunks from a dominant source for "list all" queries), batched entity extraction (5 chunks per LLM call for efficiency), and model rotation across 6 Gemini models for resilience. Retrieval paths are isolated via `Promise.allSettled`, and a file-backed static resume fallback is used when live retrieval backends fail.
+- **Topic-Aware Full-Source Augmentation:** When a query maps to a known topic (experience/career, education, certifications, publications, awards, etc.), the backend deterministically pulls the full canonical knowledge source for that topic so answers never omit items that fall below the top-K cutoff. Broadened query variants plus resilient embedding/graph retries further improve recall.
 - **Dynamic Responses:** AI-generated responses with `markdown` formatting for rich text.
 - **Interactive Chat:** Real-time chat interface with smooth animations and transitions.
 - **Reset Password:** Verify email and reset a user's password.
 - **Streaming Responses:** AI responses are streamed in real-time using Server-Sent Events (SSE) for a more natural conversation flow.
 - **Lightning-Fast Development:** Built with Vite for instant HMR and optimized production builds.
 - **Responsive UI:** Built with React and Material‑UI (MUI) with a fully responsive, modern, and animated interface.
+- **Animated 3D/WebGL Hero:** A fully procedural Three.js / React Three Fiber scene (`client/src/components/three/LuminaScene.tsx`) with no binary assets — all geometry and GLSL shaders are generated in code. It renders a simplex-noise vertex-displaced icosahedron "core" with iridescent fresnel shading, an additive fresnel halo, a ~6k-point GPU particle starfield, and orbiting knowledge-node accents with glow rings. The scene is theme-aware (light/dark), mouse-parallax, scroll-reactive, and fully responsive (device-tiered particle counts and DPR for mobile/tablet/desktop). It respects `prefers-reduced-motion`, feature-detects WebGL with a graceful fallback, is `pointer-events: none`, and is lazy-loaded/code-split. Used as the landing background and reused as the ambient backdrop on the auth pages.
 - **Landing Page:** A dynamic landing page with animations, feature cards, and call-to-action buttons.
+- **Branded Auth & Legal Pages:** Login, signup, forgot-password, passkeys, and terms pages share a cohesive, theme-aware glassmorphism design system, including a signup password-strength meter with a live match indicator, an enhanced post-signup passkey enrollment dialog, and a 2-step password-reset flow.
 - **Guest Mode:** Users may interact with the AI assistant as a guest, though conversations will not be saved.
 - **Message Editing with Conversation Branching:** Edit any previously sent message to branch the conversation — the history is truncated at the edit point and a fresh AI response is generated from the revised message.
 - **Conversation Search:** Search through conversation titles and messages to find relevant discussions.
@@ -737,52 +744,17 @@ The retry logic uses exponential backoff to avoid overwhelming the server while 
   <img src="img/login.png" alt="Login Page" width="100%">
 </p>
 
-#### Login Page - Dark Mode
-
-<p align="center">
-  <img src="img/login-dark.png" alt="Login Page - Dark Mode" width="100%">
-</p>
-
 ### Signup Page
 
 <p align="center">
   <img src="img/register.png" alt="Signup Page" width="100%">
 </p>
 
-#### Signup Page - Dark Mode
-
-<p align="center">
-  <img src="img/register-dark.png" alt="Signup Page - Dark Mode" width="100%">
-</p>
 
 ### Reset Password Page
 
 <p align="center">
   <img src="img/reset-password.png" alt="Reset Password Page" width="100%">
-</p>
-
-#### Reset Password Page - Dark Mode
-
-<p align="center">
-  <img src="img/reset-password-dark.png" alt="Reset Password Page - Dark Mode" width="100%">
-</p>
-
-### Homepage - Unauthenticated User
-
-<p align="center">
-  <img src="img/unauthed-home.png" alt="Homepage - Unauthenticated User" width="100%">
-</p>
-
-#### Homepage - Unauthenticated User - Dark Mode
-
-<p align="center">
-  <img src="img/unauthed-home-dark.png" alt="Homepage - Unauthenticated User - Dark Mode" width="100%">
-</p>
-
-### 404 Page
-
-<p align="center">
-  <img src="img/404.png" alt="404 Page" width="100%">
 </p>
 
 ## API Endpoints
