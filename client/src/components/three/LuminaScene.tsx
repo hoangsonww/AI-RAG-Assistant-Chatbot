@@ -633,12 +633,12 @@ const LuminaScene: React.FC<LuminaSceneProps> = ({
     tablet: { offsetX: 0.9, baseY: 0.2, scale: 0.82, count: 4200, detail: 32 },
     desktop: { offsetX: 1.7, baseY: 0, scale: 1, count: 6200, detail: 48 },
   }[tier];
-  const maxDprByTier = { mobile: 1.25, tablet: 1.5, desktop: 1.75 }[tier];
-
-  // Lighten the scene on low-power devices: fewer particles, lower geometry
-  // detail, and a 1x render cap so it stays smooth.
-  const count = lowPower ? Math.min(layout.count, 1400) : layout.count;
-  const detail = lowPower ? Math.min(layout.detail, 16) : layout.detail;
+  // Keep full quality on capable devices; only weak ones (lowPower) or devices
+  // that measurably struggle (AdaptiveQuality) are scaled back — so the look
+  // stays crisp and appealing everywhere it can be.
+  const maxDprByTier = { mobile: 1.5, tablet: 1.75, desktop: 2 }[tier];
+  const count = lowPower ? Math.min(layout.count, 1800) : layout.count;
+  const detail = lowPower ? Math.min(layout.detail, 18) : layout.detail;
   const maxDpr = lowPower ? 1 : maxDprByTier;
 
   const speed = reduced ? 0 : 1;
@@ -655,7 +655,7 @@ const LuminaScene: React.FC<LuminaSceneProps> = ({
       dpr={[1, maxDpr]}
       camera={{ position: [0, 0, 6], fov: 45 }}
       gl={{
-        antialias: !lowPower,
+        antialias: true,
         alpha: true,
         powerPreference: "high-performance",
       }}
