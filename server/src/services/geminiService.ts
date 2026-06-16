@@ -45,6 +45,36 @@ const isListQuery = (message: string): boolean =>
 const getEffectiveTopK = (message: string): number =>
   isListQuery(message) ? RAG_LIST_TOP_K : RAG_TOP_K;
 
+// Pure greetings ("hi", "hello", "hey there", ...) with no actual question
+// don't need retrieval — answer instantly with a varied canned reply.
+const GREETING_PATTERN =
+  /^[\s\W]*(hi+|hey+|hello+|heya|hiya|yo|howdy|greetings|sup|wass?up|what'?s\s+up|good\s+(morning|afternoon|evening|day))[\s\W]*$/i;
+
+const GREETING_RESPONSES = [
+  "Hello! How can I help you learn about David Nguyen today?",
+  "Hi there! Ask me anything about David's background, projects, or experience.",
+  "Hey! I'm Lumina, David's AI assistant — what would you like to know?",
+  "Hello! Curious about David's work, skills, or projects? Just ask.",
+  "Hi! I can walk you through David Nguyen's experience and projects — what's on your mind?",
+  "Hey there! Want a quick intro to David, or details on a specific project?",
+  "Hello! I'm here to answer questions about David Nguyen. Where should we start?",
+];
+
+let lastGreetingIndex = -1;
+
+const isPureGreeting = (message: string): boolean =>
+  GREETING_PATTERN.test(message.trim());
+
+const pickGreetingResponse = (): string => {
+  let idx = Math.floor(Math.random() * GREETING_RESPONSES.length);
+  // Avoid repeating the same canned reply twice in a row.
+  if (GREETING_RESPONSES.length > 1 && idx === lastGreetingIndex) {
+    idx = (idx + 1) % GREETING_RESPONSES.length;
+  }
+  lastGreetingIndex = idx;
+  return GREETING_RESPONSES[idx];
+};
+
 type HybridRetrievalResult = {
   sources: SourceCitation[];
   usedStaticFallback: boolean;
@@ -174,44 +204,28 @@ const detectCategorySourceIds = (message: string): string[] => {
   return Array.from(ids);
 };
 
-// Pulls every chunk of the given canonical sources and places them ahead of the
-// relevance-ranked base results, deduped and capped to a budget. This makes
-// topic answers (experience, education, certifications, ...) deterministically
-// complete instead of depending on whether each chunk cleared the top-K cutoff.
-const augmentWithFullSources = async (
-  baseResults: SourceCitation[],
-  sourceIds: string[],
-  budget: number,
-): Promise<SourceCitation[]> => {
-  if (sourceIds.length === 0) return baseResults;
-
-  const seen = new Set(baseResults.map((s) => s.id));
-  const ensured: SourceCitation[] = [];
-  for (const sourceId of sourceIds) {
-    try {
-      const chunks = await retrieveAllChunksBySourceId(sourceId);
-      for (const chunk of chunks) {
-        if (!seen.has(chunk.id)) {
-          seen.add(chunk.id);
-          ensured.push(chunk);
-        }
-      }
-    } catch (error) {
-      console.warn(
-        `Full-source augmentation failed for "${sourceId}": ${toErrorMessage(error)}`,
-      );
-    }
-  }
-
-  return [...ensured, ...baseResults].slice(0, budget);
-};
-
 const retrieveHybridSources = async (
   message: string,
   topK: number,
 ): Promise<HybridRetrievalResult> => {
   let results: SourceCitation[] = [];
   let shouldUseStaticFallback = false;
+
+  // Fire full canonical-source fetches concurrently with hybrid retrieval so
+  // topic augmentation adds ~no latency to the pre-stream critical path.
+  const categorySourceIds = detectCategorySourceIds(message);
+  const augmentPromise: Promise<SourceCitation[][]> = categorySourceIds.length
+    ? Promise.all(
+        categorySourceIds.map((id) =>
+          retrieveAllChunksBySourceId(id).catch((err) => {
+            console.warn(
+              `Full-source augmentation failed for "${id}": ${toErrorMessage(err)}`,
+            );
+            return [] as SourceCitation[];
+          }),
+        ),
+      )
+    : Promise.resolve([]);
 
   if (isNeo4jConfigured()) {
     const [vectorResult, graphResult] = await Promise.allSettled([
@@ -254,12 +268,24 @@ const retrieveHybridSources = async (
     results = await expandListResults(results);
   }
 
-  // Deterministic topic completeness: pull the full canonical source(s) for the
-  // detected topic so recent/important items are never dropped by the top-K cut.
-  const categorySourceIds = detectCategorySourceIds(message);
-  if (results.length > 0 && categorySourceIds.length > 0) {
-    const budget = Math.max(MAX_MERGED_CHUNKS, results.length);
-    results = await augmentWithFullSources(results, categorySourceIds, budget);
+  // Merge the (already in-flight) full canonical sources ahead of the
+  // relevance-ranked results so topic answers are deterministically complete.
+  if (categorySourceIds.length > 0) {
+    const ensuredArrays = await augmentPromise;
+    const seen = new Set(results.map((r) => r.id));
+    const ensured: SourceCitation[] = [];
+    for (const arr of ensuredArrays) {
+      for (const chunk of arr) {
+        if (!seen.has(chunk.id)) {
+          seen.add(chunk.id);
+          ensured.push(chunk);
+        }
+      }
+    }
+    if (ensured.length > 0) {
+      const budget = Math.max(MAX_MERGED_CHUNKS, results.length);
+      results = [...ensured, ...results].slice(0, budget);
+    }
   }
 
   if (shouldUseStaticFallback) {
@@ -580,6 +606,11 @@ export const chatWithAI = async (
     throw new Error("Missing GOOGLE_AI_API_KEY in environment variables");
   }
 
+  // Skip RAG for bare greetings — instant, varied canned reply.
+  if (isPureGreeting(message)) {
+    return { text: pickGreetingResponse(), sources: [] };
+  }
+
   const { sources, usedStaticFallback } = await retrieveHybridSources(
     message,
     getEffectiveTopK(message),
@@ -638,6 +669,13 @@ export const streamChatWithAI = async (
 ): Promise<{ text: string; sources: SourceCitation[] }> => {
   if (!process.env.GOOGLE_AI_API_KEY) {
     throw new Error("Missing GOOGLE_AI_API_KEY in environment variables");
+  }
+
+  // Skip RAG for bare greetings — emit an instant, varied canned reply.
+  if (isPureGreeting(message)) {
+    const text = pickGreetingResponse();
+    onChunk(text);
+    return { text, sources: [] };
   }
 
   const { sources, usedStaticFallback } = await retrieveHybridSources(

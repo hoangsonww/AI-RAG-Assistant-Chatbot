@@ -750,11 +750,22 @@ The retry logic uses exponential backoff to avoid overwhelming the server while 
   <img src="img/register.png" alt="Signup Page" width="100%">
 </p>
 
-
 ### Reset Password Page
 
 <p align="center">
   <img src="img/reset-password.png" alt="Reset Password Page" width="100%">
+</p>
+
+### Passkeys Management Page
+
+<p align="center">
+  <img src="img/passkeys.png" alt="Passkeys Management Page" width="100%">
+</p>
+
+### Terms & Conditions Page
+
+<p align="center">
+  <img src="img/terms.png" alt="Terms & Conditions Page" width="100%">
 </p>
 
 ## API Endpoints

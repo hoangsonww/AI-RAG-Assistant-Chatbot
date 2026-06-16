@@ -72,6 +72,10 @@ const Navbar: React.FC<NavbarProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const text = "Lumina AI";
+  // Treat default placeholder titles as "no title" so the welcome line shows.
+  const DEFAULT_TITLES = ["New Conversation", "Untitled Conversation"];
+  const hasRealTitle =
+    activeTitle.trim() !== "" && !DEFAULT_TITLES.includes(activeTitle.trim());
   // Bright/light hues that stay legible on the blue AppBar (no saturated blue).
   const colors = ["#FFD93D", "#FF8A8A", "#7CF0BD", "#FFFFFF", "#C792EA"];
 
@@ -263,10 +267,12 @@ const Navbar: React.FC<NavbarProps> = ({
               fontWeight: 600,
               maxWidth: "100%",
               color: "inherit",
-              opacity: activeTitle ? 0.95 : 0.8,
+              opacity: hasRealTitle ? 0.95 : 0.8,
             }}
           >
-            {activeTitle || "Welcome to Lumina - ask me anything about David"}
+            {hasRealTitle
+              ? activeTitle
+              : "Welcome to Lumina - ask me anything about David"}
           </Typography>
         </Box>
 
