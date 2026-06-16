@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
 /**
@@ -517,6 +517,29 @@ function hasWebGL(): boolean {
   }
 }
 
+// Watches real frame rate and steps the render resolution down (up to twice,
+// floor 0.75x) if a device can't keep up — keeps the scene smooth everywhere.
+const AdaptiveQuality: React.FC<{ initialDpr: number }> = ({ initialDpr }) => {
+  const setDpr = useThree((s) => s.setDpr);
+  const samples = useRef<number[]>([]);
+  const currentDpr = useRef(initialDpr);
+  const steps = useRef(0);
+  useFrame((_, delta) => {
+    if (steps.current >= 2 || currentDpr.current <= 0.75) return;
+    samples.current.push(delta);
+    if (samples.current.length < 90) return; // ~1.5s of frames
+    const avg =
+      samples.current.reduce((a, b) => a + b, 0) / samples.current.length;
+    samples.current.length = 0;
+    if (avg > 0 && 1 / avg < 40) {
+      steps.current += 1;
+      currentDpr.current = Math.max(0.75, currentDpr.current * 0.8);
+      setDpr(currentDpr.current);
+    }
+  });
+  return null;
+};
+
 const LuminaScene: React.FC<LuminaSceneProps> = ({
   mode,
   colorA,
@@ -527,6 +550,8 @@ const LuminaScene: React.FC<LuminaSceneProps> = ({
   const [supported, setSupported] = useState(true);
   const [reduced, setReduced] = useState(false);
   const [finePointer, setFinePointer] = useState(true);
+  const [lowPower, setLowPower] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const [width, setWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1280,
   );
@@ -538,6 +563,15 @@ const LuminaScene: React.FC<LuminaSceneProps> = ({
     setReduced(rm.matches);
     setFinePointer(fp.matches);
     setWidth(window.innerWidth);
+
+    // Detect low-power devices (few CPU cores / little RAM) to lighten the scene.
+    const cores = navigator.hardwareConcurrency || 8;
+    const memory = (navigator as { deviceMemory?: number }).deviceMemory || 8;
+    setLowPower(cores <= 4 || memory <= 4);
+
+    // Pause rendering while the tab is hidden to save battery / GPU.
+    const onVisibility = (): void => setHidden(document.hidden);
+    document.addEventListener("visibilitychange", onVisibility);
     const onRm = (e: MediaQueryListEvent): void => setReduced(e.matches);
     const onFp = (e: MediaQueryListEvent): void => setFinePointer(e.matches);
     rm.addEventListener("change", onRm);
@@ -584,6 +618,7 @@ const LuminaScene: React.FC<LuminaSceneProps> = ({
       window.removeEventListener("resize", onResize);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("scroll", onScroll, { capture: true });
+      document.removeEventListener("visibilitychange", onVisibility);
       window.cancelAnimationFrame(idle);
       window.cancelAnimationFrame(resizeRaf);
     };
@@ -593,47 +628,34 @@ const LuminaScene: React.FC<LuminaSceneProps> = ({
 
   const tier: "mobile" | "tablet" | "desktop" =
     width < 600 ? "mobile" : width < 960 ? "tablet" : "desktop";
+  const layout = {
+    mobile: { offsetX: 0, baseY: -1.15, scale: 0.58, count: 2400, detail: 20 },
+    tablet: { offsetX: 0.9, baseY: 0.2, scale: 0.82, count: 4200, detail: 32 },
+    desktop: { offsetX: 1.7, baseY: 0, scale: 1, count: 6200, detail: 48 },
+  }[tier];
+  const maxDprByTier = { mobile: 1.25, tablet: 1.5, desktop: 1.75 }[tier];
+
+  // Lighten the scene on low-power devices: fewer particles, lower geometry
+  // detail, and a 1x render cap so it stays smooth.
+  const count = lowPower ? Math.min(layout.count, 1400) : layout.count;
+  const detail = lowPower ? Math.min(layout.detail, 16) : layout.detail;
+  const maxDpr = lowPower ? 1 : maxDprByTier;
+
   const speed = reduced ? 0 : 1;
   const animate = !reduced;
-  const config = {
-    mobile: {
-      count: 2400,
-      detail: 20,
-      offsetX: 0,
-      baseY: -1.15,
-      scale: 0.58,
-      dpr: 1.5,
-    },
-    tablet: {
-      count: 4200,
-      detail: 32,
-      offsetX: 0.9,
-      baseY: 0.2,
-      scale: 0.82,
-      dpr: 1.75,
-    },
-    desktop: {
-      count: 6200,
-      detail: 48,
-      offsetX: 1.7,
-      baseY: 0,
-      scale: 1,
-      dpr: 2,
-    },
-  }[tier];
-  const parallaxEnabled = finePointer && tier !== "mobile";
+  const parallaxEnabled = finePointer && tier !== "mobile" && !lowPower;
   const pixelRatio = Math.min(
     typeof window !== "undefined" ? window.devicePixelRatio : 1,
-    config.dpr,
+    maxDpr,
   );
 
   return (
     <Canvas
-      frameloop="always"
-      dpr={[1, config.dpr]}
+      frameloop={hidden ? "never" : "always"}
+      dpr={[1, maxDpr]}
       camera={{ position: [0, 0, 6], fov: 45 }}
       gl={{
-        antialias: true,
+        antialias: !lowPower,
         alpha: true,
         powerPreference: "high-performance",
       }}
@@ -645,9 +667,10 @@ const LuminaScene: React.FC<LuminaSceneProps> = ({
         pointerEvents: "none",
       }}
     >
+      <AdaptiveQuality initialDpr={pixelRatio} />
       {/* Particle dust fills the whole viewport, independent of parallax. */}
       <ParticleField
-        count={config.count}
+        count={count}
         colorA={colorA}
         colorB={colorB}
         mode={mode}
@@ -655,9 +678,9 @@ const LuminaScene: React.FC<LuminaSceneProps> = ({
         pixelRatio={pixelRatio}
       />
       <ParallaxRig
-        offsetX={config.offsetX}
-        baseY={config.baseY}
-        baseScale={config.scale}
+        offsetX={layout.offsetX}
+        baseY={layout.baseY}
+        baseScale={layout.scale}
         parallax={parallaxEnabled}
         animate={animate}
       >
@@ -667,7 +690,7 @@ const LuminaScene: React.FC<LuminaSceneProps> = ({
           colorC={colorC}
           mode={mode}
           speed={speed}
-          detail={config.detail}
+          detail={detail}
         />
         <OrbitingNodes
           colorA={colorA}
