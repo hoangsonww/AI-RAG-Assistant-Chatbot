@@ -1,19 +1,17 @@
 import React, { useState } from "react";
 import {
   Box,
-  Paper,
   Typography,
   TextField,
   Button,
-  IconButton,
   InputAdornment,
   CircularProgress,
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogContentText,
   DialogActions,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import {
   signupUser,
   setTokenInLocalStorage,
@@ -23,9 +21,20 @@ import {
 } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../components/ToastProvider";
-import Visibility from "@mui/icons-material/Visibility";
-import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import MailOutlineIcon from "@mui/icons-material/MailOutline";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import AuthShell from "../components/auth/AuthShell";
+import PasswordField from "../components/auth/PasswordField";
+import PasswordStrengthMeter from "../components/auth/PasswordStrengthMeter";
+import {
+  authFieldSx,
+  authLinkSx,
+  brandButtonSx,
+  gradientTextSx,
+} from "../components/auth/styles";
 
 /**
  * The Signup component
@@ -36,14 +45,18 @@ const Signup: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPw, setShowPw] = useState(false);
-  const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [loadingSignup, setLoadingSignup] = useState(false);
   const [passkeyDialogOpen, setPasskeyDialogOpen] = useState(false);
   const [registeringPasskey, setRegisteringPasskey] = useState(false);
 
+  const theme = useTheme();
   const navigate = useNavigate();
   const { showToast } = useToast();
+
+  const passwordsMatch =
+    confirmPassword.length > 0 && password === confirmPassword;
+  const passwordsMismatch =
+    confirmPassword.length > 0 && password !== confirmPassword;
 
   /**
    * Handle the signup button click
@@ -98,169 +111,237 @@ const Signup: React.FC = () => {
     navigate("/chat");
   };
 
+  const canSubmit =
+    !loadingSignup &&
+    email.trim() !== "" &&
+    password.trim() !== "" &&
+    confirmPassword.trim() !== "" &&
+    passwordsMatch;
+
   return (
-    <Box
-      display="flex"
-      height="100vh"
-      justifyContent="center"
-      alignItems="center"
-      sx={{ background: "linear-gradient(to right, #00c6ff, #0072ff)" }}
-    >
-      <Paper style={{ padding: "2rem", maxWidth: 400, width: "100%" }}>
-        <Typography
-          variant="h4"
-          marginBottom="1rem"
-          sx={{ textAlign: "center" }}
-        >
-          Sign Up
-        </Typography>
-        <Typography
-          variant="body2"
-          marginBottom="1rem"
-          sx={{ textAlign: "center" }}
-        >
-          Sign up to save your chat history, access your messages from any
-          device, and more.
-        </Typography>
-        <TextField
-          fullWidth
-          label="Email"
-          margin="normal"
-          value={email}
-          required={true}
-          onChange={(e) => setEmail(e.target.value)}
-          onKeyPress={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleSignup();
-            }
-          }}
-          disabled={loadingSignup}
-        />
-        <TextField
-          fullWidth
-          label="Password"
-          margin="normal"
-          type={showPw ? "text" : "password"}
-          value={password}
-          required={true}
-          onChange={(e) => setPassword(e.target.value)}
-          onKeyPress={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleSignup();
-            }
-          }}
-          disabled={loadingSignup}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  onClick={() => setShowPw(!showPw)}
-                  disabled={loadingSignup}
-                >
-                  {showPw ? <VisibilityOff /> : <Visibility />}
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
-        <TextField
-          fullWidth
-          label="Confirm Password"
-          margin="normal"
-          type={showConfirmPw ? "text" : "password"}
-          value={confirmPassword}
-          required={true}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          onKeyPress={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleSignup();
-            }
-          }}
-          disabled={loadingSignup}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  onClick={() => setShowConfirmPw(!showConfirmPw)}
-                  disabled={loadingSignup}
-                >
-                  {showConfirmPw ? <VisibilityOff /> : <Visibility />}
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
-        <Button
-          variant="contained"
-          color="primary"
-          fullWidth
-          onClick={handleSignup}
-          style={{ marginTop: "1rem" }}
-          disabled={
-            loadingSignup ||
-            email.trim() === "" ||
-            password.trim() === "" ||
-            confirmPassword.trim() === ""
-          }
-        >
-          {loadingSignup ? (
-            <CircularProgress size={24} color="inherit" />
-          ) : (
-            "Sign Up"
-          )}
-        </Button>
-        <Box marginTop="1rem">
-          <Typography variant="body2">
+    <AuthShell
+      eyebrow="GET STARTED"
+      title={
+        <>
+          Create your{" "}
+          <Box component="span" sx={gradientTextSx(theme)}>
+            account
+          </Box>
+        </>
+      }
+      subtitle="Sign up to save your chat history, access your messages from any device, and more."
+      footer={
+        <>
+          <Typography variant="body2" align="center" color="text.secondary">
             Already have an account?{" "}
-            <Button onClick={() => navigate("/login")}>Login</Button>
-          </Typography>
-          <Typography variant="body2">
-            Don't want to login?{" "}
             <Button
-              style={{ color: "green" }}
+              size="small"
+              onClick={() => navigate("/login")}
+              sx={authLinkSx}
+            >
+              Log In
+            </Button>
+          </Typography>
+          <Typography variant="body2" align="center" color="text.secondary">
+            Prefer not to sign in?{" "}
+            <Button
+              size="small"
               onClick={() => navigate("/chat")}
+              sx={{ ...authLinkSx, color: theme.palette.success.main }}
             >
               Continue as Guest
             </Button>
           </Typography>
-          <Typography variant="body2">
-            Forgot your password?{" "}
-            <Button
-              style={{ color: "red" }}
-              onClick={() => navigate("/forgot-password")}
-            >
-              Reset Password
-            </Button>
-          </Typography>
+        </>
+      }
+    >
+      <Box
+        component="form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (canSubmit) handleSignup();
+        }}
+        sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+      >
+        <TextField
+          fullWidth
+          label="Email"
+          type="email"
+          autoComplete="email"
+          autoFocus
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={loadingSignup}
+          sx={authFieldSx}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <MailOutlineIcon fontSize="small" />
+              </InputAdornment>
+            ),
+          }}
+        />
+
+        <Box>
+          <PasswordField
+            fullWidth
+            label="Password"
+            autoComplete="new-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loadingSignup}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <LockOutlinedIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <PasswordStrengthMeter password={password} />
         </Box>
-      </Paper>
+
+        <Box>
+          <PasswordField
+            fullWidth
+            label="Confirm Password"
+            autoComplete="new-password"
+            required
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            disabled={loadingSignup}
+            error={passwordsMismatch}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <LockOutlinedIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+          />
+          {confirmPassword.length > 0 && (
+            <Typography
+              variant="caption"
+              sx={{
+                mt: 0.5,
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+                color: passwordsMatch
+                  ? theme.palette.success.main
+                  : theme.palette.error.main,
+                fontWeight: 600,
+              }}
+            >
+              {passwordsMatch ? (
+                <CheckCircleOutlineIcon sx={{ fontSize: 16 }} />
+              ) : (
+                <ErrorOutlineIcon sx={{ fontSize: 16 }} />
+              )}
+              {passwordsMatch ? "Passwords match" : "Passwords don't match"}
+            </Typography>
+          )}
+        </Box>
+
+        <Button
+          type="submit"
+          variant="contained"
+          fullWidth
+          disabled={!canSubmit}
+          sx={brandButtonSx(theme)}
+        >
+          {loadingSignup ? (
+            <CircularProgress size={24} color="inherit" />
+          ) : (
+            "Create Account"
+          )}
+        </Button>
+      </Box>
 
       <Dialog
         open={passkeyDialogOpen}
         onClose={registeringPasskey ? undefined : handleSkipPasskey}
         aria-labelledby="passkey-setup-title"
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 4,
+            backgroundImage: "none",
+            overflow: "hidden",
+          },
+        }}
       >
-        <DialogTitle
-          id="passkey-setup-title"
-          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-        >
-          <FingerprintIcon color="primary" /> Set up a passkey?
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText>
+        <Box
+          sx={{
+            height: 4,
+            background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.info.main}, ${theme.palette.secondary.main})`,
+          }}
+        />
+        <DialogContent sx={{ textAlign: "center", pt: 3.5 }}>
+          <Box
+            sx={{
+              mx: "auto",
+              mb: 2,
+              width: 56,
+              height: 56,
+              borderRadius: 3,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.info.main})`,
+              boxShadow: "0 12px 26px rgba(0,0,0,0.25)",
+            }}
+          >
+            <FingerprintIcon sx={{ color: "#fff", fontSize: 30 }} />
+          </Box>
+          <Typography
+            id="passkey-setup-title"
+            variant="h6"
+            sx={{ fontWeight: 800, mb: 1 }}
+          >
+            Set up a passkey?
+          </Typography>
+          <DialogContentText sx={{ mb: 2.5 }}>
             Sign in next time with Face ID, Touch ID, Windows Hello, or your
-            phone — no password to type. You can always add or remove passkeys
-            later from your account settings.
+            phone — no password to type.
           </DialogContentText>
+          <Box
+            sx={{
+              display: "grid",
+              gap: 1,
+              textAlign: "left",
+              maxWidth: 320,
+              mx: "auto",
+            }}
+          >
+            {[
+              "Faster, phishing‑resistant sign‑in",
+              "No password to remember or type",
+              "Add or remove anytime from settings",
+            ].map((benefit) => (
+              <Box
+                key={benefit}
+                sx={{ display: "flex", alignItems: "center", gap: 1 }}
+              >
+                <CheckCircleOutlineIcon
+                  sx={{ fontSize: 18, color: theme.palette.success.main }}
+                />
+                <Typography variant="body2" color="text.secondary">
+                  {benefit}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
           <Button
             onClick={handleSkipPasskey}
             disabled={registeringPasskey}
             color="inherit"
+            sx={{ textTransform: "none" }}
           >
             Skip for now
           </Button>
@@ -268,6 +349,7 @@ const Signup: React.FC = () => {
             onClick={handleEnrollPasskey}
             disabled={registeringPasskey}
             variant="contained"
+            sx={brandButtonSx(theme)}
             startIcon={
               registeringPasskey ? (
                 <CircularProgress size={18} color="inherit" />
@@ -280,7 +362,7 @@ const Signup: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </AuthShell>
   );
 };
 

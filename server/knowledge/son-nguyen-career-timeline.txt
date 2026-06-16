@@ -1,0 +1,22 @@
+Son Nguyen (David Nguyen) — Career Timeline, Work Experience, and Key Milestones
+
+Current role: Software Engineer, Product Engineering at Matroid, Inc. (Palo Alto, CA), since May 2026 — building and shipping computer vision products on Matroid's platform for creating, training, and deploying visual AI detectors at scale.
+
+Complete professional timeline, most recent first (company — title — dates — location):
+- Matroid, Inc. — Software Engineer, Product Engineering — May 2026 to Present — Palo Alto, CA.
+- LexisNexis (RELX Group) — Software Engineer III, Agentic AI — Feb 2026 to May 2026 — Raleigh, NC.
+- Toshiba Global Commerce Solutions — Software Engineering Intern — Sep 2025 to Feb 2026 — Durham, NC.
+- UNC-Chapel Hill — Teaching Assistant, COMP-426 Modern Full-Stack Web Development — Aug 2025 to Dec 2025 — Chapel Hill, NC.
+- FRG (Financial Risk Group) — Software Engineer Intern, Visualization of Risk (VOR) platform — Apr 2025 to Aug 2025 — Cary, NC.
+- DHEP Lab, UNC-Chapel Hill — Web Application Developer & Research Assistant — May 2025 to Aug 2025 — Remote.
+- AIMING Lab, UNC-Chapel Hill — Research Assistant (LLMs, VLMs, diffusion models) — Jan 2025 to Apr 2025 — Chapel Hill, NC.
+- Technical Consulting & Research, Inc. — Software Engineer Intern — Jan 2025 to Apr 2025 — Weston, CT (Remote).
+- UNC-Chapel Hill — Teaching Assistant COMP-126 (Jan 2025 to May 2025) and Undergraduate Learning Assistant COMP-210 (Aug 2024 to Dec 2024) — Chapel Hill, NC.
+- FPT Corporation / FPT Software — Software Engineer Intern — May 2024 to Aug 2024 — Ho Chi Minh City, Vietnam.
+- Huong Hua Co., Ltd. — Associate Software Engineer Intern — Dec 2023 to Feb 2024 — Remote.
+- VNG Corporation — Software Engineer Intern, awarded Best Intern (Summer 2023) — May 2023 to Aug 2023 — Ho Chi Minh City, Vietnam.
+- Case Western Reserve University — Data Analytics Research Assistant — Dec 2022 to May 2023 — Cleveland, OH.
+
+Education milestone: B.S. in Computer Science and B.A. in Economics (minor in Data Science), University of North Carolina at Chapel Hill, graduated December 2025, GPA 3.93/4.0, with Highest Distinction, Phi Beta Kappa member.
+
+Other key milestones: 87+ public GitHub projects; 6 published research papers; Microsoft Learn Student Ambassador (since Aug 2022); Project Manager and Team Lead at Google Developer Student Clubs UNC-CH; Best Intern Award at VNG Corporation (Summer 2023).

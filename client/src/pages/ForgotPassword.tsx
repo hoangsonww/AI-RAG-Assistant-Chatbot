@@ -1,19 +1,34 @@
 import React, { useState } from "react";
 import {
   Box,
-  Paper,
   Typography,
   TextField,
   Button,
-  IconButton,
   InputAdornment,
   CircularProgress,
+  Alert,
 } from "@mui/material";
+import { alpha, useTheme } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../components/ToastProvider";
-import Visibility from "@mui/icons-material/Visibility";
-import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import MailOutlineIcon from "@mui/icons-material/MailOutline";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import CheckIcon from "@mui/icons-material/Check";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { verifyEmail, resetPassword } from "../services/api";
+import AuthShell from "../components/auth/AuthShell";
+import PasswordField from "../components/auth/PasswordField";
+import PasswordStrengthMeter from "../components/auth/PasswordStrengthMeter";
+import {
+  authFieldSx,
+  authLinkSx,
+  brandButtonSx,
+  gradientTextSx,
+} from "../components/auth/styles";
+
+const STEPS = ["Verify email", "New password"] as const;
 
 /**
  * The ForgotPassword component
@@ -25,14 +40,19 @@ const ForgotPassword: React.FC = () => {
   const [emailVerified, setEmailVerified] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [loadingVerify, setLoadingVerify] = useState(false);
   const [loadingReset, setLoadingReset] = useState(false);
 
+  const theme = useTheme();
   const navigate = useNavigate();
   const { showToast } = useToast();
+
+  const activeStep = emailVerified ? 1 : 0;
+  const passwordsMatch =
+    confirmPassword.length > 0 && newPassword === confirmPassword;
+  const passwordsMismatch =
+    confirmPassword.length > 0 && newPassword !== confirmPassword;
 
   /**
    * Handle the verify email button click
@@ -76,172 +96,265 @@ const ForgotPassword: React.FC = () => {
     setLoadingReset(false);
   };
 
+  const handleBackToEmail = () => {
+    setEmailVerified(false);
+    setError("");
+    setNewPassword("");
+    setConfirmPassword("");
+  };
+
+  const canReset =
+    !loadingReset &&
+    newPassword.trim() !== "" &&
+    confirmPassword.trim() !== "" &&
+    passwordsMatch;
+
   return (
-    <Box
-      display="flex"
-      height="100vh"
-      justifyContent="center"
-      alignItems="center"
-      sx={{ background: "linear-gradient(to right, #00c6ff, #0072ff)" }}
-    >
-      <Paper style={{ padding: "2rem", maxWidth: 400, width: "100%" }}>
-        <Typography
-          variant="h5"
-          marginBottom="1rem"
-          sx={{ textAlign: "center" }}
-        >
-          Forgot Password
-        </Typography>
-        <Typography
-          variant="body2"
-          marginBottom="1rem"
-          sx={{ textAlign: "center" }}
-        >
-          Forgot your password? We've got you covered. Enter your email to reset
-          your password.
-        </Typography>
-        {!emailVerified ? (
-          <>
-            <TextField
-              fullWidth
-              label="Email"
-              margin="normal"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required={true}
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleVerifyEmail();
-                }
-              }}
-              disabled={loadingVerify}
-            />
-            {error && (
-              <Typography variant="body2" color="error">
-                {error}
-              </Typography>
-            )}
-            <Button
-              variant="contained"
-              color="primary"
-              fullWidth
-              onClick={handleVerifyEmail}
-              style={{ marginTop: "1rem" }}
-              disabled={loadingVerify || email.trim() === ""}
-            >
-              {loadingVerify ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                "Verify Email"
-              )}
-            </Button>
-          </>
-        ) : (
-          <>
-            <TextField
-              fullWidth
-              label="New Password"
-              margin="normal"
-              type={showNewPassword ? "text" : "password"}
-              value={newPassword}
-              required={true}
-              onChange={(e) => setNewPassword(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleResetPassword();
-                }
-              }}
-              disabled={loadingReset}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowNewPassword((prev) => !prev)}
-                      edge="end"
-                      disabled={loadingReset}
-                    >
-                      {showNewPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <TextField
-              fullWidth
-              label="Confirm New Password"
-              margin="normal"
-              type={showConfirmPassword ? "text" : "password"}
-              value={confirmPassword}
-              required={true}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleResetPassword();
-                }
-              }}
-              disabled={loadingReset}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowConfirmPassword((prev) => !prev)}
-                      edge="end"
-                      disabled={loadingReset}
-                    >
-                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-            {error && (
-              <Typography variant="body2" color="error">
-                {error}
-              </Typography>
-            )}
-            <Button
-              variant="contained"
-              color="primary"
-              fullWidth
-              onClick={handleResetPassword}
-              style={{ marginTop: "1rem" }}
-              disabled={
-                loadingReset ||
-                newPassword.trim() === "" ||
-                confirmPassword.trim() === ""
-              }
-            >
-              {loadingReset ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                "Reset Password"
-              )}
-            </Button>
-          </>
-        )}
-        <Box marginTop="1rem">
-          <Typography variant="body2">
+    <AuthShell
+      eyebrow="ACCOUNT RECOVERY"
+      title={
+        <>
+          Reset your{" "}
+          <Box component="span" sx={gradientTextSx(theme)}>
+            password
+          </Box>
+        </>
+      }
+      subtitle={
+        emailVerified
+          ? "Choose a strong new password for your account."
+          : "Enter the email tied to your account and we'll help you reset your password."
+      }
+      footer={
+        <>
+          <Typography variant="body2" align="center" color="text.secondary">
             Remembered your password?{" "}
-            <Button onClick={() => navigate("/login")} color="primary">
-              Login
+            <Button
+              size="small"
+              onClick={() => navigate("/login")}
+              sx={authLinkSx}
+            >
+              Log In
             </Button>
           </Typography>
-          <Typography variant="body2">
-            Continue as Guest?{" "}
+          <Typography variant="body2" align="center" color="text.secondary">
+            Just exploring?{" "}
             <Button
-              style={{ color: "green" }}
+              size="small"
               onClick={() => navigate("/chat")}
-              color="primary"
+              sx={{ ...authLinkSx, color: theme.palette.success.main }}
             >
               Back to Chat
             </Button>
           </Typography>
+        </>
+      }
+    >
+      {/* Step indicator */}
+      <Box sx={{ display: "flex", gap: 1.5, mb: 3 }}>
+        {STEPS.map((label, i) => {
+          const active = i === activeStep;
+          const done = i < activeStep;
+          const highlight = active || done;
+          return (
+            <Box key={label} sx={{ flex: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box
+                  sx={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: "50%",
+                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    color: highlight ? "#fff" : theme.palette.text.secondary,
+                    background: highlight
+                      ? `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.info.main})`
+                      : alpha(theme.palette.text.primary, 0.1),
+                  }}
+                >
+                  {done ? <CheckIcon sx={{ fontSize: 15 }} /> : i + 1}
+                </Box>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontWeight: 600,
+                    color: active
+                      ? theme.palette.text.primary
+                      : theme.palette.text.secondary,
+                  }}
+                >
+                  {label}
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  height: 3,
+                  mt: 1,
+                  borderRadius: 999,
+                  background: highlight
+                    ? `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.info.main})`
+                    : alpha(theme.palette.text.primary, 0.12),
+                }}
+              />
+            </Box>
+          );
+        })}
+      </Box>
+
+      {!emailVerified ? (
+        <Box
+          component="form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!loadingVerify && email.trim()) handleVerifyEmail();
+          }}
+          sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+        >
+          <TextField
+            fullWidth
+            label="Email"
+            type="email"
+            autoComplete="email"
+            autoFocus
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={loadingVerify}
+            sx={authFieldSx}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <MailOutlineIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+          />
+          {error && (
+            <Alert severity="error" sx={{ borderRadius: 2 }}>
+              {error}
+            </Alert>
+          )}
+          <Button
+            type="submit"
+            variant="contained"
+            fullWidth
+            disabled={loadingVerify || email.trim() === ""}
+            sx={brandButtonSx(theme)}
+          >
+            {loadingVerify ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Verify Email"
+            )}
+          </Button>
         </Box>
-      </Paper>
-    </Box>
+      ) : (
+        <Box
+          component="form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (canReset) handleResetPassword();
+          }}
+          sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+        >
+          <Box>
+            <PasswordField
+              fullWidth
+              label="New Password"
+              autoComplete="new-password"
+              autoFocus
+              required
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              disabled={loadingReset}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockOutlinedIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <PasswordStrengthMeter password={newPassword} />
+          </Box>
+
+          <Box>
+            <PasswordField
+              fullWidth
+              label="Confirm New Password"
+              autoComplete="new-password"
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={loadingReset}
+              error={passwordsMismatch}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockOutlinedIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            {confirmPassword.length > 0 && (
+              <Typography
+                variant="caption"
+                sx={{
+                  mt: 0.5,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  color: passwordsMatch
+                    ? theme.palette.success.main
+                    : theme.palette.error.main,
+                  fontWeight: 600,
+                }}
+              >
+                {passwordsMatch ? (
+                  <CheckCircleOutlineIcon sx={{ fontSize: 16 }} />
+                ) : (
+                  <ErrorOutlineIcon sx={{ fontSize: 16 }} />
+                )}
+                {passwordsMatch ? "Passwords match" : "Passwords don't match"}
+              </Typography>
+            )}
+          </Box>
+
+          {error && (
+            <Alert severity="error" sx={{ borderRadius: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          <Button
+            type="submit"
+            variant="contained"
+            fullWidth
+            disabled={!canReset}
+            sx={brandButtonSx(theme)}
+          >
+            {loadingReset ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Reset Password"
+            )}
+          </Button>
+          <Button
+            type="button"
+            onClick={handleBackToEmail}
+            disabled={loadingReset}
+            startIcon={<ArrowBackIcon />}
+            sx={{ ...authLinkSx, alignSelf: "center", color: "text.secondary" }}
+          >
+            Use a different email
+          </Button>
+        </Box>
+      )}
+    </AuthShell>
   );
 };
 

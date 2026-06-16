@@ -30,19 +30,50 @@ const STATIC_GEMINI_MODELS = [
   "gemini-2.0-flash-lite",
   "gemini-2.0-flash-lite-001",
 ];
-const RAG_TOP_K = 10;
-const RAG_LIST_TOP_K = 20;
+const RAG_TOP_K = 12;
+const RAG_LIST_TOP_K = 24;
 const MAX_CONTEXT_SNIPPET_CHARS = 1200;
+const MAX_MERGED_CHUNKS = 30;
 const DUAL_SOURCE_BONUS = 0.1;
 
 const LIST_QUERY_PATTERN =
-  /\b(list|all|every|everything|comprehensive|complete|full list|enumerate|name all|show all|what are all)\b/i;
+  /\b(list|all|every|everything|comprehensive|complete|full list|enumerate|name all|show all|what are all|career|careers|experience|experiences|work history|employment|milestones?|background|resume|cv|timeline|roles?|jobs?|positions?|certifications?|publications?|papers?|awards?|honors?|education|internships?)\b/i;
 
 const isListQuery = (message: string): boolean =>
   LIST_QUERY_PATTERN.test(message);
 
 const getEffectiveTopK = (message: string): number =>
   isListQuery(message) ? RAG_LIST_TOP_K : RAG_TOP_K;
+
+// Pure greetings ("hi", "hello", "hey there", ...) with no actual question
+// don't need retrieval — answer instantly with a varied canned reply.
+const GREETING_PATTERN =
+  /^[\s\W]*(hi+|hey+|hello+|heya|hiya|yo|howdy|greetings|sup|wass?up|what'?s\s+up|good\s+(morning|afternoon|evening|day))[\s\W]*$/i;
+
+const GREETING_RESPONSES = [
+  "Hello! How can I help you learn about David Nguyen today?",
+  "Hi there! Ask me anything about David's background, projects, or experience.",
+  "Hey! I'm Lumina, David's AI assistant — what would you like to know?",
+  "Hello! Curious about David's work, skills, or projects? Just ask.",
+  "Hi! I can walk you through David Nguyen's experience and projects — what's on your mind?",
+  "Hey there! Want a quick intro to David, or details on a specific project?",
+  "Hello! I'm here to answer questions about David Nguyen. Where should we start?",
+];
+
+let lastGreetingIndex = -1;
+
+const isPureGreeting = (message: string): boolean =>
+  GREETING_PATTERN.test(message.trim());
+
+const pickGreetingResponse = (): string => {
+  let idx = Math.floor(Math.random() * GREETING_RESPONSES.length);
+  // Avoid repeating the same canned reply twice in a row.
+  if (GREETING_RESPONSES.length > 1 && idx === lastGreetingIndex) {
+    idx = (idx + 1) % GREETING_RESPONSES.length;
+  }
+  lastGreetingIndex = idx;
+  return GREETING_RESPONSES[idx];
+};
 
 type HybridRetrievalResult = {
   sources: SourceCitation[];
@@ -120,12 +151,81 @@ const expandListResults = async (
   return initial;
 };
 
+// Maps a question topic to the canonical knowledge source(s) that should be
+// pulled in FULL so the model always has the complete picture for that topic.
+// Only compact sources are listed here; large docs (projects, skills) keep
+// using vector + list expansion to avoid flooding the context window.
+const CATEGORY_FULL_SOURCES: Array<{ pattern: RegExp; sourceIds: string[] }> = [
+  {
+    pattern:
+      /\b(career|careers|experience|experiences|work history|employment|employer|roles?|jobs?|positions?|milestones?|background|resume|cv|timeline|worked|internships?|interned)\b/i,
+    sourceIds: ["career-timeline", "profile"],
+  },
+  {
+    pattern:
+      /\b(education|degrees?|university|college|gpa|major|minor|graduated?|school|academic|coursework|courses?|classes)\b/i,
+    sourceIds: ["profile", "coursework"],
+  },
+  {
+    pattern:
+      /\b(certification|certifications|certificates?|certified|certs?)\b/i,
+    sourceIds: ["certifications"],
+  },
+  {
+    pattern:
+      /\b(publication|publications|papers?|research|arxiv|journal|conference|articles?)\b/i,
+    sourceIds: ["publications"],
+  },
+  {
+    pattern: /\b(awards?|honors?|achievements?|recognition|scholarships?)\b/i,
+    sourceIds: ["honors-awards"],
+  },
+  {
+    pattern: /\b(volunteer|volunteering|community|nonprofit)\b/i,
+    sourceIds: ["volunteering", "profile"],
+  },
+  {
+    pattern: /\b(languages?|fluent|bilingual|organizations?|affiliations?)\b/i,
+    sourceIds: ["languages-organizations"],
+  },
+  {
+    pattern: /\b(test scores?|sat|gre|toefl|ielts)\b/i,
+    sourceIds: ["test-scores"],
+  },
+];
+
+const detectCategorySourceIds = (message: string): string[] => {
+  const ids = new Set<string>();
+  for (const { pattern, sourceIds } of CATEGORY_FULL_SOURCES) {
+    if (pattern.test(message)) {
+      for (const id of sourceIds) ids.add(id);
+    }
+  }
+  return Array.from(ids);
+};
+
 const retrieveHybridSources = async (
   message: string,
   topK: number,
 ): Promise<HybridRetrievalResult> => {
   let results: SourceCitation[] = [];
   let shouldUseStaticFallback = false;
+
+  // Fire full canonical-source fetches concurrently with hybrid retrieval so
+  // topic augmentation adds ~no latency to the pre-stream critical path.
+  const categorySourceIds = detectCategorySourceIds(message);
+  const augmentPromise: Promise<SourceCitation[][]> = categorySourceIds.length
+    ? Promise.all(
+        categorySourceIds.map((id) =>
+          retrieveAllChunksBySourceId(id).catch((err) => {
+            console.warn(
+              `Full-source augmentation failed for "${id}": ${toErrorMessage(err)}`,
+            );
+            return [] as SourceCitation[];
+          }),
+        ),
+      )
+    : Promise.resolve([]);
 
   if (isNeo4jConfigured()) {
     const [vectorResult, graphResult] = await Promise.allSettled([
@@ -168,6 +268,26 @@ const retrieveHybridSources = async (
     results = await expandListResults(results);
   }
 
+  // Merge the (already in-flight) full canonical sources ahead of the
+  // relevance-ranked results so topic answers are deterministically complete.
+  if (categorySourceIds.length > 0) {
+    const ensuredArrays = await augmentPromise;
+    const seen = new Set(results.map((r) => r.id));
+    const ensured: SourceCitation[] = [];
+    for (const arr of ensuredArrays) {
+      for (const chunk of arr) {
+        if (!seen.has(chunk.id)) {
+          seen.add(chunk.id);
+          ensured.push(chunk);
+        }
+      }
+    }
+    if (ensured.length > 0) {
+      const budget = Math.max(MAX_MERGED_CHUNKS, results.length);
+      results = [...ensured, ...results].slice(0, budget);
+    }
+  }
+
   if (shouldUseStaticFallback) {
     const fallbackSources = await retrieveStaticResumeFallbackSources(
       message,
@@ -194,6 +314,7 @@ const RAG_PROMPT_INSTRUCTIONS = [
   "Avoid repeating the same item; de-duplicate by title or project name.",
   "When the user asks for a list, respond with a short intro sentence and a clean bullet list.",
   "For lists, use the format: Project — timeframe — one-sentence description.",
+  "When summarizing experience, career, education, projects, or similar topics, include EVERY relevant item present in the sources, ordered most-recent-first for roles, and never omit the most recent ones.",
   "Do not restate identity or titles unless explicitly asked.",
 ].join(" ");
 
@@ -485,6 +606,11 @@ export const chatWithAI = async (
     throw new Error("Missing GOOGLE_AI_API_KEY in environment variables");
   }
 
+  // Skip RAG for bare greetings — instant, varied canned reply.
+  if (isPureGreeting(message)) {
+    return { text: pickGreetingResponse(), sources: [] };
+  }
+
   const { sources, usedStaticFallback } = await retrieveHybridSources(
     message,
     getEffectiveTopK(message),
@@ -543,6 +669,13 @@ export const streamChatWithAI = async (
 ): Promise<{ text: string; sources: SourceCitation[] }> => {
   if (!process.env.GOOGLE_AI_API_KEY) {
     throw new Error("Missing GOOGLE_AI_API_KEY in environment variables");
+  }
+
+  // Skip RAG for bare greetings — emit an instant, varied canned reply.
+  if (isPureGreeting(message)) {
+    const text = pickGreetingResponse();
+    onChunk(text);
+    return { text, sources: [] };
   }
 
   const { sources, usedStaticFallback } = await retrieveHybridSources(

@@ -40,10 +40,12 @@ The frontend seamlessly integrates with the backend to provide functionalities s
 ## Key Features
 
 - **AI Chat Interface:** Interact with an intelligent assistant that answers questions about David Nguyen and various topics.
+- **3D Landing Hero:** A fully procedural WebGL background (Three.js + React Three Fiber) renders a noise-displaced, iridescent fresnel-shaded "core," an additive glow halo, a ~6,000-point GPU particle starfield, orbiting knowledge-node accents, and glow rings — all geometry and GLSL generated in code with no binary assets. It is theme-aware, reacts to mouse parallax and scroll, scales across mobile/tablet/desktop tiers, respects `prefers-reduced-motion`, falls back gracefully when WebGL is unavailable, and is lazy-loaded into its own chunk. The same scene is reused as the ambient backdrop on the auth pages.
 - **User Authentication:** Sign up, log in, and manage your account with JWT-based authentication.
 - **Passkey (WebAuthn) Sign-in:** Passwordless login with Touch ID, Face ID, Windows Hello, or a phone via QR. Supports discoverable (usernameless) credentials, an optional post-signup enrollment prompt, and a `/passkeys` management page for adding, naming, and revoking credentials. Email + password remains as a fallback.
+- **Branded Auth Experience:** Login, signup, password reset, passkeys, and terms pages share a cohesive glassmorphism layout (`AuthShell`) built over the 3D backdrop, are fully theme-aware (light/dark), and use proper `<form>` semantics with autocomplete hints. Signup includes a live password-strength meter, a real-time "passwords match" indicator, and an enhanced post-signup passkey enrollment dialog; forgot-password walks through a 2-step recovery indicator.
 - **Toast Notifications:** Global `ToastProvider` surfaces success and error messages from auth/passkey flows instead of relying on `alert()`.
-- **Conversation History:** Save, retrieve, rename, and search your past interactions (available for authenticated users).
+- **Conversation History:** Save, retrieve, rename, and search your past interactions (available for authenticated users). The signed-in conversation list is cached in `localStorage` and rendered instantly on reload (stale-while-revalidate), so the sidebar spinner only appears when nothing is cached; the cache is cleared on logout.
 - **Auto-Generated Titles:** AI automatically generates concise titles for conversations based on the first message.
 - **Theme Toggle:** Switch between dark and light modes, with your preference stored locally.
 - **Responsive Design:** Enjoy a fully optimized experience on mobile, tablet, and desktop devices.
@@ -55,6 +57,7 @@ The frontend seamlessly integrates with the backend to provide functionalities s
 - **Vite** – lightning-fast build tool and dev server
 - **React** with **TypeScript** – for building the user interface
 - **Material‑UI (MUI)** – for modern, responsive UI components
+- **Three.js** & **@react-three/fiber** – for the procedural WebGL landing hero and ambient auth backdrop
 - **React Router** – for seamless navigation between pages
 - **Axios** – for API communication with the backend
 - **@simplewebauthn/browser** – browser-side WebAuthn helpers (`startRegistration`, `startAuthentication`) for passkey flows
@@ -66,9 +69,9 @@ The frontend seamlessly integrates with the backend to provide functionalities s
 
 The client application features several distinct pages and components:
 
-- **Landing Page:** Showcases the app’s features with animations and call-to-action buttons.
-- **Homepage:** The central hub for chatting with the AI, featuring a collapsible sidebar for conversation history.
-- **Authentication Pages:** Includes login, signup, and password reset pages. The login page exposes a "Sign in with passkey" action when WebAuthn is available; signup offers a one-time enrollment dialog after account creation.
+- **Landing Page:** Showcases the app’s features with animations and call-to-action buttons, set against a fixed full-viewport procedural 3D/WebGL hero scene (`pointer-events: none`, so it never blocks interaction).
+- **Homepage:** The central hub for chatting with the AI, featuring a collapsible sidebar for conversation history (cached for instant reloads).
+- **Authentication Pages:** Login, signup, password reset, passkeys, and terms pages share a branded glassmorphism shell (`AuthShell`) layered over the ambient 3D backdrop and adapt to dark/light themes. The login page exposes a "Sign in with passkey" action when WebAuthn is available; signup offers a password-strength meter, a live passwords-match indicator, and a one-time passkey enrollment dialog after account creation.
 - **Passkeys Page (`/passkeys`):** Authenticated route for adding, naming, and revoking passkeys. Reachable via the fingerprint icon in the navbar.
 - **Theme Toggle:** Easily switch between dark and light modes using the navigation bar.
 - **Responsive Design:** Ensures a consistent experience across all devices.
@@ -141,7 +144,14 @@ client/
     ├── components/           # Reusable UI components
     │   ├── Navbar.tsx
     │   ├── Sidebar.tsx
-    │   └── ChatArea.tsx
+    │   ├── ChatArea.tsx
+    │   ├── three/            # Procedural WebGL scene (lazy-loaded, no binary assets)
+    │   │   └── LuminaScene.tsx
+    │   └── auth/             # Shared branded auth UI system
+    │       ├── AuthShell.tsx           # Glass layout reusing the 3D backdrop
+    │       ├── PasswordField.tsx       # Input with show/hide toggle
+    │       ├── PasswordStrengthMeter.tsx
+    │       └── styles.ts               # Gradient-text, brand-button, field helpers
     └── pages/                # Application pages (Landing, Home, Login, Signup, etc.)
         ├── LandingPage.tsx
         ├── Home.tsx

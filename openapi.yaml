@@ -471,19 +471,19 @@ paths:
       tags:
         - "Conversations"
       summary: "Get all conversations for the authenticated user"
+      description: "Returns conversation metadata only (messages are omitted) for the sidebar list. Fetch a single conversation by ID to load its messages."
       responses:
         '200':
-          description: "A list of conversations."
+          description: "A list of conversation summaries (messages omitted)."
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Conversation'
+                  $ref: '#/components/schemas/ConversationSummary'
               example:
                 - id: "60d5ec49f5a3c80015c0d9a4"
                   title: "New Conversation"
-                  messages: []
                   createdAt: "2025-02-07T12:34:56Z"
                   updatedAt: "2025-02-07T12:34:56Z"
         '500':
@@ -601,17 +601,16 @@ paths:
             type: string
       responses:
         '200':
-          description: "A list of conversations matching the search criteria."
+          description: "A list of conversation summaries matching the search criteria (messages omitted)."
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Conversation'
+                  $ref: '#/components/schemas/ConversationSummary'
               example:
                 - id: "60d5ec49f5a3c80015c0d9a4"
                   title: "Search Result Conversation"
-                  messages: []
                   createdAt: "2025-02-07T12:34:56Z"
                   updatedAt: "2025-02-07T12:34:56Z"
         '500':
@@ -661,6 +660,27 @@ components:
           description: "List of messages in the conversation."
           items:
             $ref: '#/components/schemas/Message'
+        createdAt:
+          type: string
+          format: date-time
+          description: "Creation timestamp."
+        updatedAt:
+          type: string
+          format: date-time
+          description: "Last update timestamp."
+      required:
+        - id
+        - title
+    ConversationSummary:
+      type: object
+      description: "Conversation metadata without messages, used for list and search responses."
+      properties:
+        id:
+          type: string
+          description: "Unique identifier of the conversation."
+        title:
+          type: string
+          description: "Title of the conversation."
         createdAt:
           type: string
           format: date-time

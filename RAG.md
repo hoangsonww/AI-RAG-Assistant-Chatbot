@@ -89,17 +89,17 @@ sequenceDiagram
 
   rect rgb(0, 0, 0)
     note over C,N: Hybrid RAG Retrieval Phase (parallel)
-    C->>G: retrieveHybridSources(message, topK=10)
+    C->>G: retrieveHybridSources(message, topK=12 / 24 for list/topic queries)
 
     par Vector Path
-      G->>K: retrieveKnowledgeChunks(message, topK=15)
+      G->>K: retrieveKnowledgeChunks(message, topK+5)
       K->>K: Build query variants (up to 3)
       loop Each variant
         K->>E: embedText(variant, RETRIEVAL_QUERY)
         E->>LLM: Gemini embedding request (768-d)
         LLM-->>E: Embedding vector
         E-->>K: Float[768]
-        K->>P: query({ vector, topK: 20, includeMetadata })
+        K->>P: query({ vector, topK: max(20, 2x k), includeMetadata })
         P-->>K: Scored matches with metadata
       end
       K->>K: Merge & deduplicate across variants
@@ -107,7 +107,7 @@ sequenceDiagram
       K->>K: Sort by boosted score
       K-->>G: SourceCitation[] (vector)
     and Graph Path
-      G->>Gr: retrieveGraphChunks(message, topK=15)
+      G->>Gr: retrieveGraphChunks(message, topK+5)
       Gr->>LLM: Extract entity names from query
       LLM-->>Gr: ["entity1", "entity2"]
       Gr->>N: Fulltext search on entity_name_ft index
@@ -119,7 +119,8 @@ sequenceDiagram
 
     G->>G: mergeRetrievalResults(vectorSources, graphSources)
     G->>G: Deduplicate by chunkId, +0.1 bonus for dual-source hits
-    G->>G: Sort by merged score → top 10
+    G->>G: Sort by merged score → top K (12 / 24)
+    G->>G: List expansion + topic-aware full-source augmentation (cap 30)
     G-->>C: SourceCitation[]
   end
 
@@ -245,14 +246,26 @@ graph LR
 
 The embedding service validates that every response contains exactly 768 floats before returning. Malformed responses throw immediately.
 
-### Embedding Retry on Rate Limits
+### Resilient Embedding Retry (Rate Limits + Transient Errors)
 
-The embedding service retries automatically on HTTP 429 (rate limit) errors using exponential backoff. Previously, a 429 response would crash the request; now the service backs off and retries up to 5 times.
+The embedding service (`embedText()`) retries **indefinitely** on two classes of recoverable failure so that a single transient blip -- or a free-tier per-minute quota window -- never aborts a full `knowledge:sync`:
 
-| Constant               | Value    | Purpose                                   |
-| ---------------------- | -------- | ----------------------------------------- |
-| `EMBED_RETRY_ATTEMPTS` | 5        | Maximum retry attempts on 429 errors      |
-| `EMBED_RETRY_BASE_MS`  | 3,000 ms | Base backoff delay (doubles each attempt) |
+- **Rate limit (429):** When the API reports `429` / `Too Many Requests`, the service parses the **server-suggested retry delay** out of the error (e.g. `"retry in 29s"` or `"retryDelay":"29s"`) and waits exactly that long (plus a small 2s cushion, capped at `EMBED_RETRY_MAX_MS`). Honoring the server's hint lets a run ride out a quota window instead of guessing the backoff.
+- **Transient network / 5xx:** undici `"fetch failed"`, `ECONNRESET`, `ETIMEDOUT`, `ENOTFOUND`, socket-hangup, and `5xx` responses (matched by both message text and `error.cause.code`) are also retried, using a linearly increasing backoff (`EMBED_RETRY_BASE_MS x attempt`, capped at `EMBED_RETRY_MAX_MS`).
+
+Critically, the loop is **not** unconditional: non-retryable errors -- authentication failures, invalid requests, and a malformed/`Invalid embedding response format.` -- are **thrown immediately** rather than retried, so an unrecoverable failure never spins forever.
+
+```ts
+// Honor the server-suggested wait when present, otherwise back off linearly.
+const suggestedMs = isRateLimit ? parseSuggestedDelayMs(message) : 0;
+const delay =
+  suggestedMs || Math.min(EMBED_RETRY_BASE_MS * attempt, EMBED_RETRY_MAX_MS);
+```
+
+| Constant              | Value     | Purpose                                            |
+| --------------------- | --------- | -------------------------------------------------- |
+| `EMBED_RETRY_BASE_MS` | 3,000 ms  | Base backoff (multiplied by attempt count)         |
+| `EMBED_RETRY_MAX_MS`  | 70,000 ms | Ceiling on any single backoff / suggested delay    |
 
 ---
 
@@ -440,16 +453,16 @@ array of strings. If no specific entities, return [].
 
 ### Rate Limit Handling
 
-Entity extraction includes exponential backoff retry for Gemini 429 (rate limit) errors:
+Entity extraction wraps each Gemini extraction call in `withRateLimitRetry()`, which mirrors the resilient embedding retry: it retries **indefinitely** on `429` rate limits **and** transient network/5xx errors, while throwing any other (non-recoverable) error immediately. On a 429 it parses and honors the API's **server-suggested retry delay** (`"retry in Ns"` / `"retryDelay":"Ns"`); otherwise it backs off linearly (`EXTRACTION_BASE_DELAY_MS x attempt`, capped at `EXTRACTION_MAX_DELAY_MS`). This keeps a `graph:rebuild` or `knowledge:sync` from aborting mid-run when the free-tier per-minute quota is exhausted.
 
-| Constant                         | Value      | Purpose                                  |
-| -------------------------------- | ---------- | ---------------------------------------- |
-| `ENTITY_EXTRACTION_BATCH_SIZE`   | 5          | Chunks per LLM extraction call           |
-| `EXTRACTION_RETRY_ATTEMPTS`      | 3          | Maximum retry attempts                   |
-| `EXTRACTION_BASE_DELAY_MS`       | 15,000 ms  | Base delay between retries               |
-| `EXTRACTION_CONCURRENCY`         | 2          | Max concurrent batch extractions         |
+| Constant                         | Value      | Purpose                                            |
+| -------------------------------- | ---------- | -------------------------------------------------- |
+| `ENTITY_EXTRACTION_BATCH_SIZE`   | 5          | Chunks per LLM extraction call                     |
+| `EXTRACTION_BASE_DELAY_MS`       | 15,000 ms  | Base delay (multiplied by attempt count)           |
+| `EXTRACTION_MAX_DELAY_MS`        | 60,000 ms  | Ceiling on any single backoff / suggested delay    |
+| `EXTRACTION_CONCURRENCY`         | 2          | Max concurrent batch extractions                   |
 
-The delay multiplier increases linearly: 15s, 30s, 45s for successive retries.
+Successive non-suggested delays increase linearly (15s, 30s, 45s, ...) up to the 60s ceiling. In addition, `runWithExtractModelRotation()` cycles through the 6-model extraction pool, so a 429 on one model is also retried on the next model before backoff kicks in.
 
 ### Lucene Escaping
 
@@ -504,17 +517,18 @@ flowchart TD
 
   MR --> BONUS["+0.1 bonus for chunks<br/>found by BOTH paths"]
   BONUS --> SORT["Sort by merged score"]
-  SORT --> TOP["Return top 10 results"]
+  SORT --> TOP["Return top K (12 / 24)"]
+  TOP --> AUG["List expansion +<br/>topic-aware full-source<br/>augmentation (cap 30)"]
 ```
 
 ### Vector Path: Query Variant Expansion
 
-The retriever builds up to 3 query variants to improve recall:
+The retriever builds up to 3 query variants to improve recall. The `buildQueryVariants()` function in `knowledgeBase.ts` broadened its experience/career detection so that resume-style questions ("background", "internships", "milestones", "timeline") expand into a richer retrieval query:
 
-| Pattern Detected                          | Added Variant                              |
-| ----------------------------------------- | ------------------------------------------ |
-| `project`, `portfolio`, `built`, `work`   | `"recent projects portfolio notable projects"` |
-| `experience`, `worked`, `work history`    | `"work experience projects"`               |
+| Pattern Detected                                                                                     | Added Variant                                                       |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `project`, `projects`, `portfolio`, `built`, `work`                                                  | `"recent projects portfolio notable projects"`                      |
+| `experience`, `worked`, `work history`, `career`, `milestone`, `role`, `job`, `employ`, `resume`, `cv`, `timeline`, `background`, `internship` | `"work experience career timeline employment history roles companies"` |
 
 ### Vector Path: Hybrid Scoring
 
@@ -554,7 +568,9 @@ The dual-source bonus rewards chunks that both retrieval paths independently ide
 
 | Constant                 | Value | Purpose                                    |
 | ------------------------ | ----- | ------------------------------------------ |
-| `RAG_TOP_K`              | 10    | Default number of results returned         |
+| `RAG_TOP_K`              | 12    | Default number of results returned         |
+| `RAG_LIST_TOP_K`         | 24    | Results returned for list/topic queries    |
+| `MAX_MERGED_CHUNKS`      | 30    | Budget after full-source augmentation      |
 | `MIN_SEARCH_TOP_K`       | 8     | Minimum initial candidates per variant     |
 | `QUERY_VARIANT_LIMIT`    | 3     | Maximum query expansions                   |
 | `MIN_QUERY_TERM_LENGTH`  | 3     | Minimum characters for a lexical term      |
@@ -564,17 +580,19 @@ The dual-source bonus rewards chunks that both retrieval paths independently ide
 
 ### Exhaustive List Retrieval
 
-When a user asks a list-type question (e.g., "List all projects", "What are all your skills?"), the standard top-10 retrieval may miss relevant content spread across many chunks. The system detects list queries and automatically widens the retrieval window to return complete results.
+When a user asks a list-type question (e.g., "List all projects", "What are all your skills?"), the standard top-K retrieval may miss relevant content spread across many chunks. The system detects list queries and automatically widens the retrieval window to return complete results.
 
-**Detection:** A regex pattern identifies list-intent keywords in the query:
+**Detection:** A regex pattern identifies list-intent keywords in the query. It was broadened beyond pure list verbs to also catch career/experience phrasings, so resume-style questions get the wider window too:
 
 ```
-/\b(list|all|every|everything|comprehensive|complete|full list|enumerate|name all|show all|what are all)\b/i
+/\b(list|all|every|everything|comprehensive|complete|full list|enumerate|name all|show all|what are all|career|careers|experience|experiences|work history|employment|milestones?|background|resume|cv|timeline|roles?|jobs?|positions?|certifications?|publications?|awards?|honors?|education|internships?)\b/i
 ```
+
+A list query bumps the effective top-K from the base `RAG_TOP_K` (12) to `RAG_LIST_TOP_K` (24) via `getEffectiveTopK()`.
 
 **Retrieval flow:**
 
-1. Normal hybrid retrieval runs with an expanded `topK=20`.
+1. Normal hybrid retrieval runs with the expanded list `topK` of 24.
 2. If **50% or more** of the returned results come from a single `sourceId`, the system treats that source as dominant and fetches **all** chunks from that source via a Pinecone metadata filter (`sourceId` match).
 3. The complete source content (all chunks) plus any non-dominant extras from the initial retrieval are passed to the LLM.
 
@@ -583,13 +601,57 @@ This ensures that when a single knowledge source contains the comprehensive answ
 ```mermaid
 flowchart TD
     Q["User: 'List all projects'"] --> D{"List query detected?"}
-    D -->|No| N["Standard top-10 retrieval"]
-    D -->|Yes| H["Hybrid top-20 retrieval"]
+    D -->|No| N["Standard top-12 retrieval"]
+    D -->|Yes| H["Hybrid top-24 retrieval"]
     H --> DOM{"50%+ results from<br/>single source?"}
-    DOM -->|No| R1["Return top-20 results"]
+    DOM -->|No| R1["Return top-24 results"]
     DOM -->|Yes| ALL["Fetch ALL chunks from<br/>dominant source via<br/>Pinecone metadata filter"]
     ALL --> R2["Return complete source<br/>+ non-dominant extras"]
 ```
+
+### Topic-Aware Full-Source Augmentation
+
+List expansion only fires when a single source already dominates the top-K results. But some questions are clearly *about a known topic* whose canonical answer lives in one compact source -- and the most relevant chunks of that source can still fall below the similarity cutoff, dropping individual items from the answer. The classic symptom: a "career milestones" question that returned only some roles because the chunks describing the others never cleared top-K.
+
+To guarantee topic completeness, `retrieveHybridSources()` runs a deterministic augmentation pass **after** vector+graph merging and list expansion. It detects the query's topic and, for known topics, pulls the **full** canonical knowledge source(s) and places them **ahead** of the relevance-ranked base results:
+
+1. **Topic detection** -- `detectCategorySourceIds(message)` matches the query against `CATEGORY_FULL_SOURCES`, an ordered list of `{ pattern: RegExp; sourceIds: string[] }` entries. Every matching entry contributes its source `externalId`s to a deduplicated set.
+2. **Full-source fetch** -- `augmentWithFullSources(baseResults, sourceIds, budget)` calls `retrieveAllChunksBySourceId()` for each detected source, collecting every chunk that is not already present in the base results.
+3. **Prepend + cap** -- The ensured chunks are placed in front of the base results (so the model sees the complete canonical source first), then the combined list is sliced to a budget of `MAX_MERGED_CHUNKS` (30). Per-source fetch failures are non-fatal: a warning is logged and the base results are preserved.
+
+```ts
+const categorySourceIds = detectCategorySourceIds(message);
+if (results.length > 0 && categorySourceIds.length > 0) {
+  const budget = Math.max(MAX_MERGED_CHUNKS, results.length);
+  results = await augmentWithFullSources(results, categorySourceIds, budget);
+}
+```
+
+**Topic → canonical source mapping** (`CATEGORY_FULL_SOURCES`):
+
+| Query topic (regex keywords)                                                                      | Full source(s) pulled              |
+| ------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| experience, career, roles, jobs, positions, milestones, work history, employment, background, resume, cv, timeline, internships | `career-timeline` + `profile`      |
+| education, degrees, university, college, gpa, major, coursework, courses, classes                 | `profile` + `coursework`           |
+| certifications, certificates, certified, certs                                                    | `certifications`                   |
+| publications, papers, research, arxiv, journal, conference, articles                              | `publications`                     |
+| awards, honors, achievements, recognition, scholarships                                           | `honors-awards`                    |
+| volunteering, community, nonprofit                                                                | `volunteering` + `profile`         |
+| languages, fluent, bilingual, organizations, affiliations                                         | `languages-organizations`          |
+| test scores, sat, gre, toefl, ielts                                                               | `test-scores`                      |
+
+Large documents (`projects`, `skills`) are intentionally **excluded** from full-source augmentation. They are big enough that pulling them whole would flood the context window, so they continue to rely on vector similarity plus list expansion. The augmentation is reserved for compact, single-retrievable-unit sources where pulling the whole document is cheap and the completeness guarantee matters.
+
+```mermaid
+flowchart TD
+    M["Merged hybrid results<br/>(+ list expansion if applicable)"] --> T{"Topic detected?<br/>detectCategorySourceIds()"}
+    T -->|No| KEEP["Keep relevance-ranked results"]
+    T -->|Yes| FETCH["Fetch ALL chunks of canonical<br/>source(s) via retrieveAllChunksBySourceId()"]
+    FETCH --> PRE["Prepend ensured chunks<br/>ahead of base results (deduped)"]
+    PRE --> CAP["Cap to MAX_MERGED_CHUNKS = 30"]
+```
+
+This complements list expansion rather than replacing it: list expansion handles "the answer is one dominant source we discovered at query time", while topic augmentation handles "the answer is a *known* topic whose canonical source we can name deterministically".
 
 ---
 
@@ -625,6 +687,7 @@ graph TD
 4. If sources don't contain the answer, say so -- don't guess.
 5. Don't use general knowledge for questions about the knowledge base owner.
 6. Be concise; de-duplicate list items by title/project name.
+7. When summarizing experience, career, education, projects, or similar topics, include **EVERY** relevant item present in the sources, ordered most-recent-first for roles, and never omit the most recent ones. This directive pairs with topic-aware full-source augmentation: the augmentation guarantees the complete canonical source reaches the prompt, and this rule instructs the model not to drop any item from it.
 
 ### Generation Config
 
@@ -904,6 +967,10 @@ npm run knowledge:sync -- --manifest ./knowledge/manifest.json
 }
 ```
 
+The repository ships a populated manifest at `server/knowledge/manifest.json` whose entries map directly to the canonical source `externalId`s used by topic-aware full-source augmentation (`profile`, `career-timeline`, `certifications`, `publications`, `honors-awards`, `volunteering`, `coursework`, `languages-organizations`, `test-scores`, plus the larger `projects` and `skills` docs).
+
+> **`career-timeline` source:** `server/knowledge/son-nguyen-career-timeline.txt` (registered as `externalId: "career-timeline"`) is a dense, single-retrievable-unit, reverse-chronological list of every role plus key milestones. It is purpose-built to be pulled **whole** by topic augmentation for career/experience/milestone queries, guaranteeing no role is dropped by the top-K cutoff.
+
 **Delete sources not in the manifest:**
 
 ```bash
@@ -981,16 +1048,18 @@ Summary of key constants governing the RAG pipeline behavior:
 | Constant                         | Value      | File                     | Purpose                                        |
 | -------------------------------- | ---------- | ------------------------ | ---------------------------------------------- |
 | `ENTITY_EXTRACTION_BATCH_SIZE`   | 5          | `graphKnowledge.ts`      | Chunks per entity extraction LLM call          |
-| `EXTRACTION_RETRY_ATTEMPTS`      | 3          | `graphKnowledge.ts`      | Max retries for extraction rate limits         |
 | `EXTRACTION_BASE_DELAY_MS`       | 15,000 ms  | `graphKnowledge.ts`      | Base delay between extraction retries          |
+| `EXTRACTION_MAX_DELAY_MS`        | 60,000 ms  | `graphKnowledge.ts`      | Ceiling on extraction backoff / suggested delay|
 | `EXTRACTION_CONCURRENCY`         | 2          | `graphKnowledge.ts`      | Max concurrent extraction batches              |
-| `EMBED_RETRY_ATTEMPTS`           | 5          | `geminiEmbeddings.ts`    | Max retries for embedding 429 errors           |
 | `EMBED_RETRY_BASE_MS`            | 3,000 ms   | `geminiEmbeddings.ts`    | Base backoff for embedding retries             |
+| `EMBED_RETRY_MAX_MS`             | 70,000 ms  | `geminiEmbeddings.ts`    | Ceiling on embedding backoff / suggested delay |
 | `MAX_CHUNK_CHARS`                | 900        | `knowledgeBase.ts`       | Maximum characters per chunk                   |
 | `MIN_CHUNK_CHARS`                | 240        | `knowledgeBase.ts`       | Minimum characters per chunk                   |
 | `CHUNK_OVERLAP_CHARS`            | 160        | `knowledgeBase.ts`       | Overlap between adjacent chunks                |
 | `UPSERT_BATCH_SIZE`              | 50         | `knowledgeBase.ts`       | Vectors per Pinecone upsert batch              |
-| `RAG_TOP_K`                      | 10         | `geminiService.ts`       | Default results returned to LLM               |
+| `RAG_TOP_K`                      | 12         | `geminiService.ts`       | Default results returned to LLM                |
+| `RAG_LIST_TOP_K`                 | 24         | `geminiService.ts`       | Results returned for list/topic queries        |
+| `MAX_MERGED_CHUNKS`              | 30         | `geminiService.ts`       | Budget after full-source augmentation          |
 | `DUAL_SOURCE_BONUS`              | 0.1        | `geminiService.ts`       | Score bonus for dual-path hits                 |
 | `LEXICAL_BOOST_WEIGHT`           | 0.15       | `knowledgeBase.ts`       | Lexical score contribution                     |
 
@@ -1039,8 +1108,9 @@ flowchart TD
 | Scenario                          | Behavior                                                                            |
 | --------------------------------- | ----------------------------------------------------------------------------------- |
 | Missing env vars at startup       | CLI exits with error; server throws on first request                                |
-| Embedding API 429 (rate limit)    | Exponential backoff retry (3s base, up to 5 attempts) before propagating error      |
-| Embedding API failure (non-429)   | Error propagated as 500 to client                                                   |
+| Embedding API 429 (rate limit)    | Indefinite retry honoring the server-suggested delay (capped at 70s); rides out the quota window |
+| Embedding API transient/5xx error | Indefinite retry with linear backoff (3s base, capped at 70s) on `fetch failed`/`ECONNRESET`/`ETIMEDOUT`/5xx |
+| Embedding API failure (non-retryable) | Auth, invalid-request, and malformed-response errors thrown immediately (no retry loop) |
 | No matching sources               | Polite fallback message, empty sources array (not an error)                         |
 | Pinecone query failure            | If graph path still succeeds, continue with graph-only sources; otherwise static resume fallback is attempted |
 | Vector deletion 404               | Silently ignored (already deleted)                                                  |
@@ -1053,6 +1123,7 @@ flowchart TD
 | Both live retrieval backends fail | Static resume fallback is loaded from `server/knowledge/manifest.json` and local files |
 | Neo4j transient error             | Automatic retry with exponential backoff (500ms base, up to 3 attempts)             |
 | Graph ingestion failure           | Non-fatal; vector ingestion is preserved, warning logged                            |
-| Entity extraction rate limit (429)| Exponential backoff retry (15s, 30s, 45s) + model rotation through 6 Gemini models  |
+| Entity extraction rate limit (429)| Indefinite retry honoring the server-suggested delay (capped at 60s) + model rotation through 6 Gemini models |
+| Entity extraction transient/5xx   | Indefinite retry with linear backoff (15s base, capped at 60s); non-recoverable errors thrown immediately |
 | Entity extraction parse failure   | Chunk treated as having no entities; graph ingestion continues for other chunks     |
 | Fulltext query syntax error       | Lucene special characters are escaped before query; malformed input handled safely  |

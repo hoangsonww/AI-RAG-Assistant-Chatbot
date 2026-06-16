@@ -11,6 +11,8 @@
   - [Component Hierarchy](#component-hierarchy)
   - [State Management](#state-management)
   - [Routing Structure](#routing-structure)
+  - [3D / WebGL Presentation Layer](#3d--webgl-presentation-layer)
+  - [Shared Auth UI Layer](#shared-auth-ui-layer)
 - [Backend Architecture](#backend-architecture)
   - [API Layer](#api-layer)
   - [Service Layer](#service-layer)
@@ -36,6 +38,7 @@
   - [Knowledge Ingestion Data Flow (Vector + Graph)](#knowledge-ingestion-data-flow-vector--graph)
   - [Hybrid Retrieval Data Flow](#hybrid-retrieval-data-flow)
   - [Exhaustive List Retrieval](#exhaustive-list-retrieval)
+  - [Topic-Aware Full-Source Augmentation](#topic-aware-full-source-augmentation)
   - [Conversation Management Flow](#conversation-management-flow)
   - [Guest vs Authenticated User Flow](#guest-vs-authenticated-user-flow)
   - [Message Editing & Conversation Branching](#message-editing--conversation-branching)
@@ -329,6 +332,69 @@ graph LR
     style Root fill:#4CAF50
     style HomePage fill:#FF9800
 ```
+
+### 3D / WebGL Presentation Layer
+
+The landing page renders a fully procedural WebGL scene through `client/src/components/three/LuminaScene.tsx`, built on React Three Fiber (`@react-three/fiber@^8.18.0`) over `three@^0.169.0`. The scene ships **no binary assets** -- every geometry and GLSL shader is generated in code, so the brand visuals add nothing to the asset payload and scale to any resolution.
+
+```mermaid
+graph TD
+    subgraph "LuminaScene (R3F Canvas)"
+        Core["Icosahedron Core<br/>(simplex-noise vertex displacement)"]
+        Fresnel["Iridescent Fresnel Shading"]
+        Halo["Additive Fresnel Halo"]
+        Stars["GPU Particle Starfield<br/>(~6,000 points, custom point shader)"]
+        Nodes["Orbiting Knowledge-Node Accents"]
+        Rings["Glow Rings"]
+    end
+
+    Theme["MUI Theme Colors"] --> Core
+    Theme --> Halo
+    Pointer["Pointer Parallax"] --> Core
+    Scroll["Scroll Position"] --> Core
+    Tier["Responsive Tier<br/>(mobile / tablet / desktop)"] --> Stars
+    Tier --> DPR["devicePixelRatio cap"]
+    RM["prefers-reduced-motion"] -.disables animation.-> Core
+    WebGL{"WebGL supported?"} -->|No| NoOp["Graceful no-op fallback"]
+    WebGL -->|Yes| Core
+
+    style Core fill:#4285F4
+    style Stars fill:#9C27B0
+    style WebGL fill:#FF9800
+```
+
+**Procedural scene composition:**
+
+| Element | Construction |
+|---------|--------------|
+| **Core** | Icosahedron whose vertices are displaced by a simplex-noise field, shaded with an iridescent fresnel material |
+| **Halo** | Additive-blended fresnel shell that haloes the core |
+| **Starfield** | ~6,000-point GPU particle system driven by a custom point shader (no sprite textures) |
+| **Accents** | Orbiting knowledge-node points and glow rings that reinforce the knowledge-graph motif |
+
+**Architectural properties:**
+
+| Property | Behavior |
+|----------|----------|
+| **Theme-aware** | All colors are sourced from the active MUI theme, so the scene re-tints with light/dark mode and brand palette changes |
+| **Interaction** | Pointer parallax and scroll-reactive transforms; the layer itself is `pointer-events: none` so it never intercepts UI input |
+| **Responsive tiers** | Mobile / tablet / desktop tiers scale the particle count and cap `devicePixelRatio` to bound GPU cost on low-power devices |
+| **Reduced motion** | Honors `prefers-reduced-motion`, suspending animation for users who opt out |
+| **Feature detection** | Probes for WebGL (`getContext("webgl")` / `experimental-webgl`) and renders a graceful no-op fallback when unavailable |
+| **Code splitting** | Lazy-loaded via `React.lazy` + `Suspense`, so Three.js is split into its own bundle chunk and never blocks first paint of the landing page |
+
+The scene is the fixed full-viewport background of the landing page and is reused as the ambient backdrop of the authentication pages, giving the marketing and auth surfaces a single coherent visual identity.
+
+### Shared Auth UI Layer
+
+The authentication surfaces share a dedicated component layer under `client/src/components/auth/`, consumed by the login, signup, forgot-password, passkeys, and terms pages.
+
+| Component | Responsibility |
+|-----------|----------------|
+| **AuthShell** | Branded glass-morphism layout that frames each auth page over the reused `LuminaScene` backdrop |
+| **PasswordField** | Reusable password input with show/hide toggle |
+| **PasswordStrengthMeter** | Live strength feedback during signup / reset |
+| **styles** | Shared style helpers for consistent auth-surface theming |
 
 ---
 
@@ -1194,12 +1260,58 @@ For list-type queries (e.g., "list all projects", "show every skill", "what are 
 flowchart TD
     Q["User: 'List all projects'"] --> D{"List query?"}
     D -->|No| N["Normal top-K retrieval"]
-    D -->|Yes| H["Hybrid retrieval (top-20)"]
+    D -->|Yes| H["Hybrid retrieval (top-24)"]
     H --> DOM{"50%+ from<br/>one source?"}
-    DOM -->|No| R1["Return top-20"]
+    DOM -->|No| R1["Return top-24"]
     DOM -->|Yes| ALL["Fetch ALL chunks<br/>from dominant source"]
     ALL --> R2["Return complete source + extras"]
 ```
+
+The base retrieval windows were widened to give both ranked and list queries more headroom: top-K was raised from **10 -> 12** and the list window from **20 -> 24**, with broadened list-query and query-variant patterns so more phrasings of "show everything" intent are recognized.
+
+### Topic-Aware Full-Source Augmentation
+
+List-intent detection covers explicit "list all" phrasing, but many high-value queries are *topic-complete* without being list queries -- e.g. "what's his work history" or "tell me about his education" expect the **entire** canonical source on that topic, not just the slice that ranked highest by similarity. To guarantee completeness regardless of vector/graph ranking, the pipeline classifies the query topic and deterministically merges the full canonical source(s) for known topics ahead of the relevance-ranked results.
+
+This step runs in `server/src/services/geminiService.ts` **after** hybrid retrieval and list-expansion. It is purely additive -- it never displaces or reorders the existing dual-source-scored results, it only guarantees the canonical source for a recognized topic is present and prioritized.
+
+```mermaid
+flowchart TD
+    HR["Hybrid retrieval + list expansion<br/>(relevance-ranked SourceCitation[])"] --> DET["detectCategorySourceIds(message)"]
+    DET --> MATCH{"Topic matches<br/>CATEGORY_FULL_SOURCES?"}
+    MATCH -->|No| KEEP["Keep ranked results as-is"]
+    MATCH -->|Yes| AUG["augmentWithFullSources()"]
+    AUG --> MERGE["Prepend FULL canonical source chunks,<br/>then append ranked results (deduped)"]
+    MERGE --> BOUND["Bound to MAX_MERGED_CHUNKS (~30)"]
+    BOUND --> OUT["Final context for generation"]
+    KEEP --> OUT
+
+    style AUG fill:#9C27B0
+    style BOUND fill:#FF9800
+```
+
+**Recognized topics and bounds:**
+
+| Aspect | Detail |
+|--------|--------|
+| **Topic map** | `CATEGORY_FULL_SOURCES` -- regex-to-sourceId entries covering experience/career, education, certifications, publications, awards, volunteering, languages, and test scores |
+| **Classifier** | `detectCategorySourceIds(message)` matches the query against the topic patterns and returns the canonical source IDs to guarantee |
+| **Merge** | `augmentWithFullSources(results, sourceIds, budget)` prepends every chunk of the matched canonical source(s) ahead of the relevance-ranked results, deduplicating by chunk |
+| **Bound** | The merged context is capped at `MAX_MERGED_CHUNKS` (~30) so full-source injection cannot blow the prompt budget |
+| **Guarantee** | For a recognized topic the model always sees the complete canonical source, so topic completeness no longer depends on similarity ranking |
+
+A new knowledge source, `son-nguyen-career-timeline.txt`, backs the experience/career topic: a dense single-unit role-and-milestone timeline designed to be merged whole, so career queries return the full chronology rather than fragmented chunks.
+
+#### Resilient Knowledge Sync
+
+To keep ingestion reliable under Gemini API throttling, the embedding and graph-extraction calls now retry **indefinitely** on 429 / transient errors, honoring any server-suggested retry delay rather than giving up after a fixed attempt count:
+
+| Call | Retry behavior |
+|------|----------------|
+| **Embedding** (`geminiEmbeddings.embedText`) | Retries indefinitely on 429 / transient errors, respecting the server-suggested delay |
+| **Graph extraction** (`graphKnowledge.withRateLimitRetry`) | Wraps each entity-extraction LLM call with the same indefinite, delay-honoring retry |
+
+This makes bulk sync of large knowledge sets converge without dropping chunks, at the cost of a longer worst-case wall-clock time when the API is heavily rate-limited.
 
 ### Conversation Management Flow
 
@@ -1242,6 +1354,55 @@ flowchart TD
     style QueryMongo1 fill:#47A248
     style SaveMongo1 fill:#47A248
     style GenTitle fill:#4285F4
+```
+
+#### Conversation Fetch Optimization
+
+The conversation list and search endpoints used to return every conversation **with its full `messages` array**, forcing the server to serialize and the client to hydrate a large payload just to render the sidebar. These endpoints now return **metadata-only summaries** -- the `messages` array is excluded and the documents are returned as plain objects, so only what the sidebar actually displays crosses the wire.
+
+```mermaid
+flowchart LR
+    subgraph "List / Search (sidebar)"
+        L["GET /api/conversations<br/>GET /api/conversations/search/:query"] --> SEL[".select('title createdAt updatedAt')<br/>.lean()"]
+        SEL --> SUM["ConversationSummary[]<br/>(no messages)"]
+    end
+
+    subgraph "Detail (on selection)"
+        DET["GET /api/conversations/:id"] --> FULL["Full document<br/>(messages included)"]
+    end
+
+    style SEL fill:#47A248
+    style SUM fill:#4CAF50
+```
+
+| Endpoint | Returns | Query shape |
+|----------|---------|-------------|
+| `GET /api/conversations` | `ConversationSummary[]` -- title + timestamps only | `.select("title createdAt updatedAt").lean()` |
+| `GET /api/conversations/search/:query` | `ConversationSummary[]` -- matches, metadata only | `.select("title createdAt updatedAt").lean()` |
+| `GET /api/conversations/:id` | Full conversation with `messages` | Loaded only when a conversation is selected |
+
+**Supporting changes:**
+
+| Aspect | Detail |
+|--------|--------|
+| **Compound index** | A `{ user: 1, createdAt: -1 }` compound index was added to the `Conversation` model so the per-user, newest-first list query is index-covered |
+| **API contract** | `openapi.yaml` documents a dedicated `ConversationSummary` schema for the list and search responses |
+| **Lean reads** | `.lean()` skips Mongoose document hydration on the list/search paths, returning plain objects |
+
+**Client-side stale-while-revalidate cache.** The signed-in conversation list is cached in `localStorage` under `cachedAuthConversations`. On reload, the sidebar renders the cached summaries **instantly** while a fresh fetch revalidates in the background; a spinner is shown only when nothing is cached. The cache is cleared on logout so a signed-out user never sees a previous account's list.
+
+```mermaid
+flowchart TD
+    Reload([Authenticated reload]) --> Cache{"cachedAuthConversations<br/>present?"}
+    Cache -->|Yes| Render["Render cached list instantly"]
+    Cache -->|No| Spinner["Show spinner"]
+    Render --> Revalidate["Background GET /api/conversations"]
+    Spinner --> Revalidate
+    Revalidate --> Update["Update sidebar + refresh cache"]
+    Logout([Logout]) --> Clear["Remove cachedAuthConversations"]
+
+    style Render fill:#4CAF50
+    style Revalidate fill:#FF9800
 ```
 
 ### Guest vs Authenticated User Flow
@@ -1510,6 +1671,7 @@ graph LR
         UserEmail[Users.email - Unique]
         ConvUser[Conversations.user - Regular]
         ConvCreated[Conversations.createdAt - Descending]
+        ConvUserCreated["Conversations(user, createdAt) - Compound"]
         GuestID[GuestConversations.guestId - Unique]
         GuestExpire[GuestConversations.expiresAt - TTL]
         KnowledgeExternalId[KnowledgeSources.externalId - Unique]
@@ -1893,6 +2055,8 @@ graph TD
         CodeSplit[Code Splitting]
         Memoization[React Memoization]
         ImageOpt[Image Optimization]
+        WebGLSplit["WebGL Scene Code-Split (React.lazy)"]
+        ConvCache["Conversation List localStorage Cache (SWR)"]
     end
 
     subgraph "Backend Optimizations"
@@ -1956,7 +2120,9 @@ graph LR
 | API Authentication | < 200ms | ~150ms |
 | Chat Message (without AI) | < 300ms | ~250ms |
 | AI Response Generation | < 3s | ~2.5s |
-| Conversation Load | < 500ms | ~400ms |
+| Conversation List (metadata-only) | < 200ms | ~120ms |
+| Conversation Sidebar (cached, SWR) | instant | ~0ms (revalidates in background) |
+| Conversation Load (full messages) | < 500ms | ~400ms |
 | Vector Search (Pinecone) | < 100ms | ~80ms |
 | Graph Traversal (Neo4j) | < 150ms | ~120ms |
 | Hybrid Retrieval (parallel, both paths) | < 200ms | ~150ms |
@@ -1974,6 +2140,20 @@ graph LR
 | **Embedding Retry** | Embedding generation retries up to 5 times with 3-second backoff on rate-limit or transient errors, ensuring no chunks are silently dropped during ingestion |
 | **Bounded Traversal** | Graph traversal limited to 2 hops to prevent combinatorial explosion on densely connected entities |
 | **Graceful Timeout** | Graph path has a configurable timeout; if exceeded, `Promise.allSettled` settles the graph path as rejected and vector results are used alone |
+
+### WebGL Scene Performance
+
+The procedural landing/auth backdrop (`LuminaScene.tsx`) is engineered to stay cheap and non-blocking on the critical path:
+
+| Optimization | Details |
+|-------------|---------|
+| **Code splitting** | Loaded via `React.lazy` + `Suspense`, so the Three.js runtime ships as a separate chunk and never blocks first paint or the auth flow |
+| **Responsive tiers** | Particle count and effect density scale down on mobile / tablet so low-power GPUs render fewer than the ~6,000 desktop points |
+| **devicePixelRatio cap** | The renderer DPR is capped per tier to avoid over-rendering on high-density displays |
+| **Procedural assets** | All geometry and shaders are generated in code -- zero texture/model downloads, so the visual layer adds no asset payload |
+| **Reduced motion** | `prefers-reduced-motion` suspends per-frame animation, eliminating continuous GPU work for users who opt out |
+| **Feature detection** | When WebGL is unavailable the component renders a no-op fallback instead of forcing a software path |
+| **Non-interactive overlay** | `pointer-events: none` keeps the canvas out of hit-testing, so it never adds input-handling cost to the UI above it |
 
 ---
 
@@ -2283,7 +2463,7 @@ This architecture document provides a comprehensive overview of the Lumina AI As
 
 ---
 
-**Document Version**: 3.1
-**Last Updated**: 2026-03-30
+**Document Version**: 3.2
+**Last Updated**: 2026-06-15
 **Maintained By**: David Nguyen
 **Contact**: hoangson091104@gmail.com

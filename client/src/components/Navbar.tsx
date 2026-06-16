@@ -5,7 +5,6 @@ import {
   Toolbar,
   IconButton,
   Typography,
-  InputBase,
   Box,
   useMediaQuery,
   useTheme,
@@ -15,7 +14,6 @@ import {
   Tooltip,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import SearchIcon from "@mui/icons-material/Search";
 import LogoutIcon from "@mui/icons-material/Logout";
 import AddCommentIcon from "@mui/icons-material/AddComment";
 import AccountCircle from "@mui/icons-material/AccountCircle";
@@ -27,15 +25,12 @@ import LightModeIcon from "@mui/icons-material/LightMode";
 
 import {
   createNewConversation,
-  searchConversations,
   isAuthenticated,
   validateToken,
   clearGuestMessagesFromLocalStorage,
   createGuestConversationInLocalStorage,
-  getGuestConversationsFromLocalStorage,
 } from "../services/api";
 import { useNavigate } from "react-router-dom";
-import { IConversation } from "../types/conversation";
 
 /**
  * Props: The Navbar component props
@@ -47,7 +42,7 @@ interface NavbarProps {
   onSelectConversation: (id: string | null) => void;
   onToggleTheme: () => void;
   darkMode: boolean;
-  setConversations: React.Dispatch<React.SetStateAction<IConversation[]>>;
+  activeTitle: string;
 }
 
 /**
@@ -69,18 +64,20 @@ const Navbar: React.FC<NavbarProps> = ({
   onSelectConversation,
   onToggleTheme,
   darkMode,
-  setConversations,
+  activeTitle,
 }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchLoading, setSearchLoading] = useState(false);
   const [newConvLoading, setNewConvLoading] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const text = "Lumina AI";
-  const colors = ["#FF6B6B", "#FFD93D", "#6BCB77", "#4D96FF", "#9D4EDD"];
-  const debounceTimerRef = useRef<number | null>(null);
+  // Treat default placeholder titles as "no title" so the welcome line shows.
+  const DEFAULT_TITLES = ["New Conversation", "Untitled Conversation"];
+  const hasRealTitle =
+    activeTitle.trim() !== "" && !DEFAULT_TITLES.includes(activeTitle.trim());
+  // Bright/light hues that stay legible on the blue AppBar (no saturated blue).
+  const colors = ["#FFD93D", "#FF8A8A", "#7CF0BD", "#FFFFFF", "#C792EA"];
 
   // State to track token validity
   const [isTokenValid, setIsTokenValid] = useState(isAuthenticated());
@@ -122,53 +119,6 @@ const Navbar: React.FC<NavbarProps> = ({
    */
   const handleMenuClose = () => {
     setAnchorEl(null);
-  };
-
-  /**
-   * Debounces the search term
-   *
-   * @param value The search value
-   */
-  const debouncedSearch = (value: string) => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-    debounceTimerRef.current = window.setTimeout(async () => {
-      if (!value.trim()) {
-        onRefreshConversations();
-        setSearchLoading(false);
-        return;
-      }
-      try {
-        if (isAuthenticated()) {
-          const results = await searchConversations(value);
-          setConversations(results);
-        } else {
-          const lowerValue = value.toLowerCase();
-          const results = getGuestConversationsFromLocalStorage().filter(
-            (conversation) =>
-              conversation.title.toLowerCase().includes(lowerValue),
-          );
-          setConversations(results);
-        }
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setSearchLoading(false);
-      }
-    }, 500);
-  };
-
-  /**
-   * Handles the search change
-   *
-   * @param e The change event
-   */
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    setSearchLoading(true);
-    debouncedSearch(value);
   };
 
   /**
@@ -220,6 +170,8 @@ const Navbar: React.FC<NavbarProps> = ({
    */
   const handleLogout = () => {
     localStorage.removeItem("token");
+    // Drop the cached conversation list so the next user never sees stale data.
+    localStorage.removeItem("cachedAuthConversations");
     navigate("/login");
   };
 
@@ -236,71 +188,107 @@ const Navbar: React.FC<NavbarProps> = ({
       <Toolbar
         sx={{
           display: "flex",
+          alignItems: "center",
           justifyContent: "space-between",
+          gap: 1,
           boxShadow: "0px 1px 5px 0px rgba(0,0,0,0.2)",
         }}
       >
-        <Box display="flex" alignItems="center" flex="1">
-          {/* Sidebar Toggle */}
+        {/* Left: sidebar toggle + brand */}
+        <Box sx={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
           <Tooltip title="Toggle Sidebar" arrow>
             <IconButton
               color="inherit"
               onClick={onToggleSidebar}
               edge="start"
-              sx={{ mr: 1 }}
+              sx={{ mr: isMobile ? 0.5 : 1 }}
             >
               <MenuIcon />
             </IconButton>
           </Tooltip>
 
+          {!isMobile && (
+            <Typography
+              variant="h6"
+              component={Link}
+              to="/"
+              sx={{
+                fontSize: "24px",
+                fontWeight: "bold",
+                textDecoration: "none",
+                color: "inherit",
+                whiteSpace: "nowrap",
+                "&:hover": { textDecoration: "none" },
+              }}
+            >
+              {text.split("").map((char, index) => {
+                if (char === " ") {
+                  return (
+                    <Box key={index} component="span">
+                      &nbsp;
+                    </Box>
+                  );
+                }
+                const color = colors[index % colors.length];
+                return (
+                  <Box
+                    key={index}
+                    component="span"
+                    sx={{
+                      color,
+                      display: "inline-block",
+                      textShadow: "0 1px 2px rgba(0,0,0,0.3)",
+                      transition: "transform 0.3s ease, color 0.3s ease",
+                      "&:hover": { transform: "scale(1.25)" },
+                    }}
+                  >
+                    {char}
+                  </Box>
+                );
+              })}
+            </Typography>
+          )}
+        </Box>
+
+        {/* Center: active conversation title */}
+        <Box
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            display: "flex",
+            justifyContent: "center",
+            px: 1,
+          }}
+        >
+          <Typography
+            variant="subtitle1"
+            noWrap
+            sx={{
+              fontWeight: 600,
+              maxWidth: "100%",
+              color: "inherit",
+              opacity: hasRealTitle ? 0.95 : 0.8,
+            }}
+          >
+            {hasRealTitle
+              ? activeTitle
+              : "Welcome to Lumina - ask me anything about David"}
+          </Typography>
+        </Box>
+
+        {/* Right: actions */}
+        <Box sx={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
           {/* Dark/Light Mode Toggle */}
           <Tooltip title={darkMode ? "Light Mode" : "Dark Mode"} arrow>
-            <IconButton
-              color="inherit"
-              onClick={handleToggleTheme}
-              sx={{ mr: 1 }}
-            >
+            <IconButton color="inherit" onClick={handleToggleTheme}>
               {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
             </IconButton>
           </Tooltip>
 
-          {/* Search Bar */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              backgroundColor: darkMode ? "grey.800" : "white",
-              color: "black",
-              borderRadius: 1,
-              padding: 1,
-              flex: 1,
-              transition: "all 0.3s",
-              boxShadow: "0px 1px 5px 0px rgba(0,0,0,0.2)",
-            }}
-          >
-            <SearchIcon
-              sx={{ color: darkMode ? "grey.200" : "grey.700", mr: 1 }}
-            />
-            <InputBase
-              placeholder="Search for a Conversation..."
-              sx={{
-                borderRadius: 8,
-                flex: 1,
-                color: darkMode ? "grey.200" : "black",
-              }}
-              value={searchTerm}
-              onChange={handleSearchChange}
-            />
-            {searchLoading && (
-              <CircularProgress size={20} sx={{ ml: 1, color: "#1976d2" }} />
-            )}
-          </Box>
-
-          {/* New Conversation Icon Button */}
+          {/* New Conversation */}
           <Tooltip title="New Conversation" arrow>
             <span>
               <IconButton
-                sx={{ ml: 1 }}
                 color="inherit"
                 onClick={handleCreateNewConversation}
                 disabled={newConvLoading}
@@ -314,15 +302,11 @@ const Navbar: React.FC<NavbarProps> = ({
             </span>
           </Tooltip>
 
-          {/* Login/Signup (if token is invalid) OR Logout */}
+          {/* Login/Signup (if token is invalid) OR Account/Logout */}
           {!isTokenValid ? (
             <>
               <Tooltip title="Login or Register" arrow>
-                <IconButton
-                  sx={{ ml: 1 }}
-                  color="inherit"
-                  onClick={handleMenuOpen}
-                >
+                <IconButton color="inherit" onClick={handleMenuOpen}>
                   <AccountCircle />
                 </IconButton>
               </Tooltip>
@@ -354,11 +338,7 @@ const Navbar: React.FC<NavbarProps> = ({
           ) : (
             <>
               <Tooltip title="Account" arrow>
-                <IconButton
-                  sx={{ ml: 1 }}
-                  color="inherit"
-                  onClick={handleMenuOpen}
-                >
+                <IconButton color="inherit" onClick={handleMenuOpen}>
                   <AccountCircle />
                 </IconButton>
               </Tooltip>
@@ -394,53 +374,6 @@ const Navbar: React.FC<NavbarProps> = ({
             </>
           )}
         </Box>
-
-        {/* Title on the Right (only if not mobile) */}
-        {!isMobile && (
-          <Typography
-            variant="h6"
-            component={Link}
-            to="/"
-            sx={{
-              ml: 2,
-              fontSize: "24px",
-              fontWeight: "bold",
-              textDecoration: "none",
-              color: "inherit",
-              "&:hover": {
-                textDecoration: "none",
-              },
-            }}
-          >
-            {text.split("").map((char, index) => {
-              if (char === " ") {
-                return (
-                  <Box key={index} component="span">
-                    &nbsp;
-                  </Box>
-                );
-              }
-              const color = colors[index % colors.length];
-              return (
-                <Box
-                  key={index}
-                  component="span"
-                  sx={{
-                    color,
-                    display: "inline-block",
-                    transition: "transform 0.3s ease, color 0.3s ease",
-                    "&:hover": {
-                      transform: "scale(1.2)",
-                      color: "#e19292",
-                    },
-                  }}
-                >
-                  {char}
-                </Box>
-              );
-            })}
-          </Typography>
-        )}
       </Toolbar>
     </AppBar>
   );

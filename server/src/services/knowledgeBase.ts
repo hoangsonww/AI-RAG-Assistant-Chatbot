@@ -1,6 +1,10 @@
 import { TaskType } from "@google/generative-ai";
 import dotenv from "dotenv";
-import { embedText, getEmbeddingModel } from "./geminiEmbeddings";
+import {
+  embedText,
+  getEmbeddingModel,
+  GEMINI_EMBEDDING_DIMENSION,
+} from "./geminiEmbeddings";
 import { index } from "./pineconeClient";
 import { isNeo4jConfigured } from "./neo4jClient";
 import { ingestChunksToGraph, deleteGraphDocument } from "./graphKnowledge";
@@ -119,8 +123,14 @@ const buildQueryVariants = (query: string) => {
     variants.push("recent projects portfolio notable projects");
   }
 
-  if (/(experience|worked|work history)/.test(lower)) {
-    variants.push("work experience projects");
+  if (
+    /(experience|worked|work history|career|milestone|role|job|employ|resume|cv|timeline|background|internship)/.test(
+      lower,
+    )
+  ) {
+    variants.push(
+      "work experience career timeline employment history roles companies",
+    );
   }
 
   return Array.from(new Set(variants.filter(Boolean))).slice(
@@ -318,20 +328,24 @@ export const retrieveKnowledgeChunks = async (
   const searchTopK = Math.max(topK * 2, MIN_SEARCH_TOP_K);
   const matchesMap = new Map<string, PineconeMatch>();
 
-  for (const variant of queryVariants) {
-    const queryEmbedding = await embedText(
-      model,
-      variant,
-      TaskType.RETRIEVAL_QUERY,
-    );
+  // Embed + query each variant in parallel to minimize pre-retrieval latency.
+  const variantMatches = await Promise.all(
+    queryVariants.map(async (variant) => {
+      const queryEmbedding = await embedText(
+        model,
+        variant,
+        TaskType.RETRIEVAL_QUERY,
+      );
+      const response = await index.namespace(KNOWLEDGE_NAMESPACE).query({
+        vector: queryEmbedding,
+        topK: searchTopK,
+        includeMetadata: true,
+      });
+      return (response.matches ?? []) as PineconeMatch[];
+    }),
+  );
 
-    const response = await index.namespace(KNOWLEDGE_NAMESPACE).query({
-      vector: queryEmbedding,
-      topK: searchTopK,
-      includeMetadata: true,
-    });
-
-    const matches = (response.matches ?? []) as PineconeMatch[];
+  for (const matches of variantMatches) {
     for (const match of matches) {
       const existing = matchesMap.get(match.id);
       const matchScore = match.score ?? 0;
@@ -378,20 +392,13 @@ export const retrieveKnowledgeChunks = async (
 export const retrieveAllChunksBySourceId = async (
   sourceId: string,
 ): Promise<SourceCitation[]> => {
-  if (!process.env.GOOGLE_AI_API_KEY) {
-    throw new Error("Missing GOOGLE_AI_API_KEY in environment variables");
-  }
-
-  // Use a dummy vector to query with metadata filter — Pinecone requires a vector
-  const model = getEmbeddingModel(process.env.GOOGLE_AI_API_KEY!);
-  const dummyEmbedding = await embedText(
-    model,
-    "retrieve all documents",
-    TaskType.RETRIEVAL_QUERY,
-  );
+  // Pinecone requires a query vector even for a pure metadata-filter fetch.
+  // Use a zero vector to skip a wasted embedding round-trip — results are sorted
+  // by chunkIndex below, so the (irrelevant) similarity score is never used.
+  const zeroVector = new Array(GEMINI_EMBEDDING_DIMENSION).fill(0);
 
   const response = await index.namespace(KNOWLEDGE_NAMESPACE).query({
-    vector: dummyEmbedding,
+    vector: zeroVector,
     topK: 200,
     includeMetadata: true,
     filter: { sourceId },

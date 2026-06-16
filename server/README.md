@@ -34,10 +34,12 @@ The Lumina backend is designed to handle:
 ## Key Features
 
 - **Secure API:** Implements robust JWT authentication and authorization mechanisms.
-- **Conversation Handling:** Supports creating, retrieving, updating, and deleting conversations.
+- **Conversation Handling:** Supports creating, retrieving, updating, and deleting conversations. The list and search endpoints return lightweight metadata-only summaries (titles and timestamps, no `messages`) backed by a compound index for fast, low-payload responses; full message bodies load when a conversation is selected.
 - **AI Chat Service:** Facilitates dynamic interactions with the AI, leveraging advanced language models.
 - **Hybrid RAG Pipeline:** Combines Pinecone vector similarity search with Neo4j graph traversal for comprehensive knowledge retrieval. Both retrieval paths run in parallel via `Promise.allSettled`, so one failing path never blocks the other. Results are merged to produce grounded, citation-backed responses, and static resume fallback context can be used when live retrieval backends fail.
+- **Topic-Aware Retrieval Completeness:** When a query maps to a known topic (experience/career, education, certifications, publications, awards, volunteering, languages, or test scores), the retriever deterministically pulls the full canonical knowledge source(s) for that topic (bounded to ~30 chunks) and places them ahead of the vector/graph results, so answers never omit items that fell below the top-K similarity cutoff. List-query detection is broadened and base top-K raised (10→12, list 20→24), and the prompt instructs the model to include every relevant item (most-recent-first for roles).
 - **Knowledge Graph:** Automatic entity extraction and relationship mapping stored in Neo4j AuraDB. Entities and relationships are extracted from ingested documents using Gemini AI and persisted as a queryable graph.
+- **Resilient AI Calls:** Embedding generation and graph entity-extraction retry indefinitely on rate-limit (429) and transient network/5xx errors (e.g. `fetch failed`, `ECONNRESET`, timeouts), honoring the server-suggested retry delay, while non-retryable errors (bad key, invalid request, malformed response) fail fast. This keeps a single transient blip or free-tier quota window from aborting a full knowledge sync.
 - **External Integrations:** Seamlessly integrates with MongoDB, Pinecone, Neo4j, and other external services.
 - **Email & Password Management:** Endpoints for email verification and password reset functionality.
 - **CLI for Knowledge Management:** Command-line tools for ingesting, updating, and managing knowledge sources, as well as monitoring and rebuilding the Neo4j graph.
@@ -83,11 +85,13 @@ Challenges are stored in a `challenges` collection with a TTL index (5-minute ex
 ### Conversations
 
 - **POST /api/conversations:** Create a new conversation.
-- **GET /api/conversations:** Retrieve all conversations for a user.
-- **GET /api/conversations/:id:** Retrieve a specific conversation by its ID.
+- **GET /api/conversations:** Retrieve all conversations for a user. Returns `ConversationSummary` objects (title + timestamps only; the `messages` array is omitted) via a projected, `.lean()` query for a smaller, faster response.
+- **GET /api/conversations/:id:** Retrieve a specific conversation by its ID, including its full `messages` array.
 - **PUT /api/conversations/:id:** Rename or update a conversation.
-- **GET /api/conversations/search/:query:** Search conversations by title or content.
+- **GET /api/conversations/search/:query:** Search conversations by title or content. Also returns metadata-only `ConversationSummary` objects.
 - **DELETE /api/conversations/:id:** Delete a conversation.
+
+> The list and search responses use the `ConversationSummary` schema (messages omitted), documented in `openapi.yaml`. Fetching a single conversation by ID still returns full messages, loaded on selection.
 
 ### Chat
 
@@ -154,6 +158,8 @@ For additional API details, please refer to the OpenAPI specification file (`ope
 ## Knowledge Base Ingestion (CLI)
 
 All knowledge ingestion is handled via CLI to keep the production UI locked down.
+
+Knowledge sources live in `server/knowledge/` and are registered in `knowledge/manifest.json`. These include the public-safe profile (current employer added) plus dedicated sources for projects, skills, certifications, publications, awards, volunteering, coursework, languages/organizations, and test scores. A dense, single-unit reverse-chronological `son-nguyen-career-timeline.txt` keeps career/experience queries returning complete results. Running `npm run knowledge:sync` re-indexes the manifest, including this source.
 
 1. Ensure your `.env` has `PINECONE_INDEX_NAME=lumina-index` (or your target index name).
 2. Run one of the commands below from the `server` directory.

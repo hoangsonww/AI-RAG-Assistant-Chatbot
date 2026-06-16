@@ -21,6 +21,7 @@ import SecurityIcon from "@mui/icons-material/Security";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import StorageIcon from "@mui/icons-material/Storage";
 import ExtensionIcon from "@mui/icons-material/Extension";
+import HubIcon from "@mui/icons-material/Hub";
 import TipsAndUpdatesIcon from "@mui/icons-material/TipsAndUpdates";
 import InsightsIcon from "@mui/icons-material/Insights";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -32,6 +33,8 @@ import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import PsychologyIcon from "@mui/icons-material/Psychology";
 import SupportAgentIcon from "@mui/icons-material/SupportAgent";
 import { motion } from "framer-motion";
+
+const LuminaScene = React.lazy(() => import("../components/three/LuminaScene"));
 
 const LandingPage: React.FC = () => {
   const theme = useTheme();
@@ -194,6 +197,19 @@ const LandingPage: React.FC = () => {
     "Resume-ready answers",
     "Project deep dives",
     "Private by design",
+    "Source-cited replies",
+    "Hybrid RAG",
+    "Knowledge graph",
+    "Vector search",
+    "Grounded & accurate",
+    "Recruiter-friendly",
+    "Tech stack deep dives",
+    "Career timeline",
+    "24/7 availability",
+    "Guest mode",
+    "Passkey sign-in",
+    "Conversation history",
+    "Open source",
   ];
 
   const fadeUpVariant = {
@@ -245,13 +261,34 @@ const LandingPage: React.FC = () => {
 
   const integrationTags = [
     "OpenAPI",
+    "Swagger",
     "React",
+    "Vite",
+    "TypeScript",
+    "MUI",
+    "Framer Motion",
+    "React Three Fiber",
+    "Three.js",
+    "React Router",
+    "Axios",
+    "KaTeX",
     "Node.js",
+    "Express",
     "MongoDB",
+    "Mongoose",
     "Pinecone",
+    "Neo4j",
     "LangChain",
-    "Vercel",
+    "Gemini",
+    "JWT",
+    "WebAuthn",
+    "Passkeys",
+    "Python",
+    "MCP",
     "Docker",
+    "Terraform",
+    "AWS",
+    "Vercel",
   ];
 
   const useCases = [
@@ -430,6 +467,14 @@ const LandingPage: React.FC = () => {
           overflow: "hidden",
         }}
       >
+        <React.Suspense fallback={null}>
+          <LuminaScene
+            mode={theme.palette.mode === "dark" ? "dark" : "light"}
+            colorA={theme.palette.primary.main}
+            colorB={theme.palette.info.main}
+            colorC={theme.palette.secondary.main}
+          />
+        </React.Suspense>
         <Box
           sx={{
             position: "absolute",
@@ -438,63 +483,6 @@ const LandingPage: React.FC = () => {
               "linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)",
             backgroundSize: "64px 64px",
             opacity: theme.palette.mode === "dark" ? 0.15 : 0.08,
-          }}
-        />
-        <Box
-          component={motion.div}
-          animate={{ x: [0, 40, 0], y: [0, -30, 0] }}
-          transition={{ duration: 28, repeat: Infinity, ease: "easeInOut" }}
-          sx={{
-            position: "absolute",
-            width: { xs: 240, sm: 320, md: 420 },
-            height: { xs: 240, sm: 320, md: 420 },
-            top: "-12%",
-            left: "-6%",
-            borderRadius: "50%",
-            background: `radial-gradient(circle at 30% 30%, ${alpha(
-              theme.palette.primary.main,
-              0.35,
-            )}, transparent 65%)`,
-            filter: "blur(6px)",
-            opacity: theme.palette.mode === "dark" ? 0.6 : 0.85,
-          }}
-        />
-        <Box
-          component={motion.div}
-          animate={{ x: [0, -30, 0], y: [0, 35, 0] }}
-          transition={{ duration: 32, repeat: Infinity, ease: "easeInOut" }}
-          sx={{
-            position: "absolute",
-            width: { xs: 260, sm: 360, md: 460 },
-            height: { xs: 260, sm: 360, md: 460 },
-            bottom: "-18%",
-            right: "-8%",
-            borderRadius: "50%",
-            background: `radial-gradient(circle at 70% 30%, ${alpha(
-              theme.palette.info.main,
-              0.3,
-            )}, transparent 70%)`,
-            filter: "blur(10px)",
-            opacity: theme.palette.mode === "dark" ? 0.55 : 0.75,
-          }}
-        />
-        <Box
-          component={motion.div}
-          animate={{ x: [0, 25, 0], y: [0, 20, 0] }}
-          transition={{ duration: 36, repeat: Infinity, ease: "easeInOut" }}
-          sx={{
-            position: "absolute",
-            width: { xs: 200, sm: 280, md: 340 },
-            height: { xs: 200, sm: 280, md: 340 },
-            top: "38%",
-            right: "28%",
-            borderRadius: "50%",
-            background: `radial-gradient(circle at 50% 50%, ${alpha(
-              theme.palette.success.main,
-              0.22,
-            )}, transparent 70%)`,
-            filter: "blur(12px)",
-            opacity: theme.palette.mode === "dark" ? 0.45 : 0.65,
           }}
         />
       </Box>
@@ -558,10 +546,10 @@ const LandingPage: React.FC = () => {
                   color={secondaryTextColor}
                   sx={{ mb: 3, maxWidth: 520 }}
                 >
-                  Ask about my background, projects, and impact. Lumina blends
-                  my personal knowledge base with Retrieval‑Augmented
-                  Generation, Pinecone vector search, and LangChain
-                  orchestration to deliver sourced answers in seconds.
+                  Ask about my background, projects, and impact. Lumina runs a
+                  hybrid RAG pipeline — fusing Pinecone vector search with a
+                  Neo4j knowledge graph, orchestrated through LangChain — to
+                  deliver sourced answers in seconds.
                 </Typography>
               </Box>
               <Box
@@ -619,31 +607,55 @@ const LandingPage: React.FC = () => {
                 component={motion.div}
                 variants={heroItemVariants}
                 sx={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 1,
+                  width: "100%",
+                  overflow: "hidden",
+                  maskImage:
+                    "linear-gradient(90deg, transparent, black 10%, black 90%, transparent)",
+                  WebkitMaskImage:
+                    "linear-gradient(90deg, transparent, black 10%, black 90%, transparent)",
                 }}
               >
-                {heroBadges.map((badge) => (
-                  <Box
-                    key={badge}
-                    sx={{
-                      px: 1.6,
-                      py: 0.6,
-                      borderRadius: 999,
-                      fontSize: "0.75rem",
-                      fontWeight: 600,
-                      backgroundColor: alpha(
-                        theme.palette.background.paper,
-                        theme.palette.mode === "dark" ? 0.6 : 0.8,
-                      ),
-                      border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
-                      color: secondaryTextColor,
-                    }}
-                  >
-                    {badge}
-                  </Box>
-                ))}
+                <Box
+                  component={motion.div}
+                  animate={{ x: ["0%", "-50%"] }}
+                  transition={{
+                    repeat: Infinity,
+                    duration: 32,
+                    ease: "linear",
+                  }}
+                  sx={{
+                    display: "flex",
+                    gap: 1,
+                    width: "max-content",
+                    py: 0.5,
+                  }}
+                >
+                  {[...heroBadges, ...heroBadges].map((badge, idx) => (
+                    <Box
+                      key={`${badge}-${idx}`}
+                      sx={{
+                        flex: "0 0 auto",
+                        px: 1.6,
+                        py: 0.6,
+                        borderRadius: 999,
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                        backgroundColor: alpha(
+                          theme.palette.background.paper,
+                          theme.palette.mode === "dark" ? 0.6 : 0.8,
+                        ),
+                        border: `1px solid ${alpha(
+                          theme.palette.divider,
+                          0.6,
+                        )}`,
+                        color: secondaryTextColor,
+                      }}
+                    >
+                      {badge}
+                    </Box>
+                  ))}
+                </Box>
               </Box>
             </Box>
           </Grid>
@@ -749,31 +761,34 @@ const LandingPage: React.FC = () => {
                   Retrieval Layer
                 </Typography>
                 <Box sx={{ display: "grid", gap: 1, mt: 1 }}>
-                  {["Pinecone vectors", "Private docs", "Live context"].map(
-                    (item) => (
-                      <Box
-                        key={item}
-                        sx={{
-                          px: 1.4,
-                          py: 0.6,
-                          borderRadius: 2,
-                          backgroundColor: alpha(
-                            theme.palette.primary.main,
-                            0.08,
-                          ),
-                          border: `1px solid ${alpha(
-                            theme.palette.primary.main,
-                            0.25,
-                          )}`,
-                          fontSize: "0.8rem",
-                          fontWeight: 600,
-                          color: theme.palette.text.primary,
-                        }}
-                      >
-                        {item}
-                      </Box>
-                    ),
-                  )}
+                  {[
+                    "Pinecone vectors",
+                    "Neo4j graph",
+                    "Hybrid re‑rank",
+                    "Live context",
+                  ].map((item) => (
+                    <Box
+                      key={item}
+                      sx={{
+                        px: 1.4,
+                        py: 0.6,
+                        borderRadius: 2,
+                        backgroundColor: alpha(
+                          theme.palette.primary.main,
+                          0.08,
+                        ),
+                        border: `1px solid ${alpha(
+                          theme.palette.primary.main,
+                          0.25,
+                        )}`,
+                        fontSize: "0.8rem",
+                        fontWeight: 600,
+                        color: theme.palette.text.primary,
+                      }}
+                    >
+                      {item}
+                    </Box>
+                  ))}
                 </Box>
               </Box>
               <Box
@@ -943,36 +958,49 @@ const LandingPage: React.FC = () => {
               mt: { xs: 4, sm: 5 },
               position: "relative",
               zIndex: 2,
-              display: "flex",
-              flexWrap: "wrap",
-              justifyContent: "center",
-              gap: 1.5,
+              width: "100%",
+              overflow: "hidden",
+              maskImage:
+                "linear-gradient(90deg, transparent, black 8%, black 92%, transparent)",
+              WebkitMaskImage:
+                "linear-gradient(90deg, transparent, black 8%, black 92%, transparent)",
             }}
           >
-            {integrationTags.map((tag) => (
-              <Box
-                key={tag}
-                component={motion.div}
-                whileHover={{ y: -4 }}
-                transition={{ duration: 0.2 }}
-                sx={{
-                  px: 2,
-                  py: 0.7,
-                  borderRadius: 999,
-                  fontSize: "0.78rem",
-                  fontWeight: 600,
-                  letterSpacing: "0.04em",
-                  backgroundColor: alpha(
-                    theme.palette.background.paper,
-                    theme.palette.mode === "dark" ? 0.65 : 0.9,
-                  ),
-                  border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
-                  color: secondaryTextColor,
-                }}
-              >
-                {tag}
-              </Box>
-            ))}
+            <Box
+              component={motion.div}
+              animate={{ x: ["0%", "-50%"] }}
+              transition={{ repeat: Infinity, duration: 45, ease: "linear" }}
+              sx={{
+                display: "flex",
+                gap: 1.5,
+                width: "max-content",
+                py: 0.5,
+              }}
+            >
+              {[...integrationTags, ...integrationTags].map((tag, idx) => (
+                <Box
+                  key={`${tag}-${idx}`}
+                  sx={{
+                    flex: "0 0 auto",
+                    px: 2,
+                    py: 0.7,
+                    borderRadius: 999,
+                    fontSize: "0.78rem",
+                    fontWeight: 600,
+                    letterSpacing: "0.04em",
+                    whiteSpace: "nowrap",
+                    backgroundColor: alpha(
+                      theme.palette.background.paper,
+                      theme.palette.mode === "dark" ? 0.65 : 0.9,
+                    ),
+                    border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
+                    color: secondaryTextColor,
+                  }}
+                >
+                  {tag}
+                </Box>
+              ))}
+            </Box>
           </Box>
         </Box>
 
@@ -1070,6 +1098,7 @@ const LandingPage: React.FC = () => {
                 component={motion.div}
                 variants={fadeUpVariant}
                 {...scrollRevealProps}
+                sx={{ height: "100%" }}
               >
                 <Card elevation={0} sx={cardStyle}>
                   <Box sx={iconContainerStyle}>
@@ -1094,6 +1123,7 @@ const LandingPage: React.FC = () => {
                 component={motion.div}
                 variants={fadeUpVariant}
                 {...scrollRevealProps}
+                sx={{ height: "100%" }}
               >
                 <Card elevation={0} sx={cardStyle}>
                   <Box sx={iconContainerStyle}>
@@ -1118,6 +1148,7 @@ const LandingPage: React.FC = () => {
                 component={motion.div}
                 variants={fadeUpVariant}
                 {...scrollRevealProps}
+                sx={{ height: "100%" }}
               >
                 <Card elevation={0} sx={cardStyle}>
                   <Box sx={iconContainerStyle}>
@@ -1167,17 +1198,19 @@ const LandingPage: React.FC = () => {
               color={secondaryTextColor}
               sx={{ mb: 4, maxWidth: 640, mx: "auto" }}
             >
-              RAG, Pinecone vector search, and LangChain orchestration keep
-              answers grounded in my actual materials.
+              A hybrid of Pinecone vector search and a Neo4j knowledge graph,
+              orchestrated with LangChain, keeps every answer grounded in my
+              actual materials.
             </Typography>
           </Box>
 
           <Grid container spacing={4}>
-            <Grid item xs={12} sm={6} md={4}>
+            <Grid item xs={12} sm={6} md={3}>
               <Box
                 component={motion.div}
                 variants={fadeUpVariant}
                 {...scrollRevealProps}
+                sx={{ height: "100%" }}
               >
                 <Card elevation={0} sx={cardStyle}>
                   <Box sx={iconContainerStyle}>
@@ -1187,22 +1220,24 @@ const LandingPage: React.FC = () => {
                   </Box>
                   <CardContent>
                     <Typography gutterBottom variant="h6">
-                      RAG‑Powered Knowledge
+                      Hybrid RAG Retrieval
                     </Typography>
                     <Typography variant="body2" color={secondaryTextColor}>
-                      Retrieval‑Augmented Generation enriches every answer with
-                      relevant context.
+                      Vector and graph retrieval run in parallel, then merge and
+                      re‑rank — so every answer draws on the most complete
+                      context.
                     </Typography>
                   </CardContent>
                 </Card>
               </Box>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={4}>
+            <Grid item xs={12} sm={6} md={3}>
               <Box
                 component={motion.div}
                 variants={fadeUpVariant}
                 {...scrollRevealProps}
+                sx={{ height: "100%" }}
               >
                 <Card elevation={0} sx={cardStyle}>
                   <Box sx={iconContainerStyle}>
@@ -1215,19 +1250,47 @@ const LandingPage: React.FC = () => {
                       Pinecone Vector Search
                     </Typography>
                     <Typography variant="body2" color={secondaryTextColor}>
-                      Blazing‑fast similarity search retrieves the most
-                      pertinent information in milliseconds.
+                      Blazing‑fast semantic similarity search surfaces the most
+                      pertinent passages in milliseconds.
                     </Typography>
                   </CardContent>
                 </Card>
               </Box>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={4}>
+            <Grid item xs={12} sm={6} md={3}>
               <Box
                 component={motion.div}
                 variants={fadeUpVariant}
                 {...scrollRevealProps}
+                sx={{ height: "100%" }}
+              >
+                <Card elevation={0} sx={cardStyle}>
+                  <Box sx={iconContainerStyle}>
+                    <HubIcon
+                      sx={{ fontSize: 28, color: theme.palette.primary.main }}
+                    />
+                  </Box>
+                  <CardContent>
+                    <Typography gutterBottom variant="h6">
+                      Neo4j Knowledge Graph
+                    </Typography>
+                    <Typography variant="body2" color={secondaryTextColor}>
+                      A graph of entities and relationships — projects, skills,
+                      roles — lets Lumina follow real connections, not just
+                      keywords.
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Box>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Box
+                component={motion.div}
+                variants={fadeUpVariant}
+                {...scrollRevealProps}
+                sx={{ height: "100%" }}
               >
                 <Card elevation={0} sx={cardStyle}>
                   <Box sx={iconContainerStyle}>
@@ -1406,6 +1469,7 @@ const LandingPage: React.FC = () => {
                 component={motion.div}
                 variants={fadeUpVariant}
                 {...scrollRevealProps}
+                sx={{ height: "100%" }}
               >
                 <Card elevation={0} sx={cardStyle}>
                   <Box sx={iconContainerStyle}>
@@ -1430,6 +1494,7 @@ const LandingPage: React.FC = () => {
                 component={motion.div}
                 variants={fadeUpVariant}
                 {...scrollRevealProps}
+                sx={{ height: "100%" }}
               >
                 <Card elevation={0} sx={cardStyle}>
                   <Box sx={iconContainerStyle}>
@@ -1455,6 +1520,7 @@ const LandingPage: React.FC = () => {
                 component={motion.div}
                 variants={fadeUpVariant}
                 {...scrollRevealProps}
+                sx={{ height: "100%" }}
               >
                 <Card elevation={0} sx={cardStyle}>
                   <Box sx={iconContainerStyle}>
@@ -1515,6 +1581,7 @@ const LandingPage: React.FC = () => {
                 component={motion.div}
                 variants={fadeUpVariant}
                 {...scrollRevealProps}
+                sx={{ height: "100%" }}
               >
                 <Card elevation={0} sx={cardStyle}>
                   <Box sx={iconContainerStyle}>
@@ -1540,6 +1607,7 @@ const LandingPage: React.FC = () => {
                 component={motion.div}
                 variants={fadeUpVariant}
                 {...scrollRevealProps}
+                sx={{ height: "100%" }}
               >
                 <Card elevation={0} sx={cardStyle}>
                   <Box sx={iconContainerStyle}>
@@ -1565,6 +1633,7 @@ const LandingPage: React.FC = () => {
                 component={motion.div}
                 variants={fadeUpVariant}
                 {...scrollRevealProps}
+                sx={{ height: "100%" }}
               >
                 <Card elevation={0} sx={cardStyle}>
                   <Box sx={iconContainerStyle}>
@@ -1728,7 +1797,7 @@ const LandingPage: React.FC = () => {
           component={motion.div}
           variants={staggerContainerVariants}
           {...scrollRevealProps}
-          sx={{ mt: { xs: 8, md: 12 } }}
+          sx={{ mt: { xs: 12, md: 20 } }}
         >
           <Box component={motion.div} variants={fadeUpVariant}>
             <Typography variant="overline" align="center" sx={sectionEyebrowSx}>
@@ -1803,7 +1872,7 @@ const LandingPage: React.FC = () => {
           component={motion.div}
           variants={staggerContainerVariants}
           {...scrollRevealProps}
-          sx={{ mt: { xs: 8, md: 12 } }}
+          sx={{ mt: { xs: 12, md: 20 } }}
         >
           <Box component={motion.div} variants={fadeUpVariant}>
             <Typography variant="overline" align="center" sx={sectionEyebrowSx}>
@@ -1941,8 +2010,9 @@ const LandingPage: React.FC = () => {
               <AccordionDetails>
                 <Typography variant="body2" color={secondaryTextColor}>
                   Lumina is focused on David Nguyen and leverages a curated
-                  knowledge base plus RAG, Pinecone, and LangChain to tailor
-                  answers. You still get general knowledge, but with
+                  knowledge base plus hybrid RAG — Pinecone vector search fused
+                  with a Neo4j knowledge graph, orchestrated by LangChain — to
+                  tailor answers. You still get general knowledge, but with
                   personalized context and saved conversations.
                 </Typography>
               </AccordionDetails>
@@ -2018,7 +2088,8 @@ const LandingPage: React.FC = () => {
                   <strong>React</strong> for the frontend,{" "}
                   <strong>Node.js</strong> and <strong>Express</strong> for the
                   backend, <strong>MongoDB</strong> for data storage,{" "}
-                  <strong>Pinecone</strong> for vector search,{" "}
+                  <strong>Pinecone</strong> vector search fused with a{" "}
+                  <strong>Neo4j</strong> knowledge graph, and{" "}
                   <strong>LangChain</strong> for orchestration, and more!
                 </Typography>
               </AccordionDetails>
