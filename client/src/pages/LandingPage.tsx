@@ -210,6 +210,17 @@ const LandingPage: React.FC = () => {
     },
   };
 
+  // Decorative outline ring behind the hero cards: fade + scale from center so
+  // it eases in with the stagger instead of sitting there on first paint.
+  const heroRingVariants = {
+    hidden: { opacity: 0, scale: 0.85 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: { duration: 0.9, ease: "easeOut" },
+    },
+  };
+
   const heroBadges = [
     "About David Nguyen",
     "Resume-ready answers",
@@ -707,6 +718,8 @@ const LandingPage: React.FC = () => {
               }}
             >
               <Box
+                component={motion.div}
+                variants={heroRingVariants}
                 sx={{
                   position: { xs: "absolute", md: "absolute" },
                   inset: { xs: "auto", md: "12% 10%" },
