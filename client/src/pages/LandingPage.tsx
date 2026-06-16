@@ -192,6 +192,24 @@ const LandingPage: React.FC = () => {
     },
   };
 
+  // Entrance reveal for the floating hero cards (Lumina Reply / Retrieval /
+  // Pipeline). The reveal lives on an outer wrapper so each card's continuous
+  // float animation keeps running on the inner element undisturbed.
+  const heroVisualVariants = {
+    hidden: {},
+    visible: { transition: { staggerChildren: 0.18, delayChildren: 0.35 } },
+  };
+
+  const heroCardVariants = {
+    hidden: { opacity: 0, y: 28, scale: 0.94 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: { duration: 0.7, ease: "easeOut" },
+    },
+  };
+
   const heroBadges = [
     "About David Nguyen",
     "Resume-ready answers",
@@ -467,14 +485,22 @@ const LandingPage: React.FC = () => {
           overflow: "hidden",
         }}
       >
-        <React.Suspense fallback={null}>
-          <LuminaScene
-            mode={theme.palette.mode === "dark" ? "dark" : "light"}
-            colorA={theme.palette.primary.main}
-            colorB={theme.palette.info.main}
-            colorC={theme.palette.secondary.main}
-          />
-        </React.Suspense>
+        <Box
+          component={motion.div}
+          initial={{ opacity: 0, scale: 1.06 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.6, ease: "easeOut", delay: 0.2 }}
+          sx={{ position: "absolute", inset: 0 }}
+        >
+          <React.Suspense fallback={null}>
+            <LuminaScene
+              mode={theme.palette.mode === "dark" ? "dark" : "light"}
+              colorA={theme.palette.primary.main}
+              colorB={theme.palette.info.main}
+              colorC={theme.palette.secondary.main}
+            />
+          </React.Suspense>
+        </Box>
         <Box
           sx={{
             position: "absolute",
@@ -669,6 +695,10 @@ const LandingPage: React.FC = () => {
           </Grid>
           <Grid item xs={12} md={6}>
             <Box
+              component={motion.div}
+              variants={heroVisualVariants}
+              initial="hidden"
+              animate={showHeader ? "visible" : "hidden"}
               sx={{
                 position: "relative",
                 height: { xs: "auto", md: 460 },
@@ -690,6 +720,16 @@ const LandingPage: React.FC = () => {
               />
               <Box
                 component={motion.div}
+                variants={heroCardVariants}
+                sx={{
+                  position: { xs: "relative", md: "absolute" },
+                  top: { md: 0 },
+                  left: { md: 0 },
+                  right: { md: "18%" },
+                }}
+              >
+              <Box
+                component={motion.div}
                 animate={{ y: [0, -14, 0] }}
                 transition={{
                   duration: 7,
@@ -697,10 +737,6 @@ const LandingPage: React.FC = () => {
                   ease: "easeInOut",
                 }}
                 sx={{
-                  position: { xs: "relative", md: "absolute" },
-                  top: { md: 0 },
-                  left: { md: 0 },
-                  right: { md: "18%" },
                   p: { xs: 2.5, sm: 3 },
                   borderRadius: 3,
                   backgroundColor: alpha(
@@ -734,6 +770,17 @@ const LandingPage: React.FC = () => {
                   Sources: resume, personal knowledge base, curated context
                 </Typography>
               </Box>
+              </Box>
+              <Box
+                component={motion.div}
+                variants={heroCardVariants}
+                sx={{
+                  position: { xs: "relative", md: "absolute" },
+                  top: { md: 140 },
+                  right: { md: 0 },
+                  left: { md: "18%" },
+                }}
+              >
               <Box
                 component={motion.div}
                 animate={{ y: [0, 12, 0] }}
@@ -743,10 +790,6 @@ const LandingPage: React.FC = () => {
                   ease: "easeInOut",
                 }}
                 sx={{
-                  position: { xs: "relative", md: "absolute" },
-                  top: { md: 140 },
-                  right: { md: 0 },
-                  left: { md: "18%" },
                   p: { xs: 2.5, sm: 3 },
                   borderRadius: 3,
                   backgroundColor: alpha(
@@ -799,6 +842,17 @@ const LandingPage: React.FC = () => {
                   ))}
                 </Box>
               </Box>
+              </Box>
+              <Box
+                component={motion.div}
+                variants={heroCardVariants}
+                sx={{
+                  position: { xs: "relative", md: "absolute" },
+                  bottom: { md: 0 },
+                  left: { md: "10%" },
+                  right: { md: "22%" },
+                }}
+              >
               <Box
                 component={motion.div}
                 animate={{ y: [0, -10, 0] }}
@@ -808,10 +862,6 @@ const LandingPage: React.FC = () => {
                   ease: "easeInOut",
                 }}
                 sx={{
-                  position: { xs: "relative", md: "absolute" },
-                  bottom: { md: 0 },
-                  left: { md: "10%" },
-                  right: { md: "22%" },
                   p: { xs: 2.5, sm: 3 },
                   borderRadius: 3,
                   backgroundColor: alpha(
@@ -861,6 +911,7 @@ const LandingPage: React.FC = () => {
                     </Box>
                   ))}
                 </Box>
+              </Box>
               </Box>
             </Box>
           </Grid>
