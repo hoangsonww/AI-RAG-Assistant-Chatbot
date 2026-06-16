@@ -593,10 +593,18 @@ const LandingPage: React.FC = () => {
                     fontWeight: "bold",
                     borderColor: alpha(theme.palette.primary.main, 0.5),
                     color: theme.palette.text.primary,
+                    backgroundColor: alpha(
+                      theme.palette.background.paper,
+                      theme.palette.mode === "dark" ? 0.55 : 0.85,
+                    ),
+                    backdropFilter: "blur(4px)",
                     transition: "border-color 0.3s, background-color 0.3s",
                     "&:hover": {
                       borderColor: theme.palette.primary.main,
-                      backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                      backgroundColor: alpha(
+                        theme.palette.background.paper,
+                        theme.palette.mode === "dark" ? 0.72 : 0.95,
+                      ),
                     },
                   }}
                 >
@@ -2130,8 +2138,12 @@ const LandingPage: React.FC = () => {
             py: { xs: 6, sm: 7 },
             background: `linear-gradient(135deg, ${alpha(
               theme.palette.primary.main,
-              0.18,
-            )}, ${alpha(theme.palette.info.main, 0.18)})`,
+              0.3,
+            )}, ${alpha(theme.palette.info.main, 0.3)}), ${alpha(
+              theme.palette.background.paper,
+              theme.palette.mode === "dark" ? 0.72 : 0.9,
+            )}`,
+            backdropFilter: "blur(6px)",
             border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
             boxShadow:
               theme.palette.mode === "dark"

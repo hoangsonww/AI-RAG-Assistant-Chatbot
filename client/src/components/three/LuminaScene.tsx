@@ -283,6 +283,7 @@ interface ParticlesProps {
   readonly mode: "light" | "dark";
   readonly speed: number;
   readonly pixelRatio: number;
+  readonly scrollBoost: number;
 }
 
 const ParticleField: React.FC<ParticlesProps> = ({
@@ -292,6 +293,7 @@ const ParticleField: React.FC<ParticlesProps> = ({
   mode,
   speed,
   pixelRatio,
+  scrollBoost,
 }) => {
   const matRef = useRef<THREE.ShaderMaterial>(null);
   const groupRef = useRef<THREE.Group>(null);
@@ -344,9 +346,9 @@ const ParticleField: React.FC<ParticlesProps> = ({
     if (groupRef.current && speed > 0) {
       groupRef.current.rotation.y -= d * 0.025;
       // Drift the starfield down as the user scrolls — like flying upward.
-      const ty = scroll.progress * -1.8;
+      const ty = scroll.progress * -1.8 * scrollBoost;
       groupRef.current.position.y += (ty - groupRef.current.position.y) * 0.04;
-      groupRef.current.rotation.z = scroll.progress * 0.25;
+      groupRef.current.rotation.z = scroll.progress * 0.25 * scrollBoost;
     }
   });
 
@@ -464,6 +466,7 @@ interface RigProps {
   readonly baseScale: number;
   readonly parallax: boolean;
   readonly animate: boolean;
+  readonly scrollBoost: number;
 }
 
 /**
@@ -477,19 +480,22 @@ const ParallaxRig: React.FC<RigProps> = ({
   baseScale,
   parallax,
   animate,
+  scrollBoost,
 }) => {
   const ref = useRef<THREE.Group>(null);
   const scaleRef = useRef(baseScale);
   useFrame(() => {
     if (!ref.current) return;
     const p = animate ? scroll.progress : 0;
-    const rotTargetY = (parallax ? pointer.x * 0.35 : 0) + p * Math.PI * 0.55;
-    const rotTargetX = (parallax ? -pointer.y * 0.22 : 0) + p * 0.3;
+    const rotTargetY =
+      (parallax ? pointer.x * 0.35 : 0) + p * Math.PI * 0.55 * scrollBoost;
+    const rotTargetX =
+      (parallax ? -pointer.y * 0.22 : 0) + p * 0.3 * scrollBoost;
     ref.current.rotation.y += (rotTargetY - ref.current.rotation.y) * 0.05;
     ref.current.rotation.x += (rotTargetX - ref.current.rotation.x) * 0.05;
-    const posTargetY = baseY + p * 0.9;
+    const posTargetY = baseY + p * 0.9 * scrollBoost;
     ref.current.position.y += (posTargetY - ref.current.position.y) * 0.05;
-    const targetScale = baseScale * (1 - p * 0.18);
+    const targetScale = baseScale * (1 - Math.min(p * 0.18 * scrollBoost, 0.4));
     scaleRef.current += (targetScale - scaleRef.current) * 0.05;
     ref.current.scale.setScalar(scaleRef.current);
   });
@@ -643,6 +649,9 @@ const LuminaScene: React.FC<LuminaSceneProps> = ({
 
   const speed = reduced ? 0 : 1;
   const animate = !reduced;
+  // Amplify scroll-driven motion on smaller screens (no pointer parallax there,
+  // and the offset orb otherwise moves too subtly) so scrolling clearly reacts.
+  const scrollBoost = { mobile: 2.1, tablet: 1.35, desktop: 1 }[tier];
   const parallaxEnabled = finePointer && tier !== "mobile" && !lowPower;
   const pixelRatio = Math.min(
     typeof window !== "undefined" ? window.devicePixelRatio : 1,
@@ -676,6 +685,7 @@ const LuminaScene: React.FC<LuminaSceneProps> = ({
         mode={mode}
         speed={speed}
         pixelRatio={pixelRatio}
+        scrollBoost={scrollBoost}
       />
       <ParallaxRig
         offsetX={layout.offsetX}
@@ -683,6 +693,7 @@ const LuminaScene: React.FC<LuminaSceneProps> = ({
         baseScale={layout.scale}
         parallax={parallaxEnabled}
         animate={animate}
+        scrollBoost={scrollBoost}
       >
         <OrbCore
           colorA={colorA}
