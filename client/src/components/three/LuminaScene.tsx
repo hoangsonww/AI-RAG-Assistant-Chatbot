@@ -560,10 +560,19 @@ const LuminaScene: React.FC<LuminaSceneProps> = ({
     window.addEventListener("pointermove", onMove, { passive: true });
 
     const onScroll = (): void => {
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      scroll.progress = max > 0 ? Math.min(1, window.scrollY / max) : 0;
+      // Read from the actual scrolling element — on mobile this is often
+      // document.body (not documentElement), where the documentElement-based
+      // math collapses to 0 and the scene never reacts.
+      const el = document.scrollingElement || document.documentElement;
+      const top = el.scrollTop || window.scrollY || window.pageYOffset || 0;
+      const max = el.scrollHeight - el.clientHeight;
+      scroll.progress = max > 0 ? Math.min(1, Math.max(0, top / max)) : 0;
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
+    // Capture phase so scroll on any nested container is also picked up.
+    window.addEventListener("scroll", onScroll, {
+      passive: true,
+      capture: true,
+    });
     onScroll();
 
     // Defer mounting the canvas so the hero text paints first.
@@ -574,7 +583,7 @@ const LuminaScene: React.FC<LuminaSceneProps> = ({
       fp.removeEventListener("change", onFp);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scroll", onScroll, { capture: true });
       window.cancelAnimationFrame(idle);
       window.cancelAnimationFrame(resizeRaf);
     };
