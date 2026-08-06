@@ -34,3 +34,14 @@ export const authenticateJWT = (
     res.status(401).json({ message: "Authorization header missing" });
   }
 };
+
+export const requireAdmin = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  if (!req.user?.isAdmin) {
+    return res.status(403).json({ message: "Unauthorized: Admin access required" });
+  }
+  next();
+};

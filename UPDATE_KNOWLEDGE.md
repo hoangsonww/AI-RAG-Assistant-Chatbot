@@ -41,6 +41,9 @@ Every knowledge update flows through this pipeline:
 2. **Run the CLI upsert** — this re-chunks, re-embeds (Pinecone), re-extracts entities (Neo4j), and updates MongoDB
 3. Both stores are always kept in sync via the CLI
 
+> [!TIP]
+> **UI Knowledge Manager**: Prefer a visual interface? Administrators can manage knowledge directly from the web app! Log in as an admin and click the Storage icon in the Navbar (or navigate to `/admin/knowledge`) to access the Knowledge Manager dashboard. From there, you can view, edit, re-index, delete, and run a manifest sync with a single click.
+
 ---
 
 ## Knowledge File Structure

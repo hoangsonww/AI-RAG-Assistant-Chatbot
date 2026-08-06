@@ -22,6 +22,7 @@ import LoginIcon from "@mui/icons-material/Login";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
+import StorageIcon from "@mui/icons-material/Storage";
 
 import {
   createNewConversation,
@@ -29,6 +30,7 @@ import {
   validateToken,
   clearGuestMessagesFromLocalStorage,
   createGuestConversationInLocalStorage,
+  isAdminUser,
 } from "../services/api";
 import { useNavigate } from "react-router-dom";
 
@@ -36,13 +38,13 @@ import { useNavigate } from "react-router-dom";
  * Props: The Navbar component props
  */
 interface NavbarProps {
-  sidebarOpen: boolean;
-  onToggleSidebar: () => void;
-  onRefreshConversations: () => void;
-  onSelectConversation: (id: string | null) => void;
+  sidebarOpen?: boolean;
+  onToggleSidebar?: () => void;
+  onRefreshConversations?: () => void;
+  onSelectConversation?: (id: string | null) => void;
   onToggleTheme: () => void;
   darkMode: boolean;
-  activeTitle: string;
+  activeTitle?: string;
 }
 
 /**
@@ -64,7 +66,7 @@ const Navbar: React.FC<NavbarProps> = ({
   onSelectConversation,
   onToggleTheme,
   darkMode,
-  activeTitle,
+  activeTitle = "",
 }) => {
   const [newConvLoading, setNewConvLoading] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -196,16 +198,18 @@ const Navbar: React.FC<NavbarProps> = ({
       >
         {/* Left: sidebar toggle + brand */}
         <Box sx={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
-          <Tooltip title="Toggle Sidebar" arrow>
-            <IconButton
-              color="inherit"
-              onClick={onToggleSidebar}
-              edge="start"
-              sx={{ mr: isMobile ? 0.5 : 1 }}
-            >
-              <MenuIcon />
-            </IconButton>
-          </Tooltip>
+          {onToggleSidebar && (
+            <Tooltip title="Toggle Sidebar" arrow>
+              <IconButton
+                color="inherit"
+                onClick={onToggleSidebar}
+                edge="start"
+                sx={{ mr: isMobile ? 0.5 : 1 }}
+              >
+                <MenuIcon />
+              </IconButton>
+            </Tooltip>
+          )}
 
           {!isMobile && (
             <Typography
@@ -288,21 +292,32 @@ const Navbar: React.FC<NavbarProps> = ({
           </Tooltip>
 
           {/* New Conversation */}
-          <Tooltip title="New Conversation" arrow>
-            <span>
-              <IconButton
-                color="inherit"
-                onClick={handleCreateNewConversation}
-                disabled={newConvLoading}
-              >
-                {newConvLoading ? (
-                  <CircularProgress size={20} color="inherit" />
-                ) : (
-                  <AddCommentIcon />
-                )}
+          {onSelectConversation && onRefreshConversations && (
+            <Tooltip title="New Conversation" arrow>
+              <span>
+                <IconButton
+                  color="inherit"
+                  onClick={handleCreateNewConversation}
+                  disabled={newConvLoading}
+                >
+                  {newConvLoading ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    <AddCommentIcon />
+                  )}
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
+
+          {/* Knowledge Manager (Admin Only) */}
+          {isTokenValid && isAdminUser() && (
+            <Tooltip title="Knowledge Manager" arrow>
+              <IconButton color="inherit" onClick={() => navigate("/admin/knowledge")}>
+                <StorageIcon />
               </IconButton>
-            </span>
-          </Tooltip>
+            </Tooltip>
+          )}
 
           {/* Login/Signup (if token is invalid) OR Account/Logout */}
           {!isTokenValid ? (

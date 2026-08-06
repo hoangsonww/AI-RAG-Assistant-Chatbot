@@ -15,6 +15,8 @@ tags:
     description: "Endpoints for chat interactions with the AI assistant"
   - name: "Conversations"
     description: "Endpoints for managing user conversations"
+  - name: "Knowledge"
+    description: "Endpoints for managing RAG knowledge sources (Admin only)"
 paths:
   /api/auth/signup:
     post:
@@ -616,6 +618,181 @@ paths:
         '500':
           description: "Internal server error."
 
+  /api/knowledge:
+    get:
+      tags:
+        - "Knowledge"
+      summary: "List knowledge sources"
+      description: "Retrieve a paginated list of knowledge sources. Note: The `content` field is excluded from list responses for performance."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "A paginated list of sources."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sources:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/KnowledgeSource'
+                  pagination:
+                    type: object
+        '403':
+          description: "Admin access required."
+    post:
+      tags:
+        - "Knowledge"
+      summary: "Create a new knowledge source"
+      description: "Creates a new source, chunks the content, embeds it into Pinecone, and ingests it into Neo4j."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, content, sourceType]
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+                sourceType:
+                  type: string
+                  enum: [resume, note, link, project, bio, other]
+                sourceUrl:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+                externalId:
+                  type: string
+      responses:
+        '201':
+          description: "Source created and embedded."
+
+  /api/knowledge/{id}:
+    patch:
+      tags:
+        - "Knowledge"
+      summary: "Update a knowledge source"
+      description: "Updates source metadata. If `content` is provided, the old vectors are deleted and new content is embedded."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+                sourceType:
+                  type: string
+                  enum: [resume, note, link, project, bio, other]
+                sourceUrl:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+                externalId:
+                  type: string
+      responses:
+        '200':
+          description: "Source updated."
+    delete:
+      tags:
+        - "Knowledge"
+      summary: "Delete a knowledge source"
+      description: "Removes the source from MongoDB, deletes its vectors from Pinecone, and removes related nodes from Neo4j."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Source deleted."
+
+  /api/knowledge/{id}/reindex:
+    post:
+      tags:
+        - "Knowledge"
+      summary: "Re-index a knowledge source"
+      description: "Deletes existing vectors and re-embeds the current content for a source."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Source re-indexed."
+
+  /api/knowledge/sync:
+    post:
+      tags:
+        - "Knowledge"
+      summary: "Bulk sync manifest"
+      description: "Upserts multiple sources based on `externalId`. Useful for keeping external static files synced."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sources]
+              properties:
+                sources:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        '200':
+          description: "Sync complete."
+
 components:
   securitySchemes:
     bearerAuth:
@@ -623,6 +800,34 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    KnowledgeSource:
+      type: object
+      properties:
+        _id:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        sourceType:
+          type: string
+          enum: [resume, note, link, project, bio, other]
+        sourceUrl:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        externalId:
+          type: string
+        chunkCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
     PasskeySummary:
       type: object
       properties:

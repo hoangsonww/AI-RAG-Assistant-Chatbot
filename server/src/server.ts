@@ -169,11 +169,13 @@ import authRoutes from "./routes/auth";
 import conversationRoutes from "./routes/conversations";
 import chatRoutes from "./routes/chat";
 import guestRoutes from "./routes/guest";
+import knowledgeRoutes from "./routes/knowledge";
 
 app.use("/api/auth", authRoutes);
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/chat/auth", chatRoutes);
 app.use("/api/chat/guest", guestRoutes);
+app.use("/api/knowledge", knowledgeRoutes);
 
 /*
  * IMPORTANT:

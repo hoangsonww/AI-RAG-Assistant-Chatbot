@@ -43,7 +43,7 @@
     "knowledge:delete": "ts-node src/scripts/knowledgeCli.ts delete",
     "knowledge:list": "ts-node src/scripts/knowledgeCli.ts list",
     "knowledge:repl": "ts-node src/scripts/knowledgeCli.ts repl",
-    "knowledge:sync": "ts-node src/scripts/knowledgeCli.ts sync",
+    "knowledge:sync": "ts-node src/scripts/knowledgeCli.ts sync --manifest ./knowledge/manifest.json",
     "knowledge:graph:status": "ts-node src/scripts/knowledgeCli.ts graph:status",
     "knowledge:graph:rebuild": "ts-node src/scripts/knowledgeCli.ts graph:rebuild",
     "knowledge:graph:rebuild:clean": "ts-node src/scripts/knowledgeCli.ts graph:rebuild --clean",
