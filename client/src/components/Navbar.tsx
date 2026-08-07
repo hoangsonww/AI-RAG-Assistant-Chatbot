@@ -131,8 +131,8 @@ const Navbar: React.FC<NavbarProps> = ({
 
     if (!isAuthenticated()) {
       const newGuestConversation = createGuestConversationInLocalStorage();
-      onRefreshConversations();
-      onSelectConversation(newGuestConversation._id);
+      if (onRefreshConversations) onRefreshConversations();
+      if (onSelectConversation) onSelectConversation(newGuestConversation._id);
       setNewConvLoading(false);
       return;
     }
@@ -146,11 +146,11 @@ const Navbar: React.FC<NavbarProps> = ({
 
     try {
       const newConv = await createNewConversation();
-      onRefreshConversations();
-      onSelectConversation(newConv._id);
+      if (onRefreshConversations) onRefreshConversations();
+      if (onSelectConversation) onSelectConversation(newConv._id);
     } catch (error: any) {
-      onSelectConversation(null);
-      onRefreshConversations();
+      if (onSelectConversation) onSelectConversation(null);
+      if (onRefreshConversations) onRefreshConversations();
       if (error.response && error.response.status === 401) {
         console.warn(
           "User is not authenticated, clearing conversation in UI only.",

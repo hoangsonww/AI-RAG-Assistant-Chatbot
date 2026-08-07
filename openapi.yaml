@@ -631,16 +631,20 @@ paths:
           in: query
           schema:
             type: integer
+            minimum: 1
             default: 1
         - name: limit
           in: query
           schema:
             type: integer
+            minimum: 1
+            maximum: 100
             default: 20
         - name: type
           in: query
           schema:
             type: string
+            enum: [resume, note, link, project, bio, other]
         - name: search
           in: query
           schema:
@@ -659,6 +663,16 @@ paths:
                       $ref: '#/components/schemas/KnowledgeSource'
                   pagination:
                     type: object
+                    required: [page, limit, total, pages]
+                    properties:
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      total:
+                        type: integer
+                      pages:
+                        type: integer
         '403':
           description: "Admin access required."
     post:

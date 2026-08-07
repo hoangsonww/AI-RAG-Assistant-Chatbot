@@ -538,12 +538,23 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
           }}
         >
           <Box
+            component="button"
+            id="manifest-sync-header"
+            aria-expanded={syncOpen}
+            aria-controls="manifest-sync-panel"
             display="flex"
             alignItems="center"
             justifyContent="space-between"
             px={2.5}
             py={1.5}
-            sx={{ cursor: "pointer" }}
+            sx={{
+              cursor: "pointer",
+              width: "100%",
+              border: "none",
+              background: "transparent",
+              color: "inherit",
+              fontFamily: "inherit",
+            }}
             onClick={() => setSyncOpen((v) => !v)}
           >
             <Box display="flex" alignItems="center" gap={1}>
@@ -561,7 +572,7 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
               }}
             />
           </Box>
-          <Collapse in={syncOpen}>
+          <Collapse in={syncOpen} id="manifest-sync-panel">
             <Divider />
             <Box px={2.5} py={2}>
               <Typography variant="body2" color="text.secondary" mb={1.5}>

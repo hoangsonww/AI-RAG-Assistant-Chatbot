@@ -467,7 +467,7 @@ For detailed instructions on managing knowledge (adding, updating, deleting), se
 
 The knowledge base supports manifest-based batch sync, making it straightforward to add, update, or delete knowledge sources in bulk. The manifest file (`server/knowledge/manifest.json`) declaratively describes all knowledge files and their metadata, enabling one-command synchronization via `npm run knowledge:sync`.
 
-**UI Manager:** Administrators can easily manage knowledge straight from the browser! Once logged in as an admin, click the Database icon in the navigation bar (or navigate to `/admin/knowledge`) to open the Knowledge Manager. From there, you can view, create, edit, delete, and re-index knowledge visually without touching the CLI.
+**UI Manager:** Administrators can easily manage knowledge straight from the browser! Once logged in as an admin, click the Storage icon in the navigation bar (or navigate to `/admin/knowledge`) to open the Knowledge Manager. From there, you can view, create, edit, delete, and re-index knowledge visually without touching the CLI.
 
 The same manifest/file set also powers the static resume fallback used during live retrieval backend failures, so fallback knowledge is easy to maintain without code changes. For the full guide covering single-file upserts, batch sync, graph rebuilds, and deletion workflows, see **[UPDATE_KNOWLEDGE.md](UPDATE_KNOWLEDGE.md)**.
 
@@ -840,7 +840,7 @@ flowchart TB
 ### Knowledge Management (Admin Only)
 
 - **GET /api/knowledge:** Retrieve a paginated list of knowledge sources.
-- **POST /api/knowledge:** Create a new knowledge source and embed its content into Pinecone and Neo4j.
+- **POST /api/knowledge:** Create a new knowledge source and embed its content into Pinecone (and Neo4j if graph RAG is configured).
 - **PATCH /api/knowledge/:id:** Update a source (and re-embed if content changed).
 - **DELETE /api/knowledge/:id:** Delete a knowledge source and its vectors/nodes.
 - **POST /api/knowledge/:id/reindex:** Force re-embed existing content for a source.

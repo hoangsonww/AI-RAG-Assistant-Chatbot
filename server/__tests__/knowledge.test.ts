@@ -6,8 +6,8 @@ import { ingestKnowledgeSource, deleteKnowledgeSourceVectors } from "../src/serv
 
 // Mock middleware
 jest.mock("../src/middleware/auth", () => ({
-  authenticateJWT: (req: any, res: any, next: any) => next(),
-  requireAdmin: (req: any, res: any, next: any) => next(),
+  authenticateJWT: jest.fn((req: any, res: any, next: any) => next()),
+  requireAdmin: jest.fn((req: any, res: any, next: any) => next()),
 }));
 
 // Mock models and services
@@ -24,6 +24,22 @@ app.use("/api/knowledge", knowledgeRouter);
 describe("Knowledge Admin Routes", () => {
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe("Authorization", () => {
+    it("rejects unauthenticated requests", async () => {
+      const auth = require("../src/middleware/auth");
+      auth.authenticateJWT.mockImplementationOnce((req: any, res: any) => res.status(401).json({ message: "Unauthorized" }));
+      const res = await request(app).get("/api/knowledge");
+      expect(res.status).toBe(401);
+    });
+
+    it("rejects non-admin requests", async () => {
+      const auth = require("../src/middleware/auth");
+      auth.requireAdmin.mockImplementationOnce((req: any, res: any) => res.status(403).json({ message: "Unauthorized: Admin access required" }));
+      const res = await request(app).get("/api/knowledge");
+      expect(res.status).toBe(403);
+    });
   });
 
   describe("GET /api/knowledge", () => {

@@ -35,13 +35,23 @@ export const authenticateJWT = (
   }
 };
 
-export const requireAdmin = (
+import User from "../models/User";
+
+export const requireAdmin = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
-  if (!req.user?.isAdmin) {
-    return res.status(403).json({ message: "Unauthorized: Admin access required" });
+  try {
+    if (!req.user?.id) {
+      return res.status(403).json({ message: "Unauthorized: Admin access required" });
+    }
+    const user = await User.findById(req.user.id);
+    if (!user || !user.isAdmin) {
+      return res.status(403).json({ message: "Unauthorized: Admin access required" });
+    }
+    next();
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
   }
-  next();
 };

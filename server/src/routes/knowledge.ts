@@ -11,6 +11,21 @@ import {
   ingestKnowledgeSource,
   deleteKnowledgeSourceVectors,
 } from "../services/knowledgeBase";
+import mongoose from "mongoose";
+
+const VALID_SOURCE_TYPES: KnowledgeSourceType[] = ["resume", "note", "link", "project", "bio", "other"];
+
+const normalizeTags = (tags: any): string[] => {
+  return tags ? (Array.isArray(tags) ? tags : String(tags).split(",").map((t: string) => t.trim())) : [];
+};
+
+const isValidObjectIdGuard = (id: string, res: Response): boolean => {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    res.status(400).json({ message: "Invalid id format" });
+    return false;
+  }
+  return true;
+};
 
 const router = express.Router();
 
@@ -84,16 +99,17 @@ router.use(authenticateJWT, requireAdmin);
 router.get("/", async (req: AuthRequest, res: Response) => {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.min(100, parseInt(req.query.limit as string) || 20);
+    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit as string) || 20));
     const type = req.query.type as string | undefined;
     const search = req.query.search as string | undefined;
 
     const filter: Record<string, any> = {};
     if (type) filter.sourceType = type;
     if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { tags: { $regex: search, $options: "i" } },
+        { title: { $regex: escapedSearch, $options: "i" } },
+        { tags: { $regex: escapedSearch, $options: "i" } },
       ];
     }
 
@@ -191,9 +207,8 @@ router.post("/", async (req: AuthRequest, res: Response) => {
     if (!title?.trim()) errors.push({ field: "title", message: "Title is required" });
     if (!content?.trim()) errors.push({ field: "content", message: "Content is required" });
     if (!sourceType?.trim()) errors.push({ field: "sourceType", message: "sourceType is required" });
-    const validTypes: KnowledgeSourceType[] = ["resume", "note", "link", "project", "bio", "other"];
-    if (sourceType && !validTypes.includes(sourceType)) {
-      errors.push({ field: "sourceType", message: `Must be one of: ${validTypes.join(", ")}` });
+    if (sourceType && !VALID_SOURCE_TYPES.includes(sourceType as KnowledgeSourceType)) {
+      errors.push({ field: "sourceType", message: `Must be one of: ${VALID_SOURCE_TYPES.join(", ")}` });
     }
     if (errors.length) return res.status(400).json({ errors });
 
@@ -211,25 +226,40 @@ router.post("/", async (req: AuthRequest, res: Response) => {
       content: content.trim(),
       sourceType,
       sourceUrl: sourceUrl?.trim(),
-      tags: tags ? (Array.isArray(tags) ? tags : String(tags).split(",").map((t: string) => t.trim())) : [],
+      tags: normalizeTags(tags),
       externalId: externalId?.trim() || undefined,
       chunkCount: 0,
     });
-    await source.save();
+    
+    try {
+      await source.save();
+    } catch (saveError: any) {
+      if (saveError.code === 11000) {
+        return res.status(409).json({ message: `A source with externalId "${externalId}" already exists` });
+      }
+      throw saveError;
+    }
 
     // Embed and ingest into Pinecone (+ Neo4j if configured)
-    const { chunkCount } = await ingestKnowledgeSource({
-      sourceId: String(source._id),
-      title: source.title,
-      content: source.content,
-      sourceType: source.sourceType,
-      sourceUrl: source.sourceUrl,
-    });
+    try {
+      const { chunkCount } = await ingestKnowledgeSource({
+        sourceId: String(source._id),
+        title: source.title,
+        content: source.content,
+        sourceType: source.sourceType,
+        sourceUrl: source.sourceUrl,
+      });
 
-    source.chunkCount = chunkCount;
-    await source.save();
+      source.chunkCount = chunkCount;
+      await source.save();
 
-    res.status(201).json({ source, chunkCount });
+      res.status(201).json({ source, chunkCount });
+    } catch (ingestError: any) {
+      // Roll back so the list never shows an unsearchable source.
+      await KnowledgeSource.findByIdAndDelete(source._id).catch(() => {});
+      await deleteKnowledgeSourceVectors(String(source._id)).catch(() => {});
+      throw ingestError;
+    }
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -301,15 +331,16 @@ router.post("/", async (req: AuthRequest, res: Response) => {
  */
 router.patch("/:id", async (req: AuthRequest, res: Response) => {
   try {
+    if (!isValidObjectIdGuard(req.params.id, res)) return;
+
     const source = await KnowledgeSource.findById(req.params.id);
     if (!source) return res.status(404).json({ message: "Knowledge source not found" });
 
     const { title, content, sourceType, sourceUrl, tags, externalId } = req.body;
 
-    const validTypes: KnowledgeSourceType[] = ["resume", "note", "link", "project", "bio", "other"];
-    if (sourceType && !validTypes.includes(sourceType)) {
+    if (sourceType && !VALID_SOURCE_TYPES.includes(sourceType as KnowledgeSourceType)) {
       return res.status(400).json({
-        errors: [{ field: "sourceType", message: `Must be one of: ${validTypes.join(", ")}` }],
+        errors: [{ field: "sourceType", message: `Must be one of: ${VALID_SOURCE_TYPES.join(", ")}` }],
       });
     }
 
@@ -321,27 +352,46 @@ router.patch("/:id", async (req: AuthRequest, res: Response) => {
       }
     }
 
+    let needsReembed = false;
+
     // Apply field updates
-    if (title?.trim()) source.title = title.trim();
-    if (content?.trim()) source.content = content.trim();
-    if (sourceType) source.sourceType = sourceType;
-    if (sourceUrl !== undefined) source.sourceUrl = sourceUrl?.trim();
+    if (title?.trim() && source.title !== title.trim()) {
+      source.title = title.trim();
+      needsReembed = true;
+    }
+    if (content?.trim() && source.content !== content.trim()) {
+      source.content = content.trim();
+      needsReembed = true;
+    }
+    if (sourceType && source.sourceType !== sourceType) {
+      source.sourceType = sourceType;
+      needsReembed = true;
+    }
+    if (sourceUrl !== undefined && source.sourceUrl !== sourceUrl?.trim()) {
+      source.sourceUrl = sourceUrl?.trim();
+      needsReembed = true;
+    }
     if (tags !== undefined) {
-      source.tags = Array.isArray(tags) ? tags : String(tags).split(",").map((t: string) => t.trim());
+      source.tags = normalizeTags(tags);
     }
     if (externalId !== undefined) source.externalId = externalId?.trim() || undefined;
 
-    // Re-embed with replaceExisting = true (deletes old vectors first)
-    const { chunkCount } = await ingestKnowledgeSource({
-      sourceId: String(source._id),
-      title: source.title,
-      content: source.content,
-      sourceType: source.sourceType,
-      sourceUrl: source.sourceUrl,
-      replaceExisting: true,
-    });
+    let chunkCount = source.chunkCount;
 
-    source.chunkCount = chunkCount;
+    if (needsReembed) {
+      // Re-embed with replaceExisting = true (deletes old vectors first)
+      const ingestionResult = await ingestKnowledgeSource({
+        sourceId: String(source._id),
+        title: source.title,
+        content: source.content,
+        sourceType: source.sourceType,
+        sourceUrl: source.sourceUrl,
+        replaceExisting: true,
+      });
+      chunkCount = ingestionResult.chunkCount;
+      source.chunkCount = chunkCount;
+    }
+
     await source.save();
 
     res.json({ source, chunkCount });
@@ -389,6 +439,8 @@ router.patch("/:id", async (req: AuthRequest, res: Response) => {
  */
 router.delete("/:id", async (req: AuthRequest, res: Response) => {
   try {
+    if (!isValidObjectIdGuard(req.params.id, res)) return;
+
     const source = await KnowledgeSource.findById(req.params.id);
     if (!source) return res.status(404).json({ message: "Knowledge source not found" });
 
@@ -442,6 +494,8 @@ router.delete("/:id", async (req: AuthRequest, res: Response) => {
  */
 router.post("/:id/reindex", async (req: AuthRequest, res: Response) => {
   try {
+    if (!isValidObjectIdGuard(req.params.id, res)) return;
+
     const source = await KnowledgeSource.findById(req.params.id);
     if (!source) return res.status(404).json({ message: "Knowledge source not found" });
 
@@ -550,11 +604,17 @@ router.post("/:id/reindex", async (req: AuthRequest, res: Response) => {
  *       500:
  *         description: Server error.
  */
+const MAX_SYNC_SOURCES = 50;
 router.post("/sync", async (req: AuthRequest, res: Response) => {
   try {
     const { sources } = req.body;
     if (!Array.isArray(sources) || sources.length === 0) {
       return res.status(400).json({ message: "Body must contain a non-empty `sources` array" });
+    }
+    if (sources.length > MAX_SYNC_SOURCES) {
+      return res.status(400).json({
+        message: `Manifest exceeds the limit of ${MAX_SYNC_SOURCES} sources per request`,
+      });
     }
 
     const results: { externalId: string; status: "created" | "updated"; chunkCount: number }[] = [];
@@ -578,7 +638,7 @@ router.post("/sync", async (req: AuthRequest, res: Response) => {
             content,
             sourceType,
             sourceUrl,
-            tags: tags ? (Array.isArray(tags) ? tags : String(tags).split(",").map((t: string) => t.trim())) : [],
+            tags: normalizeTags(tags),
             externalId,
             chunkCount: 0,
           });
@@ -589,7 +649,7 @@ router.post("/sync", async (req: AuthRequest, res: Response) => {
           source.sourceType = sourceType;
           source.sourceUrl = sourceUrl;
           if (tags !== undefined) {
-            source.tags = Array.isArray(tags) ? tags : String(tags).split(",").map((t: string) => t.trim());
+            source.tags = normalizeTags(tags);
           }
         }
 
@@ -609,6 +669,10 @@ router.post("/sync", async (req: AuthRequest, res: Response) => {
       } catch (err: any) {
         errors.push({ externalId, error: err.message });
       }
+    }
+
+    if (results.length === 0 && errors.length > 0) {
+      return res.status(500).json({ message: "All manifest entries failed to sync", synced: 0, results, errors });
     }
 
     res.json({ synced: results.length, results, errors });

@@ -1004,7 +1004,11 @@ export const isAdminUser = (): boolean => {
     const token = getTokenFromLocalStorage();
     if (!token) return false;
     // JWT payload is the second segment, base64url-encoded
-    const payload = JSON.parse(atob(token.split(".")[1]));
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = base64.length % 4;
+    const padded = pad ? base64 + "=".repeat(4 - pad) : base64;
+    const payload = JSON.parse(atob(padded));
     return payload?.isAdmin === true;
   } catch {
     return false;
