@@ -104,19 +104,28 @@ describe("Knowledge Admin Routes", () => {
 
   describe("DELETE /api/knowledge/:id", () => {
     it("deletes a source and its vectors", async () => {
-      (KnowledgeSource.findById as jest.Mock).mockResolvedValue({ _id: "123" });
+      const sourceId = "507f1f77bcf86cd799439011";
+      (KnowledgeSource.findById as jest.Mock).mockResolvedValue({ _id: sourceId });
       (KnowledgeSource.findByIdAndDelete as jest.Mock).mockResolvedValue(true);
       (deleteKnowledgeSourceVectors as jest.Mock).mockResolvedValue(true);
 
-      const res = await request(app).delete("/api/knowledge/123");
+      const res = await request(app).delete(`/api/knowledge/${sourceId}`);
       expect(res.status).toBe(200);
-      expect(deleteKnowledgeSourceVectors).toHaveBeenCalledWith("123");
-      expect(KnowledgeSource.findByIdAndDelete).toHaveBeenCalledWith("123");
+      expect(deleteKnowledgeSourceVectors).toHaveBeenCalledWith(sourceId);
+      expect(KnowledgeSource.findByIdAndDelete).toHaveBeenCalledWith(sourceId);
+    });
+
+    it("returns 400 if id is invalid", async () => {
+      const res = await request(app).delete("/api/knowledge/123");
+      expect(res.status).toBe(400);
+      expect(deleteKnowledgeSourceVectors).not.toHaveBeenCalled();
+      expect(KnowledgeSource.findByIdAndDelete).not.toHaveBeenCalled();
     });
 
     it("returns 404 if not found", async () => {
+      const sourceId = "507f1f77bcf86cd799439011";
       (KnowledgeSource.findById as jest.Mock).mockResolvedValue(null);
-      const res = await request(app).delete("/api/knowledge/999");
+      const res = await request(app).delete(`/api/knowledge/${sourceId}`);
       expect(res.status).toBe(404);
     });
   });

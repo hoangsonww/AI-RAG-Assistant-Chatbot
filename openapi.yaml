@@ -656,6 +656,7 @@ paths:
             application/json:
               schema:
                 type: object
+                required: [sources, pagination]
                 properties:
                   sources:
                     type: array

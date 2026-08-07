@@ -101,17 +101,25 @@ describe("Knowledge Admin Routes", () => {
     });
     describe("DELETE /api/knowledge/:id", () => {
         it("deletes a source and its vectors", () => __awaiter(void 0, void 0, void 0, function* () {
-            KnowledgeSource_1.default.findById.mockResolvedValue({ _id: "123" });
+            const sourceId = "507f1f77bcf86cd799439011";
+            KnowledgeSource_1.default.findById.mockResolvedValue({ _id: sourceId });
             KnowledgeSource_1.default.findByIdAndDelete.mockResolvedValue(true);
             knowledgeBase_1.deleteKnowledgeSourceVectors.mockResolvedValue(true);
-            const res = yield (0, supertest_1.default)(app).delete("/api/knowledge/123");
+            const res = yield (0, supertest_1.default)(app).delete(`/api/knowledge/${sourceId}`);
             expect(res.status).toBe(200);
-            expect(knowledgeBase_1.deleteKnowledgeSourceVectors).toHaveBeenCalledWith("123");
-            expect(KnowledgeSource_1.default.findByIdAndDelete).toHaveBeenCalledWith("123");
+            expect(knowledgeBase_1.deleteKnowledgeSourceVectors).toHaveBeenCalledWith(sourceId);
+            expect(KnowledgeSource_1.default.findByIdAndDelete).toHaveBeenCalledWith(sourceId);
+        }));
+        it("returns 400 if id is invalid", () => __awaiter(void 0, void 0, void 0, function* () {
+            const res = yield (0, supertest_1.default)(app).delete("/api/knowledge/123");
+            expect(res.status).toBe(400);
+            expect(knowledgeBase_1.deleteKnowledgeSourceVectors).not.toHaveBeenCalled();
+            expect(KnowledgeSource_1.default.findByIdAndDelete).not.toHaveBeenCalled();
         }));
         it("returns 404 if not found", () => __awaiter(void 0, void 0, void 0, function* () {
+            const sourceId = "507f1f77bcf86cd799439011";
             KnowledgeSource_1.default.findById.mockResolvedValue(null);
-            const res = yield (0, supertest_1.default)(app).delete("/api/knowledge/999");
+            const res = yield (0, supertest_1.default)(app).delete(`/api/knowledge/${sourceId}`);
             expect(res.status).toBe(404);
         }));
     });
