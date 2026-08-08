@@ -742,6 +742,12 @@ The retry logic uses exponential backoff to avoid overwhelming the server while 
   <img src="img/empty-home.png" alt="Homepage - Empty State" width="100%">
 </p>
 
+### Knowledge Management Page (Admin Only)
+
+<p align="center">
+  <img src="img/knowledge.png" alt="Knowledge Management Page" width="100%">
+</p>
+
 ### Login Page
 
 <p align="center">

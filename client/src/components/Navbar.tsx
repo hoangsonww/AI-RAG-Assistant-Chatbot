@@ -313,7 +313,10 @@ const Navbar: React.FC<NavbarProps> = ({
           {/* Knowledge Manager (Admin Only) */}
           {isTokenValid && isAdminUser() && (
             <Tooltip title="Knowledge Manager" arrow>
-              <IconButton color="inherit" onClick={() => navigate("/admin/knowledge")}>
+              <IconButton
+                color="inherit"
+                onClick={() => navigate("/admin/knowledge")}
+              >
                 <StorageIcon />
               </IconButton>
             </Tooltip>

@@ -47,7 +47,9 @@
     "knowledge:graph:status": "ts-node src/scripts/knowledgeCli.ts graph:status",
     "knowledge:graph:rebuild": "ts-node src/scripts/knowledgeCli.ts graph:rebuild",
     "knowledge:graph:rebuild:clean": "ts-node src/scripts/knowledgeCli.ts graph:rebuild --clean",
-    "knowledge:graph:reset": "ts-node src/scripts/knowledgeCli.ts graph:reset"
+    "knowledge:graph:reset": "ts-node src/scripts/knowledgeCli.ts graph:reset",
+    "admin:grant": "ts-node src/scripts/makeAdmin.ts grant",
+    "admin:revoke": "ts-node src/scripts/makeAdmin.ts revoke"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",

@@ -711,6 +711,36 @@ paths:
           description: "Source created and embedded."
 
   /api/knowledge/{id}:
+    get:
+      tags:
+        - "Knowledge"
+      summary: "Get a single knowledge source"
+      description: "Retrieve one source with its full `content` field included (unlike the list endpoint)."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "The knowledge source, with content."
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [source]
+                properties:
+                  source:
+                    $ref: '#/components/schemas/KnowledgeSource'
+        '400':
+          description: "Invalid id format."
+        '403':
+          description: "Admin access required."
+        '404':
+          description: "Knowledge source not found."
     patch:
       tags:
         - "Knowledge"

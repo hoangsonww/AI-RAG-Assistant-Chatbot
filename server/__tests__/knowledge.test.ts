@@ -2,7 +2,10 @@ import request from "supertest";
 import express from "express";
 import knowledgeRouter from "../src/routes/knowledge";
 import KnowledgeSource from "../src/models/KnowledgeSource";
-import { ingestKnowledgeSource, deleteKnowledgeSourceVectors } from "../src/services/knowledgeBase";
+import {
+  ingestKnowledgeSource,
+  deleteKnowledgeSourceVectors,
+} from "../src/services/knowledgeBase";
 
 // Mock middleware
 jest.mock("../src/middleware/auth", () => ({
@@ -29,14 +32,20 @@ describe("Knowledge Admin Routes", () => {
   describe("Authorization", () => {
     it("rejects unauthenticated requests", async () => {
       const auth = require("../src/middleware/auth");
-      auth.authenticateJWT.mockImplementationOnce((req: any, res: any) => res.status(401).json({ message: "Unauthorized" }));
+      auth.authenticateJWT.mockImplementationOnce((req: any, res: any) =>
+        res.status(401).json({ message: "Unauthorized" }),
+      );
       const res = await request(app).get("/api/knowledge");
       expect(res.status).toBe(401);
     });
 
     it("rejects non-admin requests", async () => {
       const auth = require("../src/middleware/auth");
-      auth.requireAdmin.mockImplementationOnce((req: any, res: any) => res.status(403).json({ message: "Unauthorized: Admin access required" }));
+      auth.requireAdmin.mockImplementationOnce((req: any, res: any) =>
+        res
+          .status(403)
+          .json({ message: "Unauthorized: Admin access required" }),
+      );
       const res = await request(app).get("/api/knowledge");
       expect(res.status).toBe(403);
     });
@@ -72,9 +81,9 @@ describe("Knowledge Admin Routes", () => {
 
     it("creates a new source and ingests it", async () => {
       (KnowledgeSource.findOne as jest.Mock).mockResolvedValue(null);
-      
+
       const mockSave = jest.fn().mockResolvedValue(true);
-      
+
       // We have to mock the constructor of KnowledgeSource
       (KnowledgeSource as unknown as jest.Mock).mockImplementation(() => ({
         _id: "new-id",
@@ -89,23 +98,27 @@ describe("Knowledge Admin Routes", () => {
       const res = await request(app).post("/api/knowledge").send({
         title: "Test",
         content: "Content",
-        sourceType: "bio"
+        sourceType: "bio",
       });
 
       expect(res.status).toBe(201);
       expect(res.body.chunkCount).toBe(5);
       expect(mockSave).toHaveBeenCalledTimes(2);
-      expect(ingestKnowledgeSource).toHaveBeenCalledWith(expect.objectContaining({
-        title: "Test",
-        sourceType: "bio"
-      }));
+      expect(ingestKnowledgeSource).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Test",
+          sourceType: "bio",
+        }),
+      );
     });
   });
 
   describe("DELETE /api/knowledge/:id", () => {
     it("deletes a source and its vectors", async () => {
       const sourceId = "507f1f77bcf86cd799439011";
-      (KnowledgeSource.findById as jest.Mock).mockResolvedValue({ _id: sourceId });
+      (KnowledgeSource.findById as jest.Mock).mockResolvedValue({
+        _id: sourceId,
+      });
       (KnowledgeSource.findByIdAndDelete as jest.Mock).mockResolvedValue(true);
       (deleteKnowledgeSourceVectors as jest.Mock).mockResolvedValue(true);
 
@@ -129,19 +142,21 @@ describe("Knowledge Admin Routes", () => {
       expect(res.status).toBe(404);
     });
   });
-  
+
   describe("POST /api/knowledge/sync", () => {
     it("syncs manifest items", async () => {
-      const mockSources = [{
-        externalId: "ext-1",
-        title: "Test",
-        content: "Content",
-        sourceType: "bio"
-      }];
-      
+      const mockSources = [
+        {
+          externalId: "ext-1",
+          title: "Test",
+          content: "Content",
+          sourceType: "bio",
+        },
+      ];
+
       (KnowledgeSource.findOne as jest.Mock).mockResolvedValue(null);
       (ingestKnowledgeSource as jest.Mock).mockResolvedValue({ chunkCount: 2 });
-      
+
       const mockSave = jest.fn().mockResolvedValue(true);
       (KnowledgeSource as unknown as jest.Mock).mockImplementation(() => ({
         _id: "ext-1-id",
@@ -151,7 +166,9 @@ describe("Knowledge Admin Routes", () => {
         save: mockSave,
       }));
 
-      const res = await request(app).post("/api/knowledge/sync").send({ sources: mockSources });
+      const res = await request(app)
+        .post("/api/knowledge/sync")
+        .send({ sources: mockSources });
       expect(res.status).toBe(200);
       expect(res.body.synced).toBe(1);
       expect(res.body.results[0].externalId).toBe("ext-1");

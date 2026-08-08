@@ -44,11 +44,15 @@ export const requireAdmin = async (
 ) => {
   try {
     if (!req.user?.id) {
-      return res.status(403).json({ message: "Unauthorized: Admin access required" });
+      return res
+        .status(403)
+        .json({ message: "Unauthorized: Admin access required" });
     }
     const user = await User.findById(req.user.id);
     if (!user || !user.isAdmin) {
-      return res.status(403).json({ message: "Unauthorized: Admin access required" });
+      return res
+        .status(403)
+        .json({ message: "Unauthorized: Admin access required" });
     }
     next();
   } catch (error) {

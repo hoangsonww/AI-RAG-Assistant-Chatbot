@@ -1,9 +1,5 @@
 import express, { Response } from "express";
-import {
-  authenticateJWT,
-  requireAdmin,
-  AuthRequest,
-} from "../middleware/auth";
+import { authenticateJWT, requireAdmin, AuthRequest } from "../middleware/auth";
 import KnowledgeSource, {
   KnowledgeSourceType,
 } from "../models/KnowledgeSource";
@@ -13,10 +9,23 @@ import {
 } from "../services/knowledgeBase";
 import mongoose from "mongoose";
 
-const VALID_SOURCE_TYPES: KnowledgeSourceType[] = ["resume", "note", "link", "project", "bio", "other"];
+const VALID_SOURCE_TYPES: KnowledgeSourceType[] = [
+  "resume",
+  "note",
+  "link",
+  "project",
+  "bio",
+  "other",
+];
 
 const normalizeTags = (tags: any): string[] => {
-  return tags ? (Array.isArray(tags) ? tags : String(tags).split(",").map((t: string) => t.trim())) : [];
+  return tags
+    ? Array.isArray(tags)
+      ? tags
+      : String(tags)
+          .split(",")
+          .map((t: string) => t.trim())
+    : [];
 };
 
 const isValidObjectIdGuard = (id: string, res: Response): boolean => {
@@ -99,14 +108,17 @@ router.use(authenticateJWT, requireAdmin);
 router.get("/", async (req: AuthRequest, res: Response) => {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit as string) || 20));
+    const limit = Math.max(
+      1,
+      Math.min(100, parseInt(req.query.limit as string) || 20),
+    );
     const type = req.query.type as string | undefined;
     const search = req.query.search as string | undefined;
 
     const filter: Record<string, any> = {};
     if (type) filter.sourceType = type;
     if (search) {
-      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       filter.$or = [
         { title: { $regex: escapedSearch, $options: "i" } },
         { tags: { $regex: escapedSearch, $options: "i" } },
@@ -127,6 +139,56 @@ router.get("/", async (req: AuthRequest, res: Response) => {
       sources,
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/knowledge/{id}:
+ *   get:
+ *     summary: Get a single knowledge source, including its full content.
+ *     description: Returns the complete source document (unlike the list endpoint, content is included). Admin access required.
+ *     tags:
+ *       - Knowledge
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: MongoDB ObjectId of the knowledge source.
+ *     responses:
+ *       200:
+ *         description: The knowledge source, with content.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/KnowledgeSource'
+ *       400:
+ *         description: Invalid id format.
+ *       401:
+ *         description: Unauthorized.
+ *       403:
+ *         description: Admin access required.
+ *       404:
+ *         description: Knowledge source not found.
+ *       500:
+ *         description: Server error.
+ */
+router.get("/:id", async (req: AuthRequest, res: Response) => {
+  try {
+    if (!isValidObjectIdGuard(req.params.id, res)) return;
+
+    const source = await KnowledgeSource.findById(req.params.id).lean();
+    if (!source) {
+      return res.status(404).json({ message: "Knowledge source not found" });
+    }
+
+    res.json({ source });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -204,11 +266,20 @@ router.post("/", async (req: AuthRequest, res: Response) => {
 
     // Validation
     const errors: { field: string; message: string }[] = [];
-    if (!title?.trim()) errors.push({ field: "title", message: "Title is required" });
-    if (!content?.trim()) errors.push({ field: "content", message: "Content is required" });
-    if (!sourceType?.trim()) errors.push({ field: "sourceType", message: "sourceType is required" });
-    if (sourceType && !VALID_SOURCE_TYPES.includes(sourceType as KnowledgeSourceType)) {
-      errors.push({ field: "sourceType", message: `Must be one of: ${VALID_SOURCE_TYPES.join(", ")}` });
+    if (!title?.trim())
+      errors.push({ field: "title", message: "Title is required" });
+    if (!content?.trim())
+      errors.push({ field: "content", message: "Content is required" });
+    if (!sourceType?.trim())
+      errors.push({ field: "sourceType", message: "sourceType is required" });
+    if (
+      sourceType &&
+      !VALID_SOURCE_TYPES.includes(sourceType as KnowledgeSourceType)
+    ) {
+      errors.push({
+        field: "sourceType",
+        message: `Must be one of: ${VALID_SOURCE_TYPES.join(", ")}`,
+      });
     }
     if (errors.length) return res.status(400).json({ errors });
 
@@ -216,7 +287,11 @@ router.post("/", async (req: AuthRequest, res: Response) => {
     if (externalId) {
       const existing = await KnowledgeSource.findOne({ externalId });
       if (existing) {
-        return res.status(409).json({ message: `A source with externalId "${externalId}" already exists` });
+        return res
+          .status(409)
+          .json({
+            message: `A source with externalId "${externalId}" already exists`,
+          });
       }
     }
 
@@ -230,12 +305,16 @@ router.post("/", async (req: AuthRequest, res: Response) => {
       externalId: externalId?.trim() || undefined,
       chunkCount: 0,
     });
-    
+
     try {
       await source.save();
     } catch (saveError: any) {
       if (saveError.code === 11000) {
-        return res.status(409).json({ message: `A source with externalId "${externalId}" already exists` });
+        return res
+          .status(409)
+          .json({
+            message: `A source with externalId "${externalId}" already exists`,
+          });
       }
       throw saveError;
     }
@@ -334,21 +413,38 @@ router.patch("/:id", async (req: AuthRequest, res: Response) => {
     if (!isValidObjectIdGuard(req.params.id, res)) return;
 
     const source = await KnowledgeSource.findById(req.params.id);
-    if (!source) return res.status(404).json({ message: "Knowledge source not found" });
+    if (!source)
+      return res.status(404).json({ message: "Knowledge source not found" });
 
-    const { title, content, sourceType, sourceUrl, tags, externalId } = req.body;
+    const { title, content, sourceType, sourceUrl, tags, externalId } =
+      req.body;
 
-    if (sourceType && !VALID_SOURCE_TYPES.includes(sourceType as KnowledgeSourceType)) {
+    if (
+      sourceType &&
+      !VALID_SOURCE_TYPES.includes(sourceType as KnowledgeSourceType)
+    ) {
       return res.status(400).json({
-        errors: [{ field: "sourceType", message: `Must be one of: ${VALID_SOURCE_TYPES.join(", ")}` }],
+        errors: [
+          {
+            field: "sourceType",
+            message: `Must be one of: ${VALID_SOURCE_TYPES.join(", ")}`,
+          },
+        ],
       });
     }
 
     // Check externalId uniqueness if changed
     if (externalId && externalId !== source.externalId) {
-      const conflict = await KnowledgeSource.findOne({ externalId, _id: { $ne: source._id } });
+      const conflict = await KnowledgeSource.findOne({
+        externalId,
+        _id: { $ne: source._id },
+      });
       if (conflict) {
-        return res.status(409).json({ message: `A source with externalId "${externalId}" already exists` });
+        return res
+          .status(409)
+          .json({
+            message: `A source with externalId "${externalId}" already exists`,
+          });
       }
     }
 
@@ -374,7 +470,8 @@ router.patch("/:id", async (req: AuthRequest, res: Response) => {
     if (tags !== undefined) {
       source.tags = normalizeTags(tags);
     }
-    if (externalId !== undefined) source.externalId = externalId?.trim() || undefined;
+    if (externalId !== undefined)
+      source.externalId = externalId?.trim() || undefined;
 
     let chunkCount = source.chunkCount;
 
@@ -442,7 +539,8 @@ router.delete("/:id", async (req: AuthRequest, res: Response) => {
     if (!isValidObjectIdGuard(req.params.id, res)) return;
 
     const source = await KnowledgeSource.findById(req.params.id);
-    if (!source) return res.status(404).json({ message: "Knowledge source not found" });
+    if (!source)
+      return res.status(404).json({ message: "Knowledge source not found" });
 
     await deleteKnowledgeSourceVectors(String(source._id));
     await KnowledgeSource.findByIdAndDelete(req.params.id);
@@ -497,7 +595,8 @@ router.post("/:id/reindex", async (req: AuthRequest, res: Response) => {
     if (!isValidObjectIdGuard(req.params.id, res)) return;
 
     const source = await KnowledgeSource.findById(req.params.id);
-    if (!source) return res.status(404).json({ message: "Knowledge source not found" });
+    if (!source)
+      return res.status(404).json({ message: "Knowledge source not found" });
 
     const { chunkCount } = await ingestKnowledgeSource({
       sourceId: String(source._id),
@@ -609,7 +708,9 @@ router.post("/sync", async (req: AuthRequest, res: Response) => {
   try {
     const { sources } = req.body;
     if (!Array.isArray(sources) || sources.length === 0) {
-      return res.status(400).json({ message: "Body must contain a non-empty `sources` array" });
+      return res
+        .status(400)
+        .json({ message: "Body must contain a non-empty `sources` array" });
     }
     if (sources.length > MAX_SYNC_SOURCES) {
       return res.status(400).json({
@@ -617,14 +718,22 @@ router.post("/sync", async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const results: { externalId: string; status: "created" | "updated"; chunkCount: number }[] = [];
+    const results: {
+      externalId: string;
+      status: "created" | "updated";
+      chunkCount: number;
+    }[] = [];
     const errors: { externalId: string; error: string }[] = [];
 
     for (const entry of sources) {
       const { externalId, title, content, sourceType, sourceUrl, tags } = entry;
 
       if (!externalId || !title || !content || !sourceType) {
-        errors.push({ externalId: externalId ?? "(missing)", error: "Missing required fields: externalId, title, content, sourceType" });
+        errors.push({
+          externalId: externalId ?? "(missing)",
+          error:
+            "Missing required fields: externalId, title, content, sourceType",
+        });
         continue;
       }
 
@@ -665,14 +774,25 @@ router.post("/sync", async (req: AuthRequest, res: Response) => {
         source.chunkCount = chunkCount;
         await source.save();
 
-        results.push({ externalId, status: isNew ? "created" : "updated", chunkCount });
+        results.push({
+          externalId,
+          status: isNew ? "created" : "updated",
+          chunkCount,
+        });
       } catch (err: any) {
         errors.push({ externalId, error: err.message });
       }
     }
 
     if (results.length === 0 && errors.length > 0) {
-      return res.status(500).json({ message: "All manifest entries failed to sync", synced: 0, results, errors });
+      return res
+        .status(500)
+        .json({
+          message: "All manifest entries failed to sync",
+          synced: 0,
+          results,
+          errors,
+        });
     }
 
     res.json({ synced: results.length, results, errors });
@@ -681,4 +801,4 @@ router.post("/sync", async (req: AuthRequest, res: Response) => {
   }
 });
 
-export default router;
+export default router;

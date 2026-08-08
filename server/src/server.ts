@@ -13,6 +13,13 @@ import {
 
 dotenv.config();
 
+if (!process.env.JWT_SECRET) {
+  console.error(
+    "Fatal: JWT_SECRET is not set. Refusing to start with an insecure default signing secret.",
+  );
+  process.exit(1);
+}
+
 const app = express();
 const port = process.env.PORT || 5000;
 

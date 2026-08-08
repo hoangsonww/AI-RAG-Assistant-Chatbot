@@ -853,6 +853,8 @@ export const streamGuestChatMessage = async (
 export interface IKnowledgeSource {
   _id: string;
   title: string;
+  // Omitted by the list endpoint for payload size; present on single-source fetches.
+  content?: string;
   sourceType: "resume" | "note" | "link" | "project" | "bio" | "other";
   sourceUrl?: string;
   tags?: string[];
@@ -908,7 +910,11 @@ export interface SyncManifestEntry {
 
 export interface SyncResult {
   synced: number;
-  results: { externalId: string; status: "created" | "updated"; chunkCount: number }[];
+  results: {
+    externalId: string;
+    status: "created" | "updated";
+    chunkCount: number;
+  }[];
   errors: { externalId: string; error: string }[];
 }
 
@@ -923,6 +929,19 @@ export const listKnowledgeSources = async (
 ): Promise<KnowledgeListResponse> => {
   const resp = await API.get("/knowledge", { params });
   return resp.data;
+};
+
+/**
+ * Get a single knowledge source, including its full content.
+ * Requires admin JWT.
+ *
+ * @param id - MongoDB ObjectId of the source
+ */
+export const getKnowledgeSource = async (
+  id: string,
+): Promise<IKnowledgeSource> => {
+  const resp = await API.get(`/knowledge/${id}`);
+  return resp.data.source;
 };
 
 /**

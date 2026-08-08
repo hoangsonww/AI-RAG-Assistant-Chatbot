@@ -46,6 +46,7 @@ import Navbar from "../components/Navbar";
 import {
   createKnowledgeSource,
   deleteKnowledgeSource,
+  getKnowledgeSource,
   isAdminUser,
   isAuthenticated,
   IKnowledgeSource,
@@ -59,7 +60,14 @@ import {
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
-const SOURCE_TYPES = ["resume", "note", "link", "project", "bio", "other"] as const;
+const SOURCE_TYPES = [
+  "resume",
+  "note",
+  "link",
+  "project",
+  "bio",
+  "other",
+] as const;
 type SourceType = (typeof SOURCE_TYPES)[number];
 
 const fmtDate = (iso?: string) => {
@@ -90,7 +98,10 @@ interface KnowledgeAdminProps {
   darkMode: boolean;
 }
 
-const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode }) => {
+const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({
+  onToggleTheme,
+  darkMode,
+}) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const isDark = theme.palette.mode === "dark";
@@ -118,8 +129,11 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
   const [form, setForm] = useState<KnowledgeSourcePayload>(emptyForm());
   const [tagsRaw, setTagsRaw] = useState("");
   const [saving, setSaving] = useState(false);
+  const [contentLoading, setContentLoading] = useState(false);
 
-  const [deleteTarget, setDeleteTarget] = useState<IKnowledgeSource | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<IKnowledgeSource | null>(
+    null,
+  );
   const [deleting, setDeleting] = useState(false);
 
   const [reindexingId, setReindexingId] = useState<string | null>(null);
@@ -130,7 +144,10 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
   const [syncing, setSyncing] = useState(false);
 
   // ── snackbar ──
-  const [snack, setSnack] = useState<{ msg: string; severity: "success" | "error" } | null>(null);
+  const [snack, setSnack] = useState<{
+    msg: string;
+    severity: "success" | "error";
+  } | null>(null);
 
   // ── styles ──
 
@@ -154,7 +171,10 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
       setSources(res.sources);
       setTotal(res.pagination.total);
     } catch (err: any) {
-      setSnack({ msg: err?.response?.data?.message || "Failed to load sources", severity: "error" });
+      setSnack({
+        msg: err?.response?.data?.message || "Failed to load sources",
+        severity: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -172,11 +192,11 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
     setDialogOpen(true);
   };
 
-  const openEdit = (src: IKnowledgeSource) => {
+  const openEdit = async (src: IKnowledgeSource) => {
     setEditTarget(src);
     setForm({
       title: src.title,
-      content: "",           // content not returned in list — user must re-enter
+      content: "", // list rows omit content — fetched below and filled in once loaded
       sourceType: src.sourceType,
       sourceUrl: src.sourceUrl || "",
       tags: src.tags || [],
@@ -184,6 +204,19 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
     });
     setTagsRaw((src.tags || []).join(", "));
     setDialogOpen(true);
+
+    setContentLoading(true);
+    try {
+      const full = await getKnowledgeSource(src._id);
+      setForm((f) => ({ ...f, content: full.content || "" }));
+    } catch (err: any) {
+      setSnack({
+        msg: err?.response?.data?.message || "Failed to load existing content",
+        severity: "error",
+      });
+    } finally {
+      setContentLoading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -192,7 +225,10 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
       const payload = { ...form, tags: parseTags(tagsRaw) };
       if (editTarget) {
         await updateKnowledgeSource(editTarget._id, payload);
-        setSnack({ msg: "Source updated and re-embedded.", severity: "success" });
+        setSnack({
+          msg: "Source updated and re-embedded.",
+          severity: "success",
+        });
       } else {
         await createKnowledgeSource(payload);
         setSnack({ msg: "Source created and embedded.", severity: "success" });
@@ -200,7 +236,10 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
       setDialogOpen(false);
       fetchSources();
     } catch (err: any) {
-      setSnack({ msg: err?.response?.data?.message || "Save failed", severity: "error" });
+      setSnack({
+        msg: err?.response?.data?.message || "Save failed",
+        severity: "error",
+      });
     } finally {
       setSaving(false);
     }
@@ -216,7 +255,10 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
       setDeleteTarget(null);
       fetchSources();
     } catch (err: any) {
-      setSnack({ msg: err?.response?.data?.message || "Delete failed", severity: "error" });
+      setSnack({
+        msg: err?.response?.data?.message || "Delete failed",
+        severity: "error",
+      });
     } finally {
       setDeleting(false);
     }
@@ -227,10 +269,16 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
     setReindexingId(id);
     try {
       const res = await reindexKnowledgeSource(id);
-      setSnack({ msg: `Re-indexed — ${res.chunkCount} chunks.`, severity: "success" });
+      setSnack({
+        msg: `Re-indexed — ${res.chunkCount} chunks.`,
+        severity: "success",
+      });
       fetchSources();
     } catch (err: any) {
-      setSnack({ msg: err?.response?.data?.message || "Re-index failed", severity: "error" });
+      setSnack({
+        msg: err?.response?.data?.message || "Re-index failed",
+        severity: "error",
+      });
     } finally {
       setReindexingId(null);
     }
@@ -241,13 +289,21 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
     setSyncing(true);
     try {
       const parsed = JSON.parse(syncJson);
-      const sources: SyncManifestEntry[] = Array.isArray(parsed) ? parsed : parsed.sources;
+      const sources: SyncManifestEntry[] = Array.isArray(parsed)
+        ? parsed
+        : parsed.sources;
       const res = await syncKnowledgeManifest(sources);
-      setSnack({ msg: `Synced ${res.synced} source(s). Errors: ${res.errors.length}`, severity: "success" });
+      setSnack({
+        msg: `Synced ${res.synced} source(s). Errors: ${res.errors.length}`,
+        severity: "success",
+      });
       setSyncJson("");
       fetchSources();
     } catch (err: any) {
-      setSnack({ msg: err?.response?.data?.message || err.message || "Sync failed", severity: "error" });
+      setSnack({
+        msg: err?.response?.data?.message || err.message || "Sync failed",
+        severity: "error",
+      });
     } finally {
       setSyncing(false);
     }
@@ -273,17 +329,23 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
             borderRadius: 3,
             textAlign: "center",
             maxWidth: 420,
-            backgroundColor: alpha(theme.palette.background.paper, isDark ? 0.75 : 0.92),
+            backgroundColor: alpha(
+              theme.palette.background.paper,
+              isDark ? 0.75 : 0.92,
+            ),
             border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
             backdropFilter: "blur(16px)",
           }}
         >
-          <LockIcon sx={{ fontSize: 64, color: theme.palette.error.main, mb: 2 }} />
+          <LockIcon
+            sx={{ fontSize: 64, color: theme.palette.error.main, mb: 2 }}
+          />
           <Typography variant="h5" fontWeight={800} mb={1}>
             Access Denied
           </Typography>
           <Typography variant="body2" color="text.secondary" mb={3}>
-            This page is restricted to admin users. Contact the repo owner to request access.
+            This page is restricted to admin users. Contact the repo owner to
+            request access.
           </Typography>
           <Button
             variant="contained"
@@ -300,7 +362,13 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
 
   // ─── main UI ─────────────────────────────────────────────────────────────
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: theme.palette.background.default, color: theme.palette.text.primary }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: theme.palette.background.default,
+        color: theme.palette.text.primary,
+      }}
+    >
       <Navbar
         onToggleTheme={onToggleTheme}
         darkMode={darkMode}
@@ -320,9 +388,25 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
         }}
       />
 
-      <Box sx={{ position: "relative", zIndex: 1, maxWidth: 1100, mx: "auto", py: { xs: 4, sm: 6 }, px: { xs: 2, md: 4 } }}>
+      <Box
+        sx={{
+          position: "relative",
+          zIndex: 1,
+          maxWidth: 1100,
+          mx: "auto",
+          py: { xs: 4, sm: 6 },
+          px: { xs: 2, md: 4 },
+        }}
+      >
         {/* Header */}
-        <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2} mb={3}>
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="space-between"
+          flexWrap="wrap"
+          gap={2}
+          mb={3}
+        >
           <Box display="flex" alignItems="center" gap={2}>
             <Box
               sx={{
@@ -352,7 +436,11 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
             <Button
               startIcon={<ArrowBackIcon />}
               onClick={() => navigate("/chat")}
-              sx={{ textTransform: "none", color: "text.secondary", borderRadius: 2 }}
+              sx={{
+                textTransform: "none",
+                color: "text.secondary",
+                borderRadius: 2,
+              }}
             >
               Back
             </Button>
@@ -394,11 +482,17 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
             size="small"
             placeholder="Search title or tags…"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon fontSize="small" sx={{ color: "text.secondary" }} />
+                  <SearchIcon
+                    fontSize="small"
+                    sx={{ color: "text.secondary" }}
+                  />
                 </InputAdornment>
               ),
             }}
@@ -409,15 +503,24 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
             <Select
               label="Type"
               value={typeFilter}
-              onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setTypeFilter(e.target.value);
+                setPage(1);
+              }}
             >
               <MenuItem value="">All</MenuItem>
               {SOURCE_TYPES.map((t) => (
-                <MenuItem key={t} value={t}>{t}</MenuItem>
+                <MenuItem key={t} value={t}>
+                  {t}
+                </MenuItem>
               ))}
             </Select>
           </FormControl>
-          <IconButton onClick={() => fetchSources()} size="small" title="Refresh">
+          <IconButton
+            onClick={() => fetchSources()}
+            size="small"
+            title="Refresh"
+          >
             <RefreshIcon fontSize="small" />
           </IconButton>
         </Paper>
@@ -435,15 +538,29 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
           }}
         >
           {/* gradient bar */}
-          <Box sx={{ height: 3, background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.info.main}, ${theme.palette.secondary.main})` }} />
+          <Box
+            sx={{
+              height: 3,
+              background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.info.main}, ${theme.palette.secondary.main})`,
+            }}
+          />
           <Table size="small">
             <TableHead>
               <TableRow>
-                {["Title", "Type", "Tags", "Chunks", "Updated", "Actions"].map((h) => (
-                  <TableCell key={h} sx={{ fontWeight: 700, fontSize: 12, color: "text.secondary" }}>
-                    {h}
-                  </TableCell>
-                ))}
+                {["Title", "Type", "Tags", "Chunks", "Updated", "Actions"].map(
+                  (h) => (
+                    <TableCell
+                      key={h}
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: 12,
+                        color: "text.secondary",
+                      }}
+                    >
+                      {h}
+                    </TableCell>
+                  ),
+                )}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -455,7 +572,11 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
                 </TableRow>
               ) : sources.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 5, color: "text.secondary" }}>
+                  <TableCell
+                    colSpan={6}
+                    align="center"
+                    sx={{ py: 5, color: "text.secondary" }}
+                  >
                     No knowledge sources found.
                   </TableCell>
                 </TableRow>
@@ -464,42 +585,92 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
                   <TableRow
                     key={src._id}
                     hover
-                    sx={{ "&:hover": { backgroundColor: alpha(theme.palette.primary.main, 0.04) } }}
+                    sx={{
+                      "&:hover": {
+                        backgroundColor: alpha(
+                          theme.palette.primary.main,
+                          0.04,
+                        ),
+                      },
+                    }}
                   >
-                    <TableCell sx={{ fontWeight: 600, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      <Tooltip title={src.externalId ? `externalId: ${src.externalId}` : ""}>
+                    <TableCell
+                      sx={{
+                        fontWeight: 600,
+                        maxWidth: 220,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <Tooltip
+                        title={
+                          src.externalId ? `externalId: ${src.externalId}` : ""
+                        }
+                      >
                         <span>{src.title}</span>
                       </Tooltip>
                     </TableCell>
                     <TableCell>
-                      <Chip label={src.sourceType} size="small" sx={{ fontSize: 11, height: 20 }} />
+                      <Chip
+                        label={src.sourceType}
+                        size="small"
+                        sx={{ fontSize: 11, height: 20 }}
+                      />
                     </TableCell>
                     <TableCell sx={{ maxWidth: 160 }}>
                       <Box display="flex" flexWrap="wrap" gap={0.5}>
                         {(src.tags || []).slice(0, 3).map((tag) => (
-                          <Chip key={tag} label={tag} size="small" variant="outlined" sx={{ fontSize: 10, height: 18 }} />
+                          <Chip
+                            key={tag}
+                            label={tag}
+                            size="small"
+                            variant="outlined"
+                            sx={{ fontSize: 10, height: 18 }}
+                          />
                         ))}
                         {(src.tags?.length || 0) > 3 && (
-                          <Chip label={`+${(src.tags?.length || 0) - 3}`} size="small" sx={{ fontSize: 10, height: 18 }} />
+                          <Chip
+                            label={`+${(src.tags?.length || 0) - 3}`}
+                            size="small"
+                            sx={{ fontSize: 10, height: 18 }}
+                          />
                         )}
                       </Box>
                     </TableCell>
                     <TableCell>{src.chunkCount}</TableCell>
-                    <TableCell sx={{ whiteSpace: "nowrap", fontSize: 12 }}>{fmtDate(src.updatedAt)}</TableCell>
+                    <TableCell sx={{ whiteSpace: "nowrap", fontSize: 12 }}>
+                      {fmtDate(src.updatedAt)}
+                    </TableCell>
                     <TableCell>
                       <Box display="flex" gap={0.5}>
                         <Tooltip title="Edit">
-                          <IconButton size="small" onClick={() => openEdit(src)}>
+                          <IconButton
+                            size="small"
+                            onClick={() => openEdit(src)}
+                          >
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Re-index">
-                          <IconButton size="small" onClick={() => handleReindex(src._id)} disabled={reindexingId === src._id}>
-                            {reindexingId === src._id ? <CircularProgress size={14} /> : <RefreshIcon fontSize="small" />}
+                          <IconButton
+                            size="small"
+                            onClick={() => handleReindex(src._id)}
+                            disabled={reindexingId === src._id}
+                          >
+                            {reindexingId === src._id ? (
+                              <CircularProgress size={14} />
+                            ) : (
+                              <RefreshIcon fontSize="small" />
+                            )}
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Delete">
-                          <IconButton size="small" color="error" onClick={() => setDeleteTarget(src)}>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => setDeleteTarget(src)}
+                          >
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -515,13 +686,26 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
         {/* Pagination */}
         {total > limit && (
           <Box display="flex" justifyContent="center" gap={1} mb={2}>
-            <Button size="small" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} sx={{ textTransform: "none" }}>
+            <Button
+              size="small"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+              sx={{ textTransform: "none" }}
+            >
               Previous
             </Button>
-            <Typography variant="body2" sx={{ alignSelf: "center", color: "text.secondary" }}>
+            <Typography
+              variant="body2"
+              sx={{ alignSelf: "center", color: "text.secondary" }}
+            >
               Page {page} of {Math.ceil(total / limit)}
             </Typography>
-            <Button size="small" disabled={page >= Math.ceil(total / limit)} onClick={() => setPage((p) => p + 1)} sx={{ textTransform: "none" }}>
+            <Button
+              size="small"
+              disabled={page >= Math.ceil(total / limit)}
+              onClick={() => setPage((p) => p + 1)}
+              sx={{ textTransform: "none" }}
+            >
               Next
             </Button>
           </Box>
@@ -558,7 +742,10 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
             onClick={() => setSyncOpen((v) => !v)}
           >
             <Box display="flex" alignItems="center" gap={1}>
-              <SyncIcon fontSize="small" sx={{ color: theme.palette.primary.main }} />
+              <SyncIcon
+                fontSize="small"
+                sx={{ color: theme.palette.primary.main }}
+              />
               <Typography fontWeight={700} fontSize={14}>
                 Manifest Sync
               </Typography>
@@ -576,8 +763,10 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
             <Divider />
             <Box px={2.5} py={2}>
               <Typography variant="body2" color="text.secondary" mb={1.5}>
-                Paste a JSON array of sources (or <code>{`{ "sources": [...] }`}</code>). Each entry needs{" "}
-                <code>externalId</code>, <code>title</code>, <code>content</code>, <code>sourceType</code>.
+                Paste a JSON array of sources (or{" "}
+                <code>{`{ "sources": [...] }`}</code>). Each entry needs{" "}
+                <code>externalId</code>, <code>title</code>,{" "}
+                <code>content</code>, <code>sourceType</code>.
               </Typography>
               <TextField
                 multiline
@@ -590,7 +779,13 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
               />
               <Button
                 variant="contained"
-                startIcon={syncing ? <CircularProgress size={14} color="inherit" /> : <SyncIcon />}
+                startIcon={
+                  syncing ? (
+                    <CircularProgress size={14} color="inherit" />
+                  ) : (
+                    <SyncIcon />
+                  )
+                }
                 disabled={syncing || !syncJson.trim()}
                 onClick={handleSync}
                 sx={{
@@ -610,12 +805,29 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
       </Box>
 
       {/* Create / Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <Box sx={{ height: 3, background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.info.main})` }} />
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <Box
+          sx={{
+            height: 3,
+            background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.info.main})`,
+          }}
+        />
         <DialogTitle sx={{ fontWeight: 800 }}>
           {editTarget ? "Edit Source" : "Add Knowledge Source"}
         </DialogTitle>
-        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "8px !important" }}>
+        <DialogContent
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            pt: "8px !important",
+          }}
+        >
           <TextField
             label="Title *"
             fullWidth
@@ -624,12 +836,19 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
             onChange={(e) => setForm({ ...form, title: e.target.value })}
           />
           <TextField
-            label={editTarget ? "Content (leave blank to keep existing)" : "Content *"}
+            label={
+              editTarget
+                ? contentLoading
+                  ? "Content (loading existing content…)"
+                  : "Content (leave unchanged to skip re-embedding)"
+                : "Content *"
+            }
             fullWidth
             multiline
             minRows={5}
             size="small"
             value={form.content}
+            disabled={contentLoading}
             onChange={(e) => setForm({ ...form, content: e.target.value })}
           />
           <FormControl fullWidth size="small">
@@ -637,10 +856,14 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
             <Select
               label="Source Type *"
               value={form.sourceType}
-              onChange={(e) => setForm({ ...form, sourceType: e.target.value as SourceType })}
+              onChange={(e) =>
+                setForm({ ...form, sourceType: e.target.value as SourceType })
+              }
             >
               {SOURCE_TYPES.map((t) => (
-                <MenuItem key={t} value={t}>{t}</MenuItem>
+                <MenuItem key={t} value={t}>
+                  {t}
+                </MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -669,14 +892,26 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button onClick={() => setDialogOpen(false)} sx={{ textTransform: "none" }}>
+          <Button
+            onClick={() => setDialogOpen(false)}
+            sx={{ textTransform: "none" }}
+          >
             Cancel
           </Button>
           <Button
             variant="contained"
             onClick={handleSave}
-            disabled={saving || !form.title.trim() || (!editTarget && !form.content.trim())}
-            startIcon={saving ? <CircularProgress size={14} color="inherit" /> : undefined}
+            disabled={
+              saving ||
+              contentLoading ||
+              !form.title.trim() ||
+              (!editTarget && !form.content.trim())
+            }
+            startIcon={
+              saving ? (
+                <CircularProgress size={14} color="inherit" />
+              ) : undefined
+            }
             sx={{
               textTransform: "none",
               fontWeight: 700,
@@ -690,15 +925,22 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
       </Dialog>
 
       {/* Delete Confirm Dialog */}
-      <Dialog open={deleteTarget !== null} onClose={() => setDeleteTarget(null)}>
+      <Dialog
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+      >
         <DialogTitle sx={{ fontWeight: 800 }}>Delete source?</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            <strong>{deleteTarget?.title}</strong> will be permanently removed from MongoDB, Pinecone, and the Neo4j graph. This cannot be undone.
+            <strong>{deleteTarget?.title}</strong> will be permanently removed
+            from MongoDB, Pinecone, and the Neo4j graph. This cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button onClick={() => setDeleteTarget(null)} sx={{ textTransform: "none" }}>
+          <Button
+            onClick={() => setDeleteTarget(null)}
+            sx={{ textTransform: "none" }}
+          >
             Cancel
           </Button>
           <Button
@@ -706,7 +948,13 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
             color="error"
             onClick={handleDelete}
             disabled={deleting}
-            startIcon={deleting ? <CircularProgress size={14} color="inherit" /> : <DeleteIcon />}
+            startIcon={
+              deleting ? (
+                <CircularProgress size={14} color="inherit" />
+              ) : (
+                <DeleteIcon />
+              )
+            }
             sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2 }}
           >
             Delete
@@ -721,7 +969,12 @@ const KnowledgeAdmin: React.FC<KnowledgeAdminProps> = ({ onToggleTheme, darkMode
         onClose={() => setSnack(null)}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert severity={snack?.severity} onClose={() => setSnack(null)} variant="filled" sx={{ borderRadius: 2 }}>
+        <Alert
+          severity={snack?.severity}
+          onClose={() => setSnack(null)}
+          variant="filled"
+          sx={{ borderRadius: 2 }}
+        >
           {snack?.msg}
         </Alert>
       </Snackbar>
