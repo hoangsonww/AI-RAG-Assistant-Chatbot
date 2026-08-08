@@ -388,6 +388,8 @@ Please see **[ARCHITECTURE.md](ARCHITECTURE.md)**
    WEBAUTHN_EXPECTED_ORIGIN=http://localhost:3000
    ```
 
+   > `JWT_SECRET` is required — the server refuses to start without it rather than falling back to an insecure default signing secret. Generate one with `openssl rand -hex 32`.
+
 4. **Run the server in development mode:**
 
    ```bash
@@ -468,6 +470,15 @@ For detailed instructions on managing knowledge (adding, updating, deleting), se
 The knowledge base supports manifest-based batch sync, making it straightforward to add, update, or delete knowledge sources in bulk. The manifest file (`server/knowledge/manifest.json`) declaratively describes all knowledge files and their metadata, enabling one-command synchronization via `npm run knowledge:sync`.
 
 **UI Manager:** Administrators can easily manage knowledge straight from the browser! Once logged in as an admin, click the Storage icon in the navigation bar (or navigate to `/admin/knowledge`) to open the Knowledge Manager. From there, you can view, create, edit, delete, and re-index knowledge visually without touching the CLI.
+
+**Granting admin access:** There is no signup flag or API route to become an admin — this is intentional, so the privilege can't be self-assigned over HTTP. Admin status is granted with a local CLI script instead, run from `server/`:
+
+```bash
+npm run admin:grant -- someone@example.com    # grant admin
+npm run admin:revoke -- someone@example.com   # revoke admin
+```
+
+The user must already have an account (sign up first), and must log out and back in afterward to pick up a token with the new `isAdmin` claim.
 
 The same manifest/file set also powers the static resume fallback used during live retrieval backend failures, so fallback knowledge is easy to maintain without code changes. For the full guide covering single-file upserts, batch sync, graph rebuilds, and deletion workflows, see **[UPDATE_KNOWLEDGE.md](UPDATE_KNOWLEDGE.md)**.
 
@@ -845,7 +856,8 @@ flowchart TB
 
 ### Knowledge Management (Admin Only)
 
-- **GET /api/knowledge:** Retrieve a paginated list of knowledge sources.
+- **GET /api/knowledge:** Retrieve a paginated list of knowledge sources (the `content` field is omitted here for payload size).
+- **GET /api/knowledge/:id:** Retrieve a single source, including its full `content`.
 - **POST /api/knowledge:** Create a new knowledge source and embed its content into Pinecone (and Neo4j if graph RAG is configured).
 - **PATCH /api/knowledge/:id:** Update a source (and re-embed if content changed).
 - **DELETE /api/knowledge/:id:** Delete a knowledge source and its vectors/nodes.
