@@ -7,7 +7,7 @@ import passkeyRouter from "./passkey";
 dotenv.config();
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
+const JWT_SECRET = process.env.JWT_SECRET as string;
 
 router.use("/passkey", passkeyRouter);
 
@@ -119,8 +119,8 @@ router.post("/login", async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
     const token = jwt.sign(
-      { id: user._id, email: user.email },
-      process.env.JWT_SECRET as string,
+      { id: user._id, email: user.email, isAdmin: user.isAdmin },
+      JWT_SECRET,
       { expiresIn: "1d" },
     );
     res.json({ token });

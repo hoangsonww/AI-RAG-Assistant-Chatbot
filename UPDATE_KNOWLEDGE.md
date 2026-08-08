@@ -41,6 +41,21 @@ Every knowledge update flows through this pipeline:
 2. **Run the CLI upsert** — this re-chunks, re-embeds (Pinecone), re-extracts entities (Neo4j), and updates MongoDB
 3. Both stores are always kept in sync via the CLI
 
+> [!TIP]
+> **UI Knowledge Manager**: Prefer a visual interface? Administrators can manage knowledge directly from the web app! Log in as an admin and click the Storage icon in the Navbar (or navigate to `/admin/knowledge`) to access the Knowledge Manager dashboard. From there, you can view, edit, re-index, delete, and run a manifest sync with a single click.
+>
+> Editing an existing source in the UI fetches and prefills its current content (via `GET /api/knowledge/:id`) — leaving the field unchanged skips re-embedding, so metadata-only edits (tags, title) don't trigger an unnecessary re-embed.
+
+> [!NOTE]
+> **Becoming an admin**: There's no signup checkbox or API route for this by design — admin status can only be granted from the server's local CLI, never over HTTP. After signing up normally, an existing admin (or whoever has DB access) runs, from `server/`:
+>
+> ```bash
+> npm run admin:grant -- someone@example.com
+> npm run admin:revoke -- someone@example.com   # to remove it later
+> ```
+>
+> Log out and back in afterward — the `isAdmin` claim is baked into the JWT at login, so a token issued before the grant won't reflect it.
+
 ---
 
 ## Knowledge File Structure
@@ -329,6 +344,8 @@ All commands run from `server/`:
 | `npm run knowledge:graph:rebuild` | Rebuild graph from existing sources |
 | `npm run knowledge:graph:rebuild:clean` | Wipe graph then rebuild from scratch |
 | `npm run knowledge:graph:reset` | Wipe graph completely |
+| `npm run admin:grant -- <email>` | Grant admin (Knowledge Manager) access to a user |
+| `npm run admin:revoke -- <email>` | Revoke admin access from a user |
 
 ### Upsert Flags
 

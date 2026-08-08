@@ -741,48 +741,48 @@ const LandingPage: React.FC = () => {
                   right: { md: "18%" },
                 }}
               >
-              <Box
-                component={motion.div}
-                animate={{ y: [0, -14, 0] }}
-                transition={{
-                  duration: 7,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                sx={{
-                  p: { xs: 2.5, sm: 3 },
-                  borderRadius: 3,
-                  backgroundColor: alpha(
-                    theme.palette.background.paper,
-                    theme.palette.mode === "dark" ? 0.65 : 0.95,
-                  ),
-                  border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
-                  color: theme.palette.text.primary,
-                  boxShadow:
-                    theme.palette.mode === "dark"
-                      ? "0 18px 40px rgba(0,0,0,0.45)"
-                      : "0 20px 44px rgba(15,23,42,0.15)",
-                  backdropFilter: "blur(16px)",
-                }}
-              >
-                <Typography
-                  variant="overline"
-                  sx={{ letterSpacing: "0.2em", color: secondaryTextColor }}
+                <Box
+                  component={motion.div}
+                  animate={{ y: [0, -14, 0] }}
+                  transition={{
+                    duration: 7,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  sx={{
+                    p: { xs: 2.5, sm: 3 },
+                    borderRadius: 3,
+                    backgroundColor: alpha(
+                      theme.palette.background.paper,
+                      theme.palette.mode === "dark" ? 0.65 : 0.95,
+                    ),
+                    border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
+                    color: theme.palette.text.primary,
+                    boxShadow:
+                      theme.palette.mode === "dark"
+                        ? "0 18px 40px rgba(0,0,0,0.45)"
+                        : "0 20px 44px rgba(15,23,42,0.15)",
+                    backdropFilter: "blur(16px)",
+                  }}
                 >
-                  Lumina Reply
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600, mt: 1 }}>
-                  “Here&rsquo;s a concise summary of David Nguyen&rsquo;s recent
-                  projects and impact...”
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color={secondaryTextColor}
-                  sx={{ mt: 1 }}
-                >
-                  Sources: resume, personal knowledge base, curated context
-                </Typography>
-              </Box>
+                  <Typography
+                    variant="overline"
+                    sx={{ letterSpacing: "0.2em", color: secondaryTextColor }}
+                  >
+                    Lumina Reply
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 600, mt: 1 }}>
+                    “Here&rsquo;s a concise summary of David Nguyen&rsquo;s
+                    recent projects and impact...”
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color={secondaryTextColor}
+                    sx={{ mt: 1 }}
+                  >
+                    Sources: resume, personal knowledge base, curated context
+                  </Typography>
+                </Box>
               </Box>
               <Box
                 component={motion.div}
@@ -794,67 +794,67 @@ const LandingPage: React.FC = () => {
                   left: { md: "18%" },
                 }}
               >
-              <Box
-                component={motion.div}
-                animate={{ y: [0, 12, 0] }}
-                transition={{
-                  duration: 8,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                sx={{
-                  p: { xs: 2.5, sm: 3 },
-                  borderRadius: 3,
-                  backgroundColor: alpha(
-                    theme.palette.background.paper,
-                    theme.palette.mode === "dark" ? 0.6 : 0.92,
-                  ),
-                  border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
-                  color: theme.palette.text.primary,
-                  boxShadow:
-                    theme.palette.mode === "dark"
-                      ? "0 14px 34px rgba(0,0,0,0.4)"
-                      : "0 16px 36px rgba(15,23,42,0.12)",
-                  backdropFilter: "blur(16px)",
-                }}
-              >
-                <Typography
-                  variant="overline"
-                  sx={{ letterSpacing: "0.2em", color: secondaryTextColor }}
+                <Box
+                  component={motion.div}
+                  animate={{ y: [0, 12, 0] }}
+                  transition={{
+                    duration: 8,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  sx={{
+                    p: { xs: 2.5, sm: 3 },
+                    borderRadius: 3,
+                    backgroundColor: alpha(
+                      theme.palette.background.paper,
+                      theme.palette.mode === "dark" ? 0.6 : 0.92,
+                    ),
+                    border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
+                    color: theme.palette.text.primary,
+                    boxShadow:
+                      theme.palette.mode === "dark"
+                        ? "0 14px 34px rgba(0,0,0,0.4)"
+                        : "0 16px 36px rgba(15,23,42,0.12)",
+                    backdropFilter: "blur(16px)",
+                  }}
                 >
-                  Retrieval Layer
-                </Typography>
-                <Box sx={{ display: "grid", gap: 1, mt: 1 }}>
-                  {[
-                    "Pinecone vectors",
-                    "Neo4j graph",
-                    "Hybrid re‑rank",
-                    "Live context",
-                  ].map((item) => (
-                    <Box
-                      key={item}
-                      sx={{
-                        px: 1.4,
-                        py: 0.6,
-                        borderRadius: 2,
-                        backgroundColor: alpha(
-                          theme.palette.primary.main,
-                          0.08,
-                        ),
-                        border: `1px solid ${alpha(
-                          theme.palette.primary.main,
-                          0.25,
-                        )}`,
-                        fontSize: "0.8rem",
-                        fontWeight: 600,
-                        color: theme.palette.text.primary,
-                      }}
-                    >
-                      {item}
-                    </Box>
-                  ))}
+                  <Typography
+                    variant="overline"
+                    sx={{ letterSpacing: "0.2em", color: secondaryTextColor }}
+                  >
+                    Retrieval Layer
+                  </Typography>
+                  <Box sx={{ display: "grid", gap: 1, mt: 1 }}>
+                    {[
+                      "Pinecone vectors",
+                      "Neo4j graph",
+                      "Hybrid re‑rank",
+                      "Live context",
+                    ].map((item) => (
+                      <Box
+                        key={item}
+                        sx={{
+                          px: 1.4,
+                          py: 0.6,
+                          borderRadius: 2,
+                          backgroundColor: alpha(
+                            theme.palette.primary.main,
+                            0.08,
+                          ),
+                          border: `1px solid ${alpha(
+                            theme.palette.primary.main,
+                            0.25,
+                          )}`,
+                          fontSize: "0.8rem",
+                          fontWeight: 600,
+                          color: theme.palette.text.primary,
+                        }}
+                      >
+                        {item}
+                      </Box>
+                    ))}
+                  </Box>
                 </Box>
-              </Box>
               </Box>
               <Box
                 component={motion.div}
@@ -866,65 +866,65 @@ const LandingPage: React.FC = () => {
                   right: { md: "22%" },
                 }}
               >
-              <Box
-                component={motion.div}
-                animate={{ y: [0, -10, 0] }}
-                transition={{
-                  duration: 9,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                sx={{
-                  p: { xs: 2.5, sm: 3 },
-                  borderRadius: 3,
-                  backgroundColor: alpha(
-                    theme.palette.background.paper,
-                    theme.palette.mode === "dark" ? 0.65 : 0.95,
-                  ),
-                  border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
-                  color: theme.palette.text.primary,
-                  boxShadow:
-                    theme.palette.mode === "dark"
-                      ? "0 16px 38px rgba(0,0,0,0.42)"
-                      : "0 18px 38px rgba(15,23,42,0.14)",
-                  backdropFilter: "blur(16px)",
-                }}
-              >
-                <Typography
-                  variant="overline"
-                  sx={{ letterSpacing: "0.2em", color: secondaryTextColor }}
-                >
-                  Pipeline
-                </Typography>
                 <Box
+                  component={motion.div}
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{
+                    duration: 9,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
                   sx={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 1,
-                    mt: 1,
+                    p: { xs: 2.5, sm: 3 },
+                    borderRadius: 3,
+                    backgroundColor: alpha(
+                      theme.palette.background.paper,
+                      theme.palette.mode === "dark" ? 0.65 : 0.95,
+                    ),
+                    border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
+                    color: theme.palette.text.primary,
+                    boxShadow:
+                      theme.palette.mode === "dark"
+                        ? "0 16px 38px rgba(0,0,0,0.42)"
+                        : "0 18px 38px rgba(15,23,42,0.14)",
+                    backdropFilter: "blur(16px)",
                   }}
                 >
-                  {pipelineSteps.map((step) => (
-                    <Box
-                      key={step}
-                      sx={{
-                        px: 1.2,
-                        py: 0.4,
-                        borderRadius: 999,
-                        fontSize: "0.75rem",
-                        fontWeight: 600,
-                        backgroundColor: alpha(theme.palette.info.main, 0.12),
-                        border: `1px solid ${alpha(
-                          theme.palette.info.main,
-                          0.3,
-                        )}`,
-                      }}
-                    >
-                      {step}
-                    </Box>
-                  ))}
+                  <Typography
+                    variant="overline"
+                    sx={{ letterSpacing: "0.2em", color: secondaryTextColor }}
+                  >
+                    Pipeline
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: 1,
+                      mt: 1,
+                    }}
+                  >
+                    {pipelineSteps.map((step) => (
+                      <Box
+                        key={step}
+                        sx={{
+                          px: 1.2,
+                          py: 0.4,
+                          borderRadius: 999,
+                          fontSize: "0.75rem",
+                          fontWeight: 600,
+                          backgroundColor: alpha(theme.palette.info.main, 0.12),
+                          border: `1px solid ${alpha(
+                            theme.palette.info.main,
+                            0.3,
+                          )}`,
+                        }}
+                      >
+                        {step}
+                      </Box>
+                    ))}
+                  </Box>
                 </Box>
-              </Box>
               </Box>
             </Box>
           </Grid>

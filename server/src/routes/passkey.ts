@@ -47,7 +47,7 @@ function base64UrlToBuffer(s: string): Buffer {
 
 function issueJwt(user: IUser): string {
   return jwt.sign(
-    { id: user._id, email: user.email },
+    { id: user._id, email: user.email, isAdmin: user.isAdmin },
     process.env.JWT_SECRET as string,
     { expiresIn: "1d" },
   );

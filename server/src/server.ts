@@ -13,6 +13,13 @@ import {
 
 dotenv.config();
 
+if (!process.env.JWT_SECRET) {
+  console.error(
+    "Fatal: JWT_SECRET is not set. Refusing to start with an insecure default signing secret.",
+  );
+  process.exit(1);
+}
+
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -169,11 +176,13 @@ import authRoutes from "./routes/auth";
 import conversationRoutes from "./routes/conversations";
 import chatRoutes from "./routes/chat";
 import guestRoutes from "./routes/guest";
+import knowledgeRoutes from "./routes/knowledge";
 
 app.use("/api/auth", authRoutes);
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/chat/auth", chatRoutes);
 app.use("/api/chat/guest", guestRoutes);
+app.use("/api/knowledge", knowledgeRoutes);
 
 /*
  * IMPORTANT:

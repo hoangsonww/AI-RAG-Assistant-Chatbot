@@ -50,9 +50,14 @@ import mongoose, { Schema, Document } from "mongoose";
  *           type: array
  *           items:
  *             $ref: '#/components/schemas/PasskeyCredential'
+ *         isAdmin:
+ *           type: boolean
+ *           description: Whether the user has admin privileges.
+ *           default: false
  *       example:
  *         email: user@example.com
  *         password: yourpassword
+ *         isAdmin: false
  */
 export interface IPasskeyCredential {
   credentialID: string;
@@ -70,6 +75,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   credentials: IPasskeyCredential[];
+  isAdmin: boolean;
 }
 
 const PasskeyCredentialSchema = new Schema<IPasskeyCredential>(
@@ -91,6 +97,7 @@ const UserSchema: Schema = new Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   credentials: { type: [PasskeyCredentialSchema], default: [] },
+  isAdmin: { type: Boolean, default: false },
 });
 
 UserSchema.index({ "credentials.credentialID": 1 });

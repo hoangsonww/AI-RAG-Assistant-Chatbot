@@ -8,6 +8,7 @@ import LandingPage from "./pages/LandingPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import TermsPage from "./pages/Terms";
 import Passkeys from "./pages/Passkeys";
+import KnowledgeAdmin from "./pages/KnowledgeAdmin";
 import { ThemeProvider } from "@mui/material/styles";
 import { lightTheme, darkTheme } from "./theme";
 import ToastProvider from "./components/ToastProvider";
@@ -52,6 +53,15 @@ const App: React.FC = () => {
           <Route path="/" element={<LandingPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/passkeys" element={<Passkeys />} />
+          <Route
+            path="/admin/knowledge"
+            element={
+              <KnowledgeAdmin
+                onToggleTheme={toggleThemeMode}
+                darkMode={darkMode}
+              />
+            }
+          />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </ToastProvider>

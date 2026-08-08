@@ -34,3 +34,28 @@ export const authenticateJWT = (
     res.status(401).json({ message: "Authorization header missing" });
   }
 };
+
+import User from "../models/User";
+
+export const requireAdmin = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    if (!req.user?.id) {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized: Admin access required" });
+    }
+    const user = await User.findById(req.user.id);
+    if (!user || !user.isAdmin) {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized: Admin access required" });
+    }
+    next();
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};

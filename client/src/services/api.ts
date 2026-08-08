@@ -844,3 +844,192 @@ export const streamGuestChatMessage = async (
     maxRetries,
   );
 };
+
+// --- Knowledge Admin Endpoints ---
+
+/**
+ * Knowledge source shape returned from the API (content field excluded in list).
+ */
+export interface IKnowledgeSource {
+  _id: string;
+  title: string;
+  // Omitted by the list endpoint for payload size; present on single-source fetches.
+  content?: string;
+  sourceType: "resume" | "note" | "link" | "project" | "bio" | "other";
+  sourceUrl?: string;
+  tags?: string[];
+  externalId?: string;
+  chunkCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KnowledgeListParams {
+  page?: number;
+  limit?: number;
+  type?: string;
+  search?: string;
+}
+
+export interface KnowledgeListResponse {
+  sources: IKnowledgeSource[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
+export interface KnowledgeSourcePayload {
+  title: string;
+  content: string;
+  sourceType: "resume" | "note" | "link" | "project" | "bio" | "other";
+  sourceUrl?: string;
+  tags?: string[];
+  externalId?: string;
+}
+
+export interface KnowledgeSourceUpdatePayload {
+  title?: string;
+  content?: string;
+  sourceType?: "resume" | "note" | "link" | "project" | "bio" | "other";
+  sourceUrl?: string;
+  tags?: string[];
+  externalId?: string;
+}
+
+export interface SyncManifestEntry {
+  externalId: string;
+  title: string;
+  content: string;
+  sourceType: "resume" | "note" | "link" | "project" | "bio" | "other";
+  sourceUrl?: string;
+  tags?: string[];
+}
+
+export interface SyncResult {
+  synced: number;
+  results: {
+    externalId: string;
+    status: "created" | "updated";
+    chunkCount: number;
+  }[];
+  errors: { externalId: string; error: string }[];
+}
+
+/**
+ * List knowledge sources with optional filters and pagination.
+ * Requires admin JWT.
+ *
+ * @param params - Optional filters: page, limit, type, search
+ */
+export const listKnowledgeSources = async (
+  params?: KnowledgeListParams,
+): Promise<KnowledgeListResponse> => {
+  const resp = await API.get("/knowledge", { params });
+  return resp.data;
+};
+
+/**
+ * Get a single knowledge source, including its full content.
+ * Requires admin JWT.
+ *
+ * @param id - MongoDB ObjectId of the source
+ */
+export const getKnowledgeSource = async (
+  id: string,
+): Promise<IKnowledgeSource> => {
+  const resp = await API.get(`/knowledge/${id}`);
+  return resp.data.source;
+};
+
+/**
+ * Create a new knowledge source and embed it into Pinecone.
+ * Requires admin JWT.
+ *
+ * @param payload - Source data: title, content, sourceType (required); sourceUrl, tags, externalId (optional)
+ */
+export const createKnowledgeSource = async (
+  payload: KnowledgeSourcePayload,
+): Promise<{ source: IKnowledgeSource; chunkCount: number }> => {
+  const resp = await API.post("/knowledge", payload);
+  return resp.data;
+};
+
+/**
+ * Update a knowledge source and re-embed its content.
+ * Requires admin JWT.
+ *
+ * @param id - MongoDB ObjectId of the source
+ * @param payload - Fields to update (all optional)
+ */
+export const updateKnowledgeSource = async (
+  id: string,
+  payload: KnowledgeSourceUpdatePayload,
+): Promise<{ source: IKnowledgeSource; chunkCount: number }> => {
+  const resp = await API.patch(`/knowledge/${id}`, payload);
+  return resp.data;
+};
+
+/**
+ * Delete a knowledge source from MongoDB, Pinecone, and Neo4j.
+ * Requires admin JWT.
+ *
+ * @param id - MongoDB ObjectId of the source
+ */
+export const deleteKnowledgeSource = async (
+  id: string,
+): Promise<{ message: string }> => {
+  const resp = await API.delete(`/knowledge/${id}`);
+  return resp.data;
+};
+
+/**
+ * Force re-index a knowledge source (re-embed without changing metadata).
+ * Requires admin JWT.
+ *
+ * @param id - MongoDB ObjectId of the source
+ */
+export const reindexKnowledgeSource = async (
+  id: string,
+): Promise<{ message: string; chunkCount: number }> => {
+  const resp = await API.post(`/knowledge/${id}/reindex`);
+  return resp.data;
+};
+
+/**
+ * Bulk upsert knowledge sources from a manifest-style payload.
+ * Upserts by externalId — creates new sources or updates existing ones.
+ * Requires admin JWT.
+ *
+ * @param sources - Array of source entries to sync
+ */
+export const syncKnowledgeManifest = async (
+  sources: SyncManifestEntry[],
+): Promise<SyncResult> => {
+  const resp = await API.post("/knowledge/sync", { sources });
+  return resp.data;
+};
+
+// --- Admin Helpers ---
+
+/**
+ * Decode the JWT from localStorage and return whether the current user is an admin.
+ * This is a client-side convenience check only — the backend enforces authorization on every request.
+ */
+export const isAdminUser = (): boolean => {
+  try {
+    const token = getTokenFromLocalStorage();
+    if (!token) return false;
+    // JWT payload is the second segment, base64url-encoded
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = base64.length % 4;
+    const padded = pad ? base64 + "=".repeat(4 - pad) : base64;
+    const payload = JSON.parse(atob(padded));
+    return payload?.isAdmin === true;
+  } catch {
+    return false;
+  }
+};
